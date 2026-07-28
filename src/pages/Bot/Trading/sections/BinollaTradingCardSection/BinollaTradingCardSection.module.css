@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-height: var(--trading-binolla-card-height);
   background: var(--trading-binolla-card-bg);
   border: var(--trading-card-border-width) solid var(--trading-card-border-color);
   border-radius: var(--trading-card-radius);
@@ -16,7 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
+  padding: 8px 12px 9.18px;
   background: var(--trading-binolla-header-bg);
   border-bottom: var(--trading-card-border-width) solid var(--trading-card-divider-color);
 }
@@ -24,7 +25,7 @@
 .platform {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .platformIcon {
@@ -34,18 +35,28 @@
   width: var(--trading-platform-icon-size);
   height: var(--trading-platform-icon-size);
   background: var(--color-text-primary);
-  border-radius: var(--radius-xs);
+  border-radius: var(--trading-platform-icon-radius);
+}
+
+.platformIconImage {
+  width: 7.65px;
+  height: 11.54px;
+}
+
+.platformLabel {
+  line-height: 18px;
 }
 
 .balance {
-  color: var(--color-text-caption);
+  color: #888888;
+  line-height: 16.5px;
 }
 
 .marketRow {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: var(--space-3);
+  padding: 12px;
 }
 
 .pairBlock {
@@ -62,6 +73,7 @@
 
 .pairName {
   letter-spacing: -0.375px;
+  line-height: 22.5px;
 }
 
 .pairSuffix {
@@ -70,7 +82,12 @@
 }
 
 .price {
-  letter-spacing: 0;
+  margin: 0;
+  color: var(--trading-price-color);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-xs);
 }
 
 .expiryBlock {
@@ -80,48 +97,72 @@
   gap: var(--space-1);
 }
 
+.expiryLabel {
+  font-size: 10px;
+  line-height: 15px;
+}
+
 .expiryValue {
   letter-spacing: -0.325px;
+  line-height: 19.5px;
 }
 
 .chartWrap {
-  padding: 0 var(--space-3) var(--space-2);
+  padding: 8px 12px 0;
 }
 
 .chart {
+  display: block;
   width: 100%;
-  height: auto;
+  height: var(--trading-chart-height);
+  object-fit: cover;
 }
 
 .controls {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding: 13.18px 12px 12px;
+  border-top: var(--trading-card-border-width) solid var(--trading-card-divider-color);
+}
+
+.fieldRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-3) var(--space-2);
+  gap: 8px;
 }
 
 .fieldGroup {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: 4px;
 }
 
 .fieldLabel {
-  line-height: 15px;
+  color: var(--trading-field-label-color);
+  font-family: var(--font-family-primary);
+  font-size: var(--trading-field-label-size);
+  line-height: var(--trading-field-label-line-height);
 }
 
 .field {
   display: flex;
   align-items: center;
   min-height: var(--trading-field-height);
-  padding: var(--space-2) var(--space-3);
+  padding: 9.18px 13.18px;
   background: var(--trading-field-bg);
   border: var(--trading-card-border-width) solid var(--trading-field-border-color);
   border-radius: var(--trading-field-radius);
 }
 
 .fieldPrefix {
-  margin-right: var(--space-1);
+  margin-right: 4px;
+  color: #888888;
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  line-height: 18px;
 }
 
 .amountInput {
@@ -131,7 +172,8 @@
   background: transparent;
   border: none;
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md);
   line-height: 21px;
 }
 
@@ -146,17 +188,20 @@
 
 .durationValue {
   flex: 1;
+  line-height: 19.5px;
 }
 
 .durationChevron {
+  width: 16px;
+  height: 16px;
   margin-left: auto;
 }
 
 .tradeActions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3) var(--space-3);
+  gap: 8px;
+  padding-top: 8px;
 }
 
 .tradeButtonUp,
@@ -164,7 +209,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: 6px;
   min-height: var(--trading-trade-button-height);
   border: none;
   border-radius: var(--trading-trade-button-radius);
@@ -176,5 +221,19 @@
 }
 
 .tradeButtonDown {
-  background: var(--color-red-primary);
+  background: var(--trading-trade-down-bg);
+}
+
+.tradeIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.tradeLabel {
+  color: var(--color-text-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  line-height: 21px;
+  letter-spacing: -0.35px;
 }

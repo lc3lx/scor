@@ -4,51 +4,19 @@
   justify-content: space-between;
   width: 100%;
   min-height: var(--trading-top-bar-height);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.brandIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--trading-brand-icon-size);
-  height: var(--trading-brand-icon-size);
-  background: var(--gradient-brand-tile);
-  border-radius: var(--trading-brand-icon-radius);
-}
-
-.brandText {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  width: var(--trading-brand-text-width);
-}
-
-.logoIcon,
-.logoAlpha,
-.logoScar {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.logoAlpha {
-  margin-top: 2px;
-}
-
-.logoScar {
-  margin-top: 2px;
+  margin-bottom: calc(var(--trading-header-card-gap) - var(--trading-section-gap));
 }
 
 .actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.connectionChip {
+  min-height: var(--trading-chip-height);
+  padding: 3px 8px;
+  gap: 6px;
 }
 
 .actionButton {
@@ -59,4 +27,9 @@
   height: var(--trading-action-button-size);
   background: var(--trading-action-button-bg);
   border-radius: var(--trading-action-button-radius);
+}
+
+.actionIcon {
+  width: var(--trading-action-icon-size);
+  height: var(--trading-action-icon-size);
 }

@@ -21,5 +21,6 @@
   flex-direction: column;
   gap: var(--trading-section-gap);
   width: 100%;
+  padding-top: var(--trading-content-padding-top);
   padding-bottom: var(--trading-scroll-padding-bottom);
 }

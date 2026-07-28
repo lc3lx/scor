@@ -24,9 +24,16 @@
 }
 
 @media (max-width: 402px) {
+  .shell {
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+
   .viewport {
     max-width: 100%;
-    min-height: 100%;
+    width: 100%;
+    min-height: 100dvh;
+    height: 100dvh;
     border-radius: 0;
   }
 }

@@ -13,11 +13,15 @@ export const brandAssets = {
 } as const;
 
 export const navigationAssets = {
+  home: new URL('./icons/navigation/home.svg', import.meta.url).href,
   homeActive: new URL('./icons/navigation/home-active.svg', import.meta.url).href,
   bot: new URL('./icons/navigation/bot.svg', import.meta.url).href,
+  botActive: new URL('./icons/navigation/bot-active.svg', import.meta.url).href,
   trades: new URL('./icons/navigation/trades.svg', import.meta.url).href,
+  tradesActive: new URL('./icons/navigation/trades-active.svg', import.meta.url).href,
   user: new URL('./icons/navigation/user.svg', import.meta.url).href,
-  fab: new URL('./icons/navigation/fab.svg', import.meta.url).href,
+  userActive: new URL('./icons/navigation/user-active.svg', import.meta.url).href,
+  fabIcon: new URL('./icons/navigation/fab-icon.svg', import.meta.url).href,
   bottomNavUnion: new URL('./icons/navigation/bottom-nav-union.svg', import.meta.url).href,
 } as const;
 
@@ -74,6 +78,20 @@ export const dashboardAssets = {
   growthArrow: new URL('./icons/dashboard/growth-arrow.svg', import.meta.url).href,
 } as const;
 
+export const tradingAssets = {
+  brandSIcon: new URL('./icons/trading/brand-s-icon.svg', import.meta.url).href,
+  wordmarkScar: new URL('./icons/trading/wordmark-scar.svg', import.meta.url).href,
+  wordmarkAlphaAi: new URL('./icons/trading/wordmark-alpha-ai.svg', import.meta.url).href,
+  binollaIcon: new URL('./icons/trading/binolla-icon.svg', import.meta.url).href,
+  tradeUp: new URL('./icons/trading/trade-up.svg', import.meta.url).href,
+  tradeDown: new URL('./icons/trading/trade-down.svg', import.meta.url).href,
+  refresh: new URL('./icons/trading/refresh.svg', import.meta.url).href,
+  externalLink: new URL('./icons/trading/external-link.svg', import.meta.url).href,
+  durationChevron: new URL('./icons/trading/duration-chevron.svg', import.meta.url).href,
+  candlestickChart: new URL('./images/trading/candlestick-chart.png', import.meta.url).href,
+  chartGrid: new URL('./images/trading/chart-grid.svg', import.meta.url).href,
+} as const;
+
 export const tradeAssets = {
   arrowUp: new URL('./icons/trades/arrow-up.svg', import.meta.url).href,
   arrowDown: new URL('./icons/trades/arrow-down.svg', import.meta.url).href,
@@ -128,6 +146,7 @@ export const accountAssets = {
 
 export const figmaAssets = {
   brand: brandAssets,
+  trading: tradingAssets,
   navigation: navigationAssets,
   ui: uiAssets,
   notifications: notificationAssets,

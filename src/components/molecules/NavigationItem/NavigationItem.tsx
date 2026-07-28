@@ -7,6 +7,7 @@ export type NavigationItemProps = {
   iconSrc: string;
   label?: string;
   active?: boolean;
+  iconClassName?: string;
   onClick?: () => void;
   className?: string;
 };
@@ -15,6 +16,7 @@ export function NavigationItem({
   iconSrc,
   label,
   active = false,
+  iconClassName,
   onClick,
   className,
 }: NavigationItemProps) {
@@ -26,9 +28,14 @@ export function NavigationItem({
       aria-label={label}
       aria-current={active ? 'page' : undefined}
     >
-      <Icon src={iconSrc} size="nav" decorative />
-      {label && (
-        <Text variant="nav" tone={active ? 'nav-active' : 'muted'} className={styles.label}>
+      <Icon
+        src={iconSrc}
+        size="nav"
+        decorative
+        className={cn(styles.icon, iconClassName)}
+      />
+      {active && label && (
+        <Text variant="nav" tone="nav-active" className={styles.label}>
           {label}
         </Text>
       )}

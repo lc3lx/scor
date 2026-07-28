@@ -1,5 +1,4 @@
-import { brandAssets, uiAssets } from '@assets/index';
-import { SHARED_CANDLE_DATA } from '@services/trades/trade.mock';
+import { tradingAssets } from '@assets/index';
 import type { TradingPageContent, TradingRuntimeState } from '../types';
 
 export const TRADING_MOCK_CONTENT: TradingPageContent = {
@@ -8,29 +7,29 @@ export const TRADING_MOCK_CONTENT: TradingPageContent = {
     connectionTone: 'success',
     refreshAriaLabel: 'Refresh trading data',
     exportAriaLabel: 'Open Binolla in new window',
-    refreshIconSrc: uiAssets.refresh,
-    exportIconSrc: uiAssets.externalLink,
+    refreshIconSrc: tradingAssets.refresh,
+    exportIconSrc: tradingAssets.externalLink,
   },
   binollaCard: {
     platformLabel: 'Binolla · Embedded',
-    platformIconSrc: brandAssets.binolla,
+    platformIconSrc: tradingAssets.binollaIcon,
     balancePrefix: 'Balance: ',
     balanceValue: '$4,821.44',
     pairName: 'EUR/USD',
     pairSuffix: 'OTC',
     priceDisplay: '1.08423 +0.12%',
     expiryLabel: 'Expiry',
-    candleData: SHARED_CANDLE_DATA,
+    chartImageSrc: tradingAssets.candlestickChart,
     amountLabel: 'Amount',
     amountPrefix: '$',
     durationLabel: 'Duration',
+    durationChevronSrc: tradingAssets.durationChevron,
     upLabel: 'UP',
     downLabel: 'DOWN',
-    upIconSrc: uiAssets.upArrow,
-    downIconSrc: uiAssets.downArrow,
+    upIconSrc: tradingAssets.tradeUp,
+    downIconSrc: tradingAssets.tradeDown,
   },
   signalCard: {
-    brandIconSrc: brandAssets.scarTile,
     freshLabel: 'Fresh · 4s',
     freshTone: 'success',
     stats: [

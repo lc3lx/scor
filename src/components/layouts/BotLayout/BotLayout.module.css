@@ -23,7 +23,10 @@
 .bottomNav {
   position: absolute;
   left: 0;
+  right: 0;
   bottom: 0;
   width: 100%;
   z-index: var(--z-bottom-nav);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background-color: var(--nav-bottom-background);
 }

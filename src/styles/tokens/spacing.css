@@ -24,7 +24,9 @@
   --layout-bottom-nav-item-height: 75px;
   --layout-fab-size: 55px;
   --layout-fab-ellipse-size: 72px;
-  --layout-bot-scroll-padding-bottom: var(--layout-bottom-nav-height);
+  --layout-bot-scroll-padding-bottom: calc(
+    var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px)
+  );
 
   /* Background glow */
   --glow-center-size: 259px;

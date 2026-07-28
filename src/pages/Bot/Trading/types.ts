@@ -1,4 +1,3 @@
-import type { CandlestickPoint } from '@components/organisms/CandlestickChart';
 import type { ChipTone } from '@components/types';
 
 export type {
@@ -37,10 +36,11 @@ export type BinollaCardContent = {
   pairSuffix: string;
   priceDisplay: string;
   expiryLabel: string;
-  candleData: CandlestickPoint[];
+  chartImageSrc: string;
   amountLabel: string;
   amountPrefix: string;
   durationLabel: string;
+  durationChevronSrc: string;
   upLabel: string;
   downLabel: string;
   upIconSrc: string;
@@ -48,7 +48,6 @@ export type BinollaCardContent = {
 };
 
 export type ScarAlphaSignalCardContent = {
-  brandIconSrc: string;
   freshLabel: string;
   freshTone: ChipTone;
   stats: TradingSignalStat[];

@@ -3,8 +3,13 @@
  */
 :root {
   --nav-bottom-width: 100%;
+  --nav-bottom-background: #000000;
   --nav-bottom-height: var(--layout-bottom-nav-height);
   --nav-bottom-bar-height: var(--layout-bottom-nav-bar-height);
+  --nav-bottom-inset-left: 10px;
+  --nav-bottom-inset-right: 11px;
+  --nav-bottom-column-gap: 5px;
+  --nav-bottom-fab-zone-width: 91px;
   --nav-bottom-item-width: var(--layout-bottom-nav-item-width);
   --nav-bottom-item-height: var(--layout-bottom-nav-item-height);
   --nav-bottom-item-padding-x: 15px;
@@ -12,9 +17,12 @@
   --nav-bottom-item-gap: 5px;
 
   --nav-icon-size: 24px;
-  --nav-icon-size-trades-w: 22.220703125px;
-  --nav-icon-size-trades-h: 20.00002098083496px;
+  --nav-icon-size-trades-w: 18.75032615661621px;
+  --nav-icon-size-trades-h: 14.583659172058105px;
   --nav-fab-size: var(--layout-fab-size);
+  --nav-fab-top: 10px;
+  --nav-fab-icon-width: 34.4945px;
+  --nav-fab-icon-height: 27.6605px;
   --nav-fab-ellipse-size: var(--layout-fab-ellipse-size);
   --nav-fab-shadow: var(--shadow-fab);
   --nav-fab-background: var(--gradient-fab);

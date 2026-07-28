@@ -1,12 +1,9 @@
-<svg width="24" height="22" viewBox="0 0 24 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="24" height="22" fill="#1E1E1E"/>
-<g id="Group 105">
-<g id="navigation/menu - home">
-<g id="Group">
-<path id="Vector" d="M18.5274 20.75C18.5274 18.3926 17.5909 16.1317 15.9239 14.4648C14.257 12.7978 11.9961 11.8613 9.63869 11.8613C7.28126 11.8613 5.02039 12.7978 3.35344 14.4648C1.68648 16.1317 0.75 18.3926 0.75 20.75" stroke="#5A5658" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-<path id="Vector_2" d="M9.63844 11.8609C12.7066 11.8609 15.1939 9.37362 15.1939 6.30543C15.1939 3.23725 12.7066 0.75 9.63844 0.75C6.57026 0.75 4.08301 3.23725 4.08301 6.30543C4.08301 9.37362 6.57026 11.8609 9.63844 11.8609Z" stroke="#5A5658" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-<path id="Vector_3" d="M22.9707 19.6376C22.9707 15.8932 20.7485 12.4155 18.5264 10.7489C19.2568 10.2009 19.8409 9.48122 20.2269 8.65366C20.613 7.82611 20.7891 6.91615 20.7397 6.00431C20.6902 5.09248 20.4168 4.20689 19.9435 3.42592C19.4703 2.64496 18.8118 1.99269 18.0264 1.52686" stroke="#5A5658" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</g>
-</g>
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="20.399" height="16.2323" viewBox="0 0 20.399 16.2323" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Arrow Icon">
+<path id="Vector" d="M0.824329 13.3247L2.90766 15.408L7.07433 11.2413" stroke="#5A5658" stroke-width="1.64866" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_2" d="M0.824329 2.90766L2.90766 4.991L7.07433 0.824329" stroke="#5A5658" stroke-width="1.64866" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_3" d="M11.2413 1.86632H19.5747" stroke="#5A5658" stroke-width="1.64866" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_4" d="M11.2413 8.11632H19.5747" stroke="#5A5658" stroke-width="1.64866" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_5" d="M11.2413 14.3663H19.5747" stroke="#5A5658" stroke-width="1.64866" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 </svg>
