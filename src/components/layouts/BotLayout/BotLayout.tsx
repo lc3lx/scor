@@ -1,0 +1,69 @@
+import { Outlet, useLocation, useMatches, useNavigate } from 'react-router-dom';
+import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
+import { BottomNavigation } from '@components/organisms/BottomNavigation';
+import type { NavTab } from '@components/types';
+import { ROUTES } from '@constants/routes';
+import type { RouteHandle } from '@/types/routing';
+import styles from './BotLayout.module.css';
+
+const TAB_ROUTES: Record<NavTab, string> = {
+  home: ROUTES.home,
+  bot: ROUTES.bot,
+  trades: ROUTES.history,
+  profile: ROUTES.settings,
+};
+
+function resolveActiveTab(pathname: string): NavTab | null {
+  if (pathname === ROUTES.trading) return null;
+  if (pathname === ROUTES.home) return 'home';
+  if (pathname === ROUTES.bot) return 'bot';
+  if (pathname === ROUTES.history) return 'trades';
+  if (pathname.startsWith(ROUTES.settings)) return 'profile';
+  return null;
+}
+
+function resolveFabState(pathname: string): { fabActive: boolean; fabLabel?: string } {
+  if (pathname === ROUTES.trading) {
+    return { fabActive: true, fabLabel: 'Trading' };
+  }
+
+  return { fabActive: false };
+}
+
+export function BotLayout() {
+  const matches = useMatches();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const showBottomNav = matches.some(
+    (match) => (match.handle as RouteHandle | undefined)?.showBottomNav === true,
+  );
+
+  const activeTab = resolveActiveTab(location.pathname);
+  const { fabActive, fabLabel } = resolveFabState(location.pathname);
+
+  const handleTabChange = (tab: NavTab) => {
+    navigate(TAB_ROUTES[tab]);
+  };
+
+  return (
+    <section className={styles.layout} aria-label="Bot application">
+      <BackgroundGlow variant="top-right" />
+
+      <div className={styles.content}>
+        <Outlet />
+      </div>
+
+      {showBottomNav && (
+        <BottomNavigation
+          activeTab={activeTab}
+          fabActive={fabActive}
+          fabLabel={fabLabel}
+          onTabChange={handleTabChange}
+          onFabClick={() => navigate(ROUTES.trading)}
+          className={styles.bottomNav}
+        />
+      )}
+    </section>
+  );
+}

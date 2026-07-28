@@ -1,0 +1,32 @@
+.shell {
+  min-height: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--app-background);
+}
+
+.viewport {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: var(--layout-viewport-width);
+  max-width: var(--layout-viewport-max-width);
+  min-height: var(--layout-viewport-min-height);
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  border-radius: var(--app-screen-radius);
+  background-color: var(--color-bg-primary);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@media (max-width: 402px) {
+  .viewport {
+    max-width: 100%;
+    min-height: 100%;
+    border-radius: 0;
+  }
+}

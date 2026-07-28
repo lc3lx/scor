@@ -1,0 +1,36 @@
+.page {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  background-color: var(--color-bg-primary);
+}
+
+.scroll {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--activity-section-gap);
+  width: 100%;
+  padding-bottom: var(--activity-scroll-padding-bottom);
+}
+
+.stickyHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-content);
+  padding-bottom: var(--space-2);
+  background: linear-gradient(180deg, var(--color-bg-primary) 80%, transparent 100%);
+}

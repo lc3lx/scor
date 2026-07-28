@@ -1,0 +1,23 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+  padding-bottom: var(--space-9);
+}
+
+.missing {
+  margin-top: 24px;
+  color: var(--color-text-muted);
+}

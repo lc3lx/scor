@@ -1,0 +1,9 @@
+.loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinning {
+  animation: loader-spin var(--splash-loader-rotation-duration) var(--splash-loader-rotation-easing) infinite;
+}

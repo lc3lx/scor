@@ -1,0 +1,25 @@
+.section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--activity-header-height);
+}
+
+.title {
+  font-size: var(--activity-history-title-size);
+  font-weight: var(--font-weight-extrabold);
+  line-height: 32.2px;
+  letter-spacing: -0.56px;
+}
+
+.filterButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--activity-filter-button-size);
+  height: var(--activity-filter-button-size);
+  background: rgba(255, 255, 255, 0.05);
+  border: var(--trading-card-border-width) solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-full);
+}

@@ -1,0 +1,45 @@
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.title {
+  width: 100%;
+}
+
+.description {
+  width: 100%;
+  max-width: 342px;
+  padding-top: var(--space-3);
+  font-size: var(--font-size-md);
+  line-height: var(--onboarding-description-line-height);
+  font-weight: var(--font-weight-regular);
+}
+
+.tilesSection {
+  width: 100%;
+  padding-top: var(--onboarding-tiles-margin-top);
+}
+
+.cardSection {
+  width: 100%;
+  padding-top: var(--onboarding-card-margin-top);
+}
+
+.keyPoints {
+  display: flex;
+  flex-direction: column;
+  gap: var(--onboarding-keypoint-gap);
+  width: 100%;
+  margin: 0;
+  padding: var(--onboarding-keypoints-margin-top) 0 0;
+  list-style: none;
+}
+
+.footnote {
+  width: 100%;
+  max-width: var(--onboarding-footnote-max-width);
+  padding-top: var(--onboarding-footnote-margin-top);
+}

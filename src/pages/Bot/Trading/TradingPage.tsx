@@ -1,0 +1,55 @@
+import { useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { PageContent } from '@components/layouts/PageContent';
+import { getTradeDetailPath, ROUTES } from '@constants/routes';
+import { useTradingData } from './hooks/useTradingData';
+import { BinollaTradingCardSection } from './sections/BinollaTradingCardSection';
+import { ScarAlphaSignalCardSection } from './sections/ScarAlphaSignalCardSection';
+import { TradingTopBarSection } from './sections/TradingTopBarSection';
+import styles from './TradingPage.module.css';
+
+export default function TradingPage() {
+  const navigate = useNavigate();
+  const { data, duration, expiryDisplay, updateRuntime, placeTrade, tickExpiry } = useTradingData();
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void tickExpiry();
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [tickExpiry]);
+
+  const handleTrade = useCallback(
+    async (direction: 'up' | 'down') => {
+      const tradeId = await placeTrade(direction);
+      navigate(getTradeDetailPath(tradeId));
+    },
+    [navigate, placeTrade],
+  );
+
+  if (!data || !duration) return null;
+
+  return (
+    <main className={styles.page} aria-label="Trading">
+      <div className={styles.scroll}>
+        <PageContent className={styles.content}>
+          <TradingTopBarSection content={data.topBar} />
+          <BinollaTradingCardSection
+            content={data.binollaCard}
+            amount={data.runtime.amount}
+            durationLabel={duration.label}
+            expiryDisplay={expiryDisplay}
+            onAmountChange={(value) => updateRuntime({ amount: value })}
+            onTradeUp={() => handleTrade('up')}
+            onTradeDown={() => handleTrade('down')}
+          />
+          <ScarAlphaSignalCardSection
+            content={data.signalCard}
+            onOpenBot={() => navigate(ROUTES.bot)}
+          />
+        </PageContent>
+      </div>
+    </main>
+  );
+}

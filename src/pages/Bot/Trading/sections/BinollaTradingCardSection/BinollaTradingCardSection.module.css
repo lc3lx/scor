@@ -1,0 +1,180 @@
+.section {
+  width: 100%;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--trading-binolla-card-bg);
+  border: var(--trading-card-border-width) solid var(--trading-card-border-color);
+  border-radius: var(--trading-card-radius);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: var(--trading-binolla-header-bg);
+  border-bottom: var(--trading-card-border-width) solid var(--trading-card-divider-color);
+}
+
+.platform {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.platformIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--trading-platform-icon-size);
+  height: var(--trading-platform-icon-size);
+  background: var(--color-text-primary);
+  border-radius: var(--radius-xs);
+}
+
+.balance {
+  color: var(--color-text-caption);
+}
+
+.marketRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-3);
+}
+
+.pairBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pairLine {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.pairName {
+  letter-spacing: -0.375px;
+}
+
+.pairSuffix {
+  font-size: 10px;
+  line-height: 15px;
+}
+
+.price {
+  letter-spacing: 0;
+}
+
+.expiryBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+
+.expiryValue {
+  letter-spacing: -0.325px;
+}
+
+.chartWrap {
+  padding: 0 var(--space-3) var(--space-2);
+}
+
+.chart {
+  width: 100%;
+  height: auto;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fieldLabel {
+  line-height: 15px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  min-height: var(--trading-field-height);
+  padding: var(--space-2) var(--space-3);
+  background: var(--trading-field-bg);
+  border: var(--trading-card-border-width) solid var(--trading-field-border-color);
+  border-radius: var(--trading-field-radius);
+}
+
+.fieldPrefix {
+  margin-right: var(--space-1);
+}
+
+.amountInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 21px;
+}
+
+.amountInput:focus {
+  outline: none;
+}
+
+.amountInput:focus-visible {
+  outline: 2px solid var(--color-red-primary);
+  outline-offset: 2px;
+}
+
+.durationValue {
+  flex: 1;
+}
+
+.durationChevron {
+  margin-left: auto;
+}
+
+.tradeActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+}
+
+.tradeButtonUp,
+.tradeButtonDown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--trading-trade-button-height);
+  border: none;
+  border-radius: var(--trading-trade-button-radius);
+  cursor: pointer;
+}
+
+.tradeButtonUp {
+  background: var(--color-success);
+}
+
+.tradeButtonDown {
+  background: var(--color-red-primary);
+}

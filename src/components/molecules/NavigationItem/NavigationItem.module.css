@@ -1,0 +1,29 @@
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nav-bottom-item-gap);
+  width: 100%;
+  max-width: var(--nav-bottom-item-width);
+  height: var(--nav-bottom-item-height);
+  padding: var(--nav-bottom-item-padding-y) clamp(4px, 2.2vw, var(--nav-bottom-item-padding-x));
+  margin-inline: auto;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--color-red-primary);
+  outline-offset: 2px;
+}
+
+.label {
+  height: var(--nav-label-height);
+}
+
+.active .label {
+  font-weight: var(--font-weight-bold);
+}

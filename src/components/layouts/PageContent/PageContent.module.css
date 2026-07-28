@@ -1,0 +1,12 @@
+.content {
+  width: 100%;
+  max-width: var(--layout-content-max-width);
+  margin-inline: auto;
+  padding-inline: var(--layout-page-padding-x);
+}
+
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

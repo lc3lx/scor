@@ -1,0 +1,89 @@
+.section {
+  width: 100%;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--trading-signal-card-padding);
+  background: var(--trading-signal-card-gradient);
+  border-radius: var(--trading-card-radius);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.brandIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--trading-signal-icon-size);
+  height: var(--trading-signal-icon-size);
+  background: var(--gradient-brand-tile);
+  border-radius: var(--trading-signal-icon-radius);
+}
+
+.brandText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.logoIcon,
+.logoAlpha,
+.logoScar {
+  display: block;
+  width: var(--trading-brand-text-width);
+  height: auto;
+}
+
+.logoAlpha,
+.logoScar {
+  margin-top: 2px;
+}
+
+.freshChip {
+  margin-left: auto;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2) var(--space-3);
+}
+
+.statRow,
+.marketRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: var(--trading-card-border-width) solid var(--trading-card-divider-color);
+}
+
+.marketRow {
+  width: 100%;
+}
+
+.cta {
+  width: 100%;
+  min-height: var(--trading-cta-height);
+  padding: var(--space-3);
+  background: var(--color-text-primary);
+  border: none;
+  border-radius: var(--trading-cta-radius);
+  color: var(--color-red-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: 22.5px;
+  letter-spacing: -0.15px;
+}

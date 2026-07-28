@@ -1,0 +1,87 @@
+.card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+  width: 100%;
+  min-height: 129.995px;
+  padding: 15.66px 15.82px;
+  border: var(--card-border-width) solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  max-width: calc(100% - 91px);
+}
+
+.title {
+  font-size: var(--font-size-sm);
+  line-height: 21px;
+}
+
+.description {
+  padding-top: var(--space-1);
+  color: #888888;
+  font-size: var(--font-size-xs);
+  line-height: 18px;
+}
+
+.bestFor {
+  padding-top: var(--space-1);
+  color: var(--color-text-caption);
+  font-size: 11px;
+  line-height: 16.5px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-top: var(--space-3);
+  min-height: 29.274px;
+}
+
+.action {
+  border: none;
+  background: transparent;
+  color: var(--color-red-primary);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.badge {
+  flex-shrink: 0;
+}
+
+.previewWrap {
+  flex-shrink: 0;
+  width: 75px;
+  height: 75px;
+  overflow: hidden;
+  border: var(--card-border-width) solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
