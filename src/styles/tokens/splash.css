@@ -20,4 +20,5 @@
 
   --splash-loader-rotation-duration: 1s;
   --splash-loader-rotation-easing: linear;
+  --splash-redirect-delay: 2000ms;
 }

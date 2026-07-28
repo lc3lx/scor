@@ -5,5 +5,6 @@
 }
 
 .spinning {
+  transform-origin: center;
   animation: loader-spin var(--splash-loader-rotation-duration) var(--splash-loader-rotation-easing) infinite;
 }
