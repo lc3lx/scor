@@ -1,6 +1,7 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContent } from '@components/layouts/PageContent';
+import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { getTradeDetailPath, ROUTES } from '@constants/routes';
 import { useTradingData } from './hooks/useTradingData';
 import { BinollaTradingCardSection } from './sections/BinollaTradingCardSection';
@@ -10,20 +11,20 @@ import styles from './TradingPage.module.css';
 
 export default function TradingPage() {
   const navigate = useNavigate();
-  const { data, duration, expiryDisplay, updateRuntime, placeTrade, tickExpiry } = useTradingData();
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      void tickExpiry();
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [tickExpiry]);
+  const { data, duration, expiryDisplay, updateRuntime, placeTrade, reload } = useTradingData();
 
   const handleTrade = useCallback(
     async (direction: 'up' | 'down') => {
-      const tradeId = await placeTrade(direction);
-      navigate(getTradeDetailPath(tradeId));
+      try {
+        const tradeId = await placeTrade(direction);
+        navigate(getTradeDetailPath(tradeId));
+      } catch (error) {
+        const message =
+          error && typeof error === 'object' && 'message' in error
+            ? String((error as { message: unknown }).message)
+            : 'Trade failed.';
+        window.alert(message);
+      }
     },
     [navigate, placeTrade],
   );
@@ -33,8 +34,9 @@ export default function TradingPage() {
   return (
     <main className={styles.page} aria-label="Trading">
       <div className={styles.scroll}>
+        <BackgroundGlow variant="top-right" />
         <PageContent className={styles.content}>
-          <TradingTopBarSection content={data.topBar} />
+          <TradingTopBarSection content={data.topBar} onRefresh={() => void reload()} />
           <BinollaTradingCardSection
             content={data.binollaCard}
             amount={data.runtime.amount}

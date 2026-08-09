@@ -15,11 +15,11 @@ export default function SubscriptionPage() {
   const { subscription, isLoading } = useSubscriptionData();
 
   const handleEnterKey = useCallback(() => {
-    navigate(ROUTES.activation);
+    navigate(ROUTES.editProfile);
   }, [navigate]);
 
   const handleViewHistory = useCallback(() => {
-    navigate(ROUTES.activationHistory);
+    navigate(ROUTES.settings);
   }, [navigate]);
 
   if (isLoading || !subscription) return null;

@@ -29,6 +29,7 @@
       "@features/*": ["src/features/*"],
       "@router/*": ["src/router/*"],
       "@services/*": ["src/services/*"],
+      "@shared/*": ["src/shared/*"],
       "@styles/*": ["src/styles/*"],
       "@types/*": ["src/types/*"],
       "@utils/*": ["src/utils/*"]

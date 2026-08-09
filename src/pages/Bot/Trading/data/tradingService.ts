@@ -6,46 +6,228 @@ import { activityService } from '../../Activity/data/activityService';
 import { tradeService } from '@services/trades';
 import type { TradingData, TradingRuntimeState } from '../types';
 import type { TradeDirection } from '@components/types';
+import type { CandlestickPoint } from '@components/organisms/CandlestickChart';
+import {
+  accountApi,
+  ApiClientError,
+  binollaApi,
+  marketApi,
+  strategiesApi,
+  type AccountStatusResponse,
+} from '@shared/api';
 
 let runtimeState: TradingRuntimeState = { ...TRADING_INITIAL_RUNTIME };
+let selectedAsset = 'EURUSD_otc';
+
+const CANDLE_PERIOD_SECONDS = 60;
+const MAX_CANDLES_ON_CHART = 48;
 
 function cloneRuntime(): TradingRuntimeState {
   return { ...runtimeState };
 }
 
+function formatMoney(value: number): string {
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatSignal(signal: string): { value: string; tone?: 'success' | 'primary' } {
+  const s = signal.toLowerCase();
+  if (s === 'call') return { value: 'CALL ↑', tone: 'success' };
+  if (s === 'put') return { value: 'PUT ↓', tone: 'primary' };
+  return { value: 'NONE', tone: 'primary' };
+}
+
+function durationSecondsFromId(id: string): number {
+  if (id === 'duration-3m') return 180;
+  if (id === 'duration-5m') return 300;
+  return 60;
+}
+
+function mapCandles(
+  candles: { open: number; high: number; low: number; close: number }[],
+): CandlestickPoint[] {
+  const mapped = candles.map((c) => ({
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close,
+  }));
+  if (mapped.length <= MAX_CANDLES_ON_CHART) return mapped;
+  return mapped.slice(mapped.length - MAX_CANDLES_ON_CHART);
+}
+
+function chartStatusFor(status: AccountStatusResponse | null, hasCandles: boolean): string {
+  if (!status) return 'Connect to load Binolla candles';
+  if (status.botAccess === 'BinollaNotConnected') return 'Connect Binolla to load live candles';
+  if (status.botAccess === 'AdminApprovalRequired') {
+    return 'Waiting for admin approval — candles unlock after approval';
+  }
+  if (status.botAccess === 'NotEligible') return 'Account rejected — candles unavailable';
+  if (status.botAccess === 'SessionExpired') return 'Binolla session expired — reconnect SSID';
+  if (status.botAccess !== 'Allowed') return 'Bot access required for live candles';
+  if (!hasCandles) return 'No candles from Binolla yet';
+  return 'Live Binolla candles';
+}
+
 export const tradingService = {
   async fetchTradingData(): Promise<TradingData> {
+    const content = structuredClone(TRADING_MOCK_CONTENT);
+    content.binollaCard.candleData = [];
+    content.binollaCard.balanceValue = '—';
+    content.binollaCard.priceDisplay = '—';
+
+    try {
+      const [status, balance] = await Promise.all([
+        accountApi.status().catch(() => null),
+        binollaApi.balance().catch(() => null),
+      ]);
+
+      const connected = Boolean(status?.binollaConnected && balance?.connected);
+      content.topBar.connectionLabel = connected ? 'Connected' : 'Disconnected';
+      content.topBar.connectionTone = connected ? 'success' : 'danger';
+
+      if (balance) {
+        content.binollaCard.balanceValue = formatMoney(balance.currentBalance);
+      }
+
+      if (status?.botAccess === 'AdminApprovalRequired') {
+        content.topBar.connectionLabel = 'Awaiting approval';
+        content.topBar.connectionTone = 'warning';
+      }
+
+      const allowed = status?.botAccess === 'Allowed';
+      content.binollaCard.tradesDisabled = !allowed;
+
+      const assets = allowed ? await marketApi.assets().catch(() => null) : null;
+      const firstAsset = assets?.assets.find((a) => a.available)?.symbol ?? selectedAsset;
+      selectedAsset = firstAsset;
+
+      const displayName = assets?.assets.find((a) => a.symbol === firstAsset)?.name ?? firstAsset;
+      content.binollaCard.pairName = displayName.includes('/')
+        ? displayName.split(' ')[0] ?? displayName
+        : firstAsset.replace('_otc', '');
+      content.binollaCard.pairSuffix = firstAsset.toLowerCase().includes('otc') ? 'OTC' : '';
+
+      const price = allowed ? await marketApi.price(firstAsset).catch(() => null) : null;
+      content.binollaCard.priceDisplay = price
+        ? price.price.toFixed(5)
+        : allowed
+          ? 'Unavailable'
+          : '—';
+
+      // Live candles from Binolla via backend — never invent chart data.
+      const candlesResponse = allowed
+        ? await marketApi.candles(firstAsset, CANDLE_PERIOD_SECONDS).catch(() => null)
+        : null;
+      content.binollaCard.candleData = candlesResponse
+        ? mapCandles(candlesResponse.candles)
+        : [];
+      content.binollaCard.chartStatusLabel = chartStatusFor(
+        status,
+        content.binollaCard.candleData.length > 0,
+      );
+
+      const signal = allowed
+        ? await strategiesApi.rsiSignal(firstAsset, CANDLE_PERIOD_SECONDS).catch(() => null)
+        : null;
+      if (signal) {
+        const mapped = formatSignal(signal.signal);
+        content.signalCard.freshLabel = `RSI ${signal.rsi.toFixed(2)}`;
+        content.signalCard.freshTone =
+          signal.signal.toLowerCase() === 'none' ? 'neutral' : 'success';
+        content.signalCard.stats = [
+          { id: 'signal', label: 'Last Signal', value: mapped.value, valueTone: mapped.tone },
+          { id: 'strength', label: 'RSI', value: signal.rsi.toFixed(2) },
+          { id: 'indicator', label: 'Indicator', value: 'RSI' },
+          { id: 'strategy', label: 'Strategy', value: 'RSI' },
+          { id: 'market', label: 'Market', value: firstAsset },
+          {
+            id: 'candle',
+            label: 'Candle',
+            value: new Date(signal.candleTime).toLocaleTimeString('en-GB', { hour12: false }),
+          },
+          { id: 'timeframe', label: 'Timeframe', value: `${signal.timeframe}s` },
+        ];
+      } else {
+        content.signalCard.freshLabel = allowed ? 'No signal' : 'Awaiting access';
+        content.signalCard.freshTone = 'neutral';
+        content.signalCard.stats = [
+          { id: 'signal', label: 'Last Signal', value: 'NONE' },
+          { id: 'strength', label: 'RSI', value: '—' },
+          { id: 'indicator', label: 'Indicator', value: 'RSI' },
+          { id: 'strategy', label: 'Strategy', value: 'RSI' },
+          { id: 'market', label: 'Market', value: firstAsset },
+        ];
+      }
+    } catch (error) {
+      content.topBar.connectionLabel = 'Error';
+      content.topBar.connectionTone = 'danger';
+      content.binollaCard.balanceValue = '—';
+      content.binollaCard.priceDisplay = 'Unavailable';
+      content.binollaCard.candleData = [];
+      content.binollaCard.chartStatusLabel =
+        error instanceof ApiClientError ? error.message : 'Unable to load Binolla chart';
+      if (error instanceof ApiClientError) {
+        content.signalCard.freshLabel = error.code;
+      }
+    }
+
     return {
-      ...TRADING_MOCK_CONTENT,
+      ...content,
       runtime: cloneRuntime(),
     };
   },
 
   async updateRuntime(partial: Partial<TradingRuntimeState>): Promise<TradingRuntimeState> {
-    runtimeState = { ...runtimeState, ...partial };
+    const next = { ...runtimeState, ...partial };
+    // Keep expiry display tied to the selected Binolla trade duration — not a fake timer.
+    if (partial.durationId && partial.expirySeconds === undefined) {
+      next.expirySeconds = durationSecondsFromId(partial.durationId);
+    }
+    runtimeState = next;
     return cloneRuntime();
   },
 
   async placeTrade(direction: TradeDirection): Promise<string> {
+    const status = await accountApi.status().catch(() => null);
+    if (status?.botAccess !== 'Allowed') {
+      throw new ApiClientError(
+        status?.botAccess === 'AdminApprovalRequired'
+          ? 'ADMIN_APPROVAL_REQUIRED'
+          : status?.botAccess === 'NotEligible'
+            ? 'NOT_ELIGIBLE'
+            : 'BINOLLA_NOT_CONNECTED',
+        status?.botAccess === 'AdminApprovalRequired'
+          ? 'Your Binolla account is waiting for administrator approval.'
+          : 'Trading is not available for this account.',
+        403,
+      );
+    }
+
     const amount = Number.parseFloat(runtimeState.amount) || 25;
-    const duration =
-      TRADING_MOCK_CONTENT.durationOptions.find((option) => option.id === runtimeState.durationId)
-        ?.label ?? '1 min';
+    const durationOption = TRADING_MOCK_CONTENT.durationOptions.find(
+      (option) => option.id === runtimeState.durationId,
+    );
+    const durationLabel = durationOption?.label ?? '1 min';
+    const durationSeconds = durationSecondsFromId(runtimeState.durationId);
 
     const tradeId = await tradeService.placeTrade({
       direction,
-      pair: TRADING_MOCK_CONTENT.binollaCard.pairName,
+      pair: selectedAsset,
       platform: 'binolla',
       amount,
-      durationLabel: duration,
-      strategy: 'Alpha Momentum',
-      indicator: 'Bollinger',
+      durationLabel: `${durationSeconds}s`,
+      strategy: 'rsi',
+      indicator: 'RSI',
       source: 'user',
     });
 
+    // After a live Binolla order, countdown matches that order's duration.
+    runtimeState = { ...runtimeState, expirySeconds: durationSeconds };
+
     await activityService.addTradeNotification({
       tradeId,
-      description: `$${amount} ${direction.toUpperCase()} on ${TRADING_MOCK_CONTENT.binollaCard.pairName} · ${duration} expiry.`,
+      description: `$${amount} ${direction.toUpperCase()} on ${selectedAsset} · ${durationLabel} expiry.`,
     });
 
     return tradeId;
@@ -53,6 +235,10 @@ export const tradingService = {
 
   async getTradeDetail(tradeId: string) {
     return tradeService.getTradeDetail(tradeId);
+  },
+
+  getSelectedAsset(): string {
+    return selectedAsset;
   },
 
   resetRuntime(): void {

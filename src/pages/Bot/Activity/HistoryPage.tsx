@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContent } from '@components/layouts/PageContent';
+import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { getTradeDetailPath } from '@constants/routes';
 import type { TradeListFilter } from '@services/trades';
 import { useTradeHistory } from './hooks/useTradeHistory';
@@ -26,6 +27,7 @@ export default function HistoryPage() {
   return (
     <main className={styles.page} aria-label="Trade history">
       <div className={styles.scroll}>
+        <BackgroundGlow variant="top-right" />
         <PageContent className={styles.content}>
           <div className={styles.stickyHeader}>
             <HistoryHeaderSection />

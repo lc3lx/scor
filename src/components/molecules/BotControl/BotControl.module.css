@@ -46,3 +46,8 @@
   background: rgba(34, 197, 94, 0.13);
   border-color: var(--color-success);
 }
+
+.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

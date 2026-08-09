@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import type { RouteObject } from 'react-router-dom';
+import { Navigate, type RouteObject } from 'react-router-dom';
 import { AppShell, AuthLayout, BotLayout } from '@layouts/index';
 import { FIGMA_NODES, ROUTES } from '@constants/routes';
 
@@ -7,7 +7,7 @@ const SplashPage = lazy(() => import('@pages/Bot/Splash'));
 const OnboardingPage = lazy(() => import('@pages/Bot/Onboarding'));
 const LoginPage = lazy(() => import('@pages/Bot/Login'));
 const SignupPage = lazy(() => import('@pages/Bot/Signup'));
-const ActivationPage = lazy(() => import('@pages/Bot/Activation'));
+const LinkBinollaPage = lazy(() => import('@pages/Bot/LinkBinolla'));
 const DashboardPage = lazy(() => import('@pages/Bot/Dashboard'));
 const HomePage = lazy(() => import('@pages/Bot/Home'));
 const TradingPage = lazy(() => import('@pages/Bot/Trading'));
@@ -25,15 +25,7 @@ const SettingsPage = lazy(() => import('@pages/Bot/Settings'));
 const EditProfilePage = lazy(() =>
   import('@pages/Bot/Settings').then((module) => ({ default: module.EditProfilePage })),
 );
-const ChangePasswordPage = lazy(() =>
-  import('@pages/Bot/Settings').then((module) => ({ default: module.ChangePasswordPage })),
-);
-const SubscriptionPage = lazy(() =>
-  import('@pages/Bot/Settings').then((module) => ({ default: module.SubscriptionPage })),
-);
-const ActivationHistoryPage = lazy(() =>
-  import('@pages/Bot/Settings').then((module) => ({ default: module.ActivationHistoryPage })),
-);
+const AdminPage = lazy(() => import('@pages/Bot/Admin'));
 
 export const appRoutes: RouteObject[] = [
   {
@@ -63,9 +55,14 @@ export const appRoutes: RouteObject[] = [
             handle: { title: 'Signup', figmaNodeId: FIGMA_NODES.signup },
           },
           {
+            path: ROUTES.linkBinolla,
+            element: <LinkBinollaPage />,
+            handle: { title: 'Create Binolla account' },
+          },
+          {
+            // Obsolete activation-key flow — referral + admin approval replaced it.
             path: ROUTES.activation,
-            element: <ActivationPage />,
-            handle: { title: 'Activation', figmaNodeId: FIGMA_NODES.activation },
+            element: <Navigate to={ROUTES.signup} replace />,
           },
         ],
       },
@@ -162,30 +159,21 @@ export const appRoutes: RouteObject[] = [
           },
           {
             path: ROUTES.changePassword,
-            element: <ChangePasswordPage />,
-            handle: {
-              title: 'Change Password',
-              figmaNodeId: FIGMA_NODES.changePassword,
-              requiresAuth: true,
-              showBottomNav: false,
-            },
+            element: <Navigate to={ROUTES.settings} replace />,
           },
           {
             path: ROUTES.subscription,
-            element: <SubscriptionPage />,
-            handle: {
-              title: 'Subscription',
-              figmaNodeId: FIGMA_NODES.subscription,
-              requiresAuth: true,
-              showBottomNav: false,
-            },
+            element: <Navigate to={ROUTES.settings} replace />,
           },
           {
             path: ROUTES.activationHistory,
-            element: <ActivationHistoryPage />,
+            element: <Navigate to={ROUTES.settings} replace />,
+          },
+          {
+            path: ROUTES.admin,
+            element: <AdminPage />,
             handle: {
-              title: 'Activation History',
-              figmaNodeId: FIGMA_NODES.activationHistory,
+              title: 'Admin Approvals',
               requiresAuth: true,
               showBottomNav: false,
             },

@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom';
 import { brandAssets } from '@assets/index';
 import { Icon } from '@components/atoms/Icon';
 import { Text } from '@components/atoms/Text';
+import { ROUTES } from '@constants/routes';
 import { cn } from '@utils/cn';
 import styles from './AppLinkTiles.module.css';
 
@@ -36,7 +38,11 @@ export function AppLinkTiles({ className }: AppLinkTilesProps) {
         </Text>
       </div>
 
-      <div className={styles.tile}>
+      <Link
+        className={styles.tile}
+        to={ROUTES.signup}
+        aria-label="Create Binolla account with partner referral"
+      >
         <div className={cn(styles.tileIcon, styles.binollaTile)}>
           <Icon
             src={brandAssets.binolla}
@@ -48,7 +54,7 @@ export function AppLinkTiles({ className }: AppLinkTilesProps) {
         <Text variant="caption" tone="primary" align="center" className={styles.tileLabel}>
           Binolla
         </Text>
-      </div>
+      </Link>
     </div>
   );
 }

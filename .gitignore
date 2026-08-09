@@ -26,6 +26,8 @@ Thumbs.db
 # Env
 .env
 .env.*
+!.env.production.example
+!.env.example
 
 # TypeScript
 *.tsbuildinfo

@@ -109,13 +109,25 @@
 
 .chartWrap {
   padding: 8px 12px 0;
+  min-height: var(--trading-chart-height);
 }
 
 .chart {
   display: block;
   width: 100%;
   height: var(--trading-chart-height);
-  object-fit: cover;
+}
+
+.chartEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--trading-chart-height);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 12px;
 }
 
 .controls {

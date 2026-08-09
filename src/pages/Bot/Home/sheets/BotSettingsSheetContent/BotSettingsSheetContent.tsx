@@ -12,21 +12,31 @@ export type BotSettingsSheetContentProps = {
   onSave: () => void;
 };
 
+function isComingSoonToggle(id: string): boolean {
+  return id.startsWith('auto-') || id === 'signal-confirm';
+}
+
 export function BotSettingsSheetContent({
   content,
   onToggleChange,
-  onRiskSelect,
+  onRiskSelect: _onRiskSelect,
   onSave,
 }: BotSettingsSheetContentProps) {
   return (
     <div className={styles.root}>
+      <Text variant="caption-xs" tone="caption">
+        Auto-trading controls are Coming Soon and do not affect Binolla orders.
+      </Text>
       <div className={styles.toggles}>
         {content.toggles.map((toggle) => (
           <ToggleRow
             key={toggle.id}
             label={toggle.label}
-            checked={toggle.enabled}
-            onChange={(enabled) => onToggleChange(toggle.id, enabled)}
+            checked={isComingSoonToggle(toggle.id) ? false : toggle.enabled}
+            onChange={(enabled) => {
+              if (isComingSoonToggle(toggle.id)) return;
+              onToggleChange(toggle.id, enabled);
+            }}
           />
         ))}
       </div>
@@ -41,7 +51,9 @@ export function BotSettingsSheetContent({
               key={option.id}
               label={option.label}
               selected={option.id === content.selectedRiskId}
-              onSelect={() => onRiskSelect(option.id)}
+              onSelect={() => {
+                /* Coming Soon — local risk chips do not enforce anything */
+              }}
               className={styles.riskChip}
             />
           ))}

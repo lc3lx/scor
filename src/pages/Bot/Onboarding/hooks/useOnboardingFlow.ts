@@ -31,11 +31,11 @@ export function useOnboardingFlow(): OnboardingFlowController {
   }, []);
 
   const skip = useCallback(() => {
-    navigate(ROUTES.login);
+    navigate(ROUTES.signup);
   }, [navigate]);
 
   const complete = useCallback(() => {
-    navigate(ROUTES.login);
+    navigate(ROUTES.signup);
   }, [navigate]);
 
   const footerVariant = useMemo<OnboardingFooterVariant>(() => {

@@ -12,10 +12,13 @@ export type ScarAlphaSignalCardSectionProps = {
 
 function SignalStatValue({ stat }: { stat: TradingSignalStat }) {
   if (stat.id === 'signal') {
+    const value = stat.value || 'NONE';
+    const isCall = /call|up/i.test(value);
+    const isPut = /put|down/i.test(value);
     return (
       <span className={styles.signalValue}>
-        <span className={styles.signalUp}>UP </span>
-        <span className={styles.signalArrow}>↑</span>
+        <span className={isPut ? styles.signalUp : styles.signalUp}>{value.split(' ')[0]} </span>
+        <span className={styles.signalArrow}>{isCall ? '↑' : isPut ? '↓' : '·'}</span>
       </span>
     );
   }

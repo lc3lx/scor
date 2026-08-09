@@ -1,4 +1,8 @@
+import { BINOLLA_REFERRAL_LABEL } from '@constants/binolla';
+import { accountAssets } from '@assets/index';
+import { ROUTES } from '@constants/routes';
 import {
+  ACCOUNT_PAGE_CONTENT,
   ACTIVATION_HISTORY_PAGE_CONTENT,
   CHANGE_PASSWORD_COPY,
   EDIT_PROFILE_COPY,
@@ -7,30 +11,177 @@ import {
 } from '../data/account.mock';
 import type {
   AccountSnapshot,
+  AccountMenuItem,
   ChangePasswordFormValues,
   EditProfileFormValues,
 } from '../types';
+import { accountApi, ApiClientError, binollaApi, meApi } from '@shared/api';
+import { tokenStore } from '@shared/auth/tokenStore';
 
 type AccountListener = () => void;
 
-let snapshot: AccountSnapshot = structuredClone(SEED_ACCOUNT_SNAPSHOT);
 const listeners = new Set<AccountListener>();
-
-const MOCK_PASSWORD = 'password123';
-const NETWORK_DELAY_MS = 450;
-
-function cloneSnapshot(): AccountSnapshot {
-  return structuredClone(snapshot);
-}
+let cachedSnapshot: AccountSnapshot | null = null;
+let lastSsidHint = '';
 
 function notifyListeners(): void {
   listeners.forEach((listener) => listener());
 }
 
-function delay(): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, NETWORK_DELAY_MS);
-  });
+function formatBotAccessLabel(botAccess: string): string {
+  switch (botAccess) {
+    case 'Allowed':
+      return 'Allowed';
+    case 'BinollaNotConnected':
+      return 'Binolla not connected';
+    case 'AdminApprovalRequired':
+      return 'Waiting for admin approval';
+    case 'NotEligible':
+      return 'Rejected';
+    case 'SessionExpired':
+      return 'Session expired';
+    default:
+      return botAccess;
+  }
+}
+
+function buildSnapshotFromApi(): Promise<AccountSnapshot> {
+  return (async () => {
+    const [me, status] = await Promise.all([meApi.get(), accountApi.status()]);
+
+    const fullName = me.fullName?.trim() || me.username?.trim() || 'Trader';
+    const telegram = me.username ? `@${me.username.replace(/^@/, '')}` : String(me.telegramUserId);
+    const accessLabel = formatBotAccessLabel(status.botAccess);
+    const approvalLabel = status.approvalStatus;
+
+    const badges = [
+      {
+        id: 'access',
+        label: accessLabel,
+        tone:
+          status.botAccess === 'Allowed'
+            ? ('success' as const)
+            : status.botAccess === 'AdminApprovalRequired'
+              ? ('warning' as const)
+              : ('danger' as const),
+      },
+      {
+        id: 'approval',
+        label: `Approval: ${approvalLabel}`,
+        tone: status.adminApproved ? ('success' as const) : ('warning' as const),
+      },
+    ];
+
+    const menuItems: AccountMenuItem[] = [
+      {
+        id: 'edit-profile',
+        label: 'Edit Profile / Link Binolla',
+        iconSrc: accountAssets.editProfile,
+        route: ROUTES.editProfile,
+      },
+      {
+        id: 'notifications',
+        label: 'Notifications',
+        iconSrc: accountAssets.notifications,
+        route: ROUTES.notifications,
+      },
+    ];
+
+    if (me.isAdmin) {
+      menuItems.unshift({
+        id: 'admin',
+        label: 'Admin Approvals',
+        iconSrc: accountAssets.subscriptionCrown,
+        route: ROUTES.admin,
+      });
+    }
+
+    const snapshot: AccountSnapshot = {
+      profile: {
+        fullName,
+        email: '',
+        country: me.country ?? '—',
+        telegramId: telegram,
+        binollaAccountId: status.binollaConnected ? 'Connected' : 'Not connected',
+        accountType: status.accountType || 'Demo',
+        expirationLabel: 'None',
+        accountStatus:
+          status.botAccess === 'Allowed'
+            ? 'approved'
+            : status.botAccess === 'NotEligible'
+              ? 'rejected'
+              : status.botAccess === 'SessionExpired'
+                ? 'pending'
+                : 'pending',
+        planLabel: 'Free (admin approved)',
+        avatarIconSrc: accountAssets.profileUser,
+      },
+      badges,
+      details: [
+        {
+          id: 'telegram',
+          label: 'Telegram',
+          value: telegram,
+          iconSrc: accountAssets.telegram,
+        },
+        {
+          id: 'binolla',
+          label: 'Binolla',
+          value:
+            status.botAccess === 'SessionExpired'
+              ? 'Session expired — reconnect'
+              : status.binollaConnected
+                ? 'Connected'
+                : 'Not connected',
+          iconSrc: accountAssets.binollaId,
+        },
+        {
+          id: 'account-type',
+          label: 'Account Type',
+          value: status.accountType || 'Demo',
+          iconSrc: accountAssets.accountType,
+        },
+        {
+          id: 'approval',
+          label: 'Approval Status',
+          value: approvalLabel,
+          iconSrc: accountAssets.expiration,
+        },
+        {
+          id: 'bot-access',
+          label: 'Bot Access',
+          value: accessLabel,
+          iconSrc: accountAssets.accountType,
+        },
+      ],
+      menuItems,
+      pageContent: {
+        ...ACCOUNT_PAGE_CONTENT,
+        versionLabel:
+          status.botAccess === 'SessionExpired'
+            ? 'Binolla session expired · Reconnect your SSID in Edit Profile'
+            : status.botAccess === 'AdminApprovalRequired'
+              ? 'Binolla connected · Waiting for administrator approval · Free after approval'
+              : 'Scar Alpha · Free access after admin approval',
+      },
+      subscription: {
+        ...SEED_ACCOUNT_SNAPSHOT.subscription,
+        planName: 'Free (admin approved)',
+        status: status.botAccess === 'Allowed' ? 'active' : 'pending',
+        statusLabel: accessLabel,
+        statusTone: status.botAccess === 'Allowed' ? 'success' : 'warning',
+        startDate: '—',
+        endDate: 'None',
+        daysLeft: 0,
+        keyUsedLabel: `Approval: ${approvalLabel}`,
+      },
+      activationHistory: [],
+      botAccess: status.botAccess,
+    };
+
+    cachedSnapshot = snapshot;
+    return structuredClone(snapshot);
+  })();
 }
 
 export const accountService = {
@@ -40,58 +191,61 @@ export const accountService = {
   },
 
   async fetchAccountSnapshot(): Promise<AccountSnapshot> {
-    await delay();
-    return cloneSnapshot();
+    try {
+      return await buildSnapshotFromApi();
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 401) {
+        tokenStore.clear();
+      }
+      throw error;
+    }
   },
 
   async updateProfile(values: EditProfileFormValues): Promise<AccountSnapshot> {
-    await delay();
+    const ssid = values.binollaAccountId.trim();
+    if (ssid && ssid !== 'Connected' && ssid !== 'Not connected' && ssid !== lastSsidHint) {
+      await binollaApi.connect({ ssid, accountType: 'Demo' });
+      lastSsidHint = 'Connected';
+    }
 
-    snapshot = {
-      ...snapshot,
-      profile: {
-        ...snapshot.profile,
-        fullName: values.fullName.trim(),
-        country: values.country.trim(),
-        telegramId: values.telegramId.trim(),
-      },
-      details: snapshot.details.map((item) => {
-        if (item.id === 'country') return { ...item, value: values.country.trim() };
-        if (item.id === 'telegram') return { ...item, value: values.telegramId.trim() };
-        return item;
-      }),
-    };
-
+    const snapshot = await buildSnapshotFromApi();
     notifyListeners();
-    return cloneSnapshot();
+    return snapshot;
   },
 
-  async changePassword(values: ChangePasswordFormValues): Promise<void> {
-    await delay();
-
-    if (values.currentPassword !== MOCK_PASSWORD) {
-      throw { message: 'Current password is incorrect.' };
-    }
-
-    if (values.newPassword === values.currentPassword) {
-      throw { message: 'New password must be different from the current password.' };
-    }
+  async changePassword(_values: ChangePasswordFormValues): Promise<void> {
+    throw { message: 'Password login is not used. Authenticate via Telegram Mini App.' };
   },
 
   async logout(): Promise<void> {
-    await delay();
+    try {
+      await binollaApi.disconnect().catch(() => undefined);
+    } finally {
+      tokenStore.clear();
+      cachedSnapshot = null;
+      notifyListeners();
+    }
   },
 
   getEditProfileCopy() {
-    return EDIT_PROFILE_COPY;
+    return {
+      ...EDIT_PROFILE_COPY,
+      binollaLabel: 'Binolla SSID (fallback)',
+      binollaPlaceholder: 'Optional — paste SSID only if credential login is unavailable',
+      binollaHelpText:
+        'Preferred: use Sign up / Log in with Binolla email. SSID paste is a fallback. New accounts should use partner signup (lid=15968).',
+      binollaRegisterLabel: BINOLLA_REFERRAL_LABEL,
+      binollaRegisterHref: '/signup',
+      successMessage: 'Saved. If Binolla was linked, wait for administrator approval.',
+    };
   },
 
   getEditProfileInitialValues(): EditProfileFormValues {
     return {
-      fullName: snapshot.profile.fullName,
-      country: snapshot.profile.country,
-      telegramId: snapshot.profile.telegramId,
-      binollaAccountId: snapshot.profile.binollaAccountId,
+      fullName: cachedSnapshot?.profile.fullName ?? '',
+      country: cachedSnapshot?.profile.country ?? '',
+      telegramId: cachedSnapshot?.profile.telegramId ?? '',
+      binollaAccountId: '',
     };
   },
 
@@ -100,7 +254,12 @@ export const accountService = {
   },
 
   getSubscriptionPageContent() {
-    return SUBSCRIPTION_PAGE_CONTENT;
+    return {
+      ...SUBSCRIPTION_PAGE_CONTENT,
+      pageTitle: 'Access',
+      enterKeyLabel: 'Link Binolla account',
+      viewHistoryLabel: 'Back to account',
+    };
   },
 
   getActivationHistoryPageContent() {
@@ -108,19 +267,29 @@ export const accountService = {
   },
 
   async getSubscriptionDetails() {
-    await delay();
-    return { ...snapshot.subscription };
+    const status = await accountApi.status();
+    return {
+      planName: 'Free (admin approved)',
+      status: status.botAccess === 'Allowed' ? ('active' as const) : ('pending' as const),
+      statusLabel: formatBotAccessLabel(status.botAccess),
+      statusTone: status.botAccess === 'Allowed' ? ('success' as const) : ('warning' as const),
+      startDate: '—',
+      endDate: 'None',
+      daysLeft: 0,
+      keyUsedLabel: `Approval: ${status.approvalStatus}`,
+      iconSrc: accountAssets.subscriptionCrown,
+    };
   },
 
   async getActivationHistory() {
-    await delay();
-    return snapshot.activationHistory.map((entry) => ({ ...entry }));
+    return [];
   },
 
   setUnreadNotificationCount(count: number): void {
-    snapshot = {
-      ...snapshot,
-      menuItems: snapshot.menuItems.map((item) =>
+    if (!cachedSnapshot) return;
+    cachedSnapshot = {
+      ...cachedSnapshot,
+      menuItems: cachedSnapshot.menuItems.map((item) =>
         item.id === 'notifications'
           ? {
               ...item,
@@ -133,7 +302,7 @@ export const accountService = {
   },
 
   reset(): void {
-    snapshot = structuredClone(SEED_ACCOUNT_SNAPSHOT);
+    cachedSnapshot = null;
     notifyListeners();
   },
 };

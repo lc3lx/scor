@@ -1,5 +1,12 @@
+import { Link } from 'react-router-dom';
 import { AppLinkTiles, KeyPoint, TradingPreviewCard } from '@components/molecules';
 import { Text } from '@components/atoms/Text';
+import {
+  BINOLLA_REFERRAL_LABEL,
+  BINOLLA_REFERRAL_SIGNUP_URL,
+} from '@constants/binolla';
+import { ROUTES } from '@constants/routes';
+import { openExternalLink } from '@shared/telegram/telegramWebApp';
 import type { OnboardingStepOneContent } from '../../types';
 import styles from './OnboardingStepOne.module.css';
 
@@ -21,6 +28,18 @@ export function OnboardingStepOne({ content }: OnboardingStepOneProps) {
       <div className={styles.tilesSection}>
         <AppLinkTiles />
       </div>
+
+      <Link className={styles.referralCta} to={ROUTES.signup}>
+        {BINOLLA_REFERRAL_LABEL}
+      </Link>
+
+      <button
+        type="button"
+        className={styles.referralCta}
+        onClick={() => openExternalLink(BINOLLA_REFERRAL_SIGNUP_URL)}
+      >
+        Open partner Binolla signup page
+      </button>
 
       <div className={styles.cardSection}>
         <TradingPreviewCard />

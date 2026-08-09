@@ -1,92 +1,105 @@
 import type { OnboardingContent } from '../types';
 
 /**
- * Temporary onboarding content — replace with API responses when backend is ready.
+ * Onboarding copy aligned with Phase 7/9 product model:
+ * Telegram → Binolla credentials (partner signup) → admin approval → FREE Demo + RSI.
  */
 export const ONBOARDING_MOCK_CONTENT: OnboardingContent = {
   step1: {
     title: 'Connect Your Binolla Account',
     description:
-      'Scar Alpha AI works with your Binolla trading account through the Trading page.',
+      'Log in or sign up on Binolla with your email — Scar Alpha has no separate accounts. Partner signup uses our referral link.',
     keyPoints: [
-      { id: 'step1-1', text: 'Create or log in to your Binolla account.', variant: 'check' },
+      {
+        id: 'step1-1',
+        text: 'Sign up or log in with your Binolla email and password in the app.',
+        variant: 'check',
+      },
       {
         id: 'step1-2',
-        text: 'Add your Binolla Account ID or email in Scar Alpha AI.',
+        text: 'New accounts are created on Binolla via our partner referral (lid=15968).',
         variant: 'check',
       },
       { id: 'step1-3', text: 'Wait for admin approval before using the bot.', variant: 'check' },
       {
         id: 'step1-4',
-        text: 'All trades happen inside the embedded Binolla view.',
+        text: 'Demo trading and RSI signals use your linked Binolla session.',
         variant: 'trade',
       },
     ],
     footnote:
-      'Home, Trades, AI Bot, Account, and Notifications belong to Scar Alpha AI — Binolla appears only inside Trading.',
+      'Referral is attribution only. Access requires administrator approval. No subscription or activation keys.',
   },
   step2: {
-    title: 'Activate Scar Alpha AI',
+    title: 'Wait for Admin Approval',
     description:
-      'Your bot access starts after admin approval and Activation Key verification.',
+      'After you connect Binolla, an administrator reviews your account. Access is free once approved.',
     activationItems: [
-      { label: 'Account Status', status: 'Approved', tone: 'success' },
-      { label: 'Subscription', status: 'Pending Activation', tone: 'warning' },
+      { label: 'Binolla', status: 'Connected', tone: 'success' },
+      { label: 'Admin Approval', status: 'Pending', tone: 'warning' },
     ],
-    activationKey: 'SCAR-••••-••••-1B2A',
+    activationKey: 'Admin review required',
     keyPoints: [
-      { id: 'step2-1', text: 'Register your account.', variant: 'check' },
-      { id: 'step2-2', text: 'Wait for admin approval.', variant: 'check' },
-      { id: 'step2-3', text: 'Enter your Activation Key.', variant: 'check' },
+      { id: 'step2-1', text: 'Connect Binolla from Sign up / Log in in the app.', variant: 'check' },
+      { id: 'step2-2', text: 'Wait for administrator approval.', variant: 'check' },
+      { id: 'step2-3', text: 'Once approved, you get free access to the bot.', variant: 'check' },
       {
         id: 'step2-4',
-        text: 'Subscription duration starts after activation.',
+        text: 'There is no subscription or activation key.',
         variant: 'check',
       },
       {
         id: 'step2-5',
-        text: 'Invalid, expired, or reused keys will fail.',
+        text: 'Rejected accounts cannot trade until reviewed again.',
         variant: 'warning',
       },
     ],
   },
   step3: {
-    title: 'Start the AI Bot Safely',
+    title: 'Use RSI and Demo Trading',
     description:
-      'Choose your market, indicator, strategy, amount, duration, and risk limits before starting.',
+      'After approval, open Trading for live Demo charts and manual UP/DOWN orders. RSI is a signal only — not auto-trading.',
     botPreview: {
-      name: 'Scar Alpha AI Bot',
-      statusLabel: 'Searching',
+      name: 'Scar Alpha',
+      statusLabel: 'Manual Demo',
       statusTone: 'warning',
-      strengthLabel: 'Strength',
-      strengthValue: '82%',
+      strengthLabel: 'Mode',
+      strengthValue: 'Demo',
       fields: [
-        { id: 'indicator', label: 'Indicator', value: 'Bollinger Bands' },
-        { id: 'strategy', label: 'Strategy', value: 'Alpha Momentum' },
-        { id: 'amount', label: 'Amount', value: '$25' },
-        { id: 'duration', label: 'Duration', value: '1m' },
-        { id: 'profit-target', label: 'Profit Target', value: '+$50', valueTone: 'success' },
-        { id: 'loss-limit', label: 'Loss Limit', value: '-$30', valueTone: 'loss-limit' },
+        { id: 'indicator', label: 'Signal', value: 'RSI' },
+        { id: 'strategy', label: 'Strategy', value: 'RSI' },
+        { id: 'amount', label: 'Amount', value: 'Set on Trading' },
+        { id: 'duration', label: 'Duration', value: 'Set on Trading' },
+        { id: 'profit-target', label: 'Auto trading', value: 'Not available' },
+        { id: 'loss-limit', label: 'Account', value: 'Demo only' },
       ],
     },
     keyPoints: [
       {
         id: 'step3-1',
-        text: 'Choose Market Type: Global Indicators or Binolla Market.',
+        text: 'Market data and balance come from your live Binolla Demo session.',
         variant: 'check',
       },
       {
         id: 'step3-2',
-        text: 'Select a Trading Pair, Indicator, and Strategy.',
+        text: 'RSI signal is calculated on the server from Binolla candles.',
         variant: 'check',
       },
-      { id: 'step3-3', text: 'Set Trade Amount and Duration.', variant: 'check' },
+      {
+        id: 'step3-3',
+        text: 'Place Demo trades manually on the Trading screen only.',
+        variant: 'check',
+      },
       {
         id: 'step3-4',
-        text: 'Set Daily Profit Target and Loss Limit.',
+        text: 'Real trading and auto-trading are disabled.',
         variant: 'check',
       },
-      { id: 'step3-5', text: 'Start, Pause, or Stop the bot anytime.', variant: 'check' },
+      {
+        id: 'step3-5',
+        text: 'Admin approval remains the access gate — not the referral link alone.',
+        variant: 'check',
+      },
     ],
   },
 };

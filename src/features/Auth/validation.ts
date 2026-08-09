@@ -70,7 +70,8 @@ export function validateSignupForm(values: SignupFormValues): FieldErrors<keyof 
     password: passwordRule(values.password),
     country: required(values.country, 'Country'),
     telegramId: telegramRule(values.telegramId),
-    binollaAccount: required(values.binollaAccount, 'Binolla Account ID / Email'),
+    // Optional: user may register via partner link first, then paste SSID later.
+    binollaAccount: undefined,
   };
 }
 

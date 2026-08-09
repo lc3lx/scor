@@ -1,35 +1,17 @@
-import { useCallback } from 'react';
-import type { UseHomeDataReturn } from './useHomeData';
-
-export function useHomeBotControls(homeData: UseHomeDataReturn) {
-  const { data, updateRuntime } = homeData;
-
-  const handleStart = useCallback(async () => {
-    await updateRuntime({ botStatus: 'running' });
-  }, [updateRuntime]);
-
-  const handlePause = useCallback(async () => {
-    await updateRuntime({ botStatus: 'paused' });
-  }, [updateRuntime]);
-
-  const handleStop = useCallback(async () => {
-    await updateRuntime({ botStatus: 'stopped' });
-  }, [updateRuntime]);
-
-  const handleApply = useCallback(async () => {
-    if (!data) return;
-    await updateRuntime({ botStatus: data.runtime.botStatus });
-  }, [data, updateRuntime]);
-
-  const isStartPressed = data?.runtime.botStatus === 'running';
+/**
+ * Home Start/Pause/Stop never place Binolla orders (Phase 9).
+ * Controls are Coming Soon — handlers are no-ops.
+ */
+export function useHomeBotControls(_homeData: unknown) {
+  const noop = async () => {
+    /* Coming Soon — no local fake bot run state */
+  };
 
   return {
-    isStartPressed,
-    handleStart,
-    handlePause,
-    handleStop,
-    handleApply,
+    handleStart: noop,
+    handlePause: noop,
+    handleStop: noop,
+    handleApply: noop,
+    isStartPressed: false,
   };
 }
-
-export type UseHomeBotControlsReturn = ReturnType<typeof useHomeBotControls>;

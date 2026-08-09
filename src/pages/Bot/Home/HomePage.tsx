@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { PageContent } from '@components/layouts/PageContent';
+import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { BottomSheet } from '@components/organisms/BottomSheet';
-import { HOME_SHEET_TITLES, BOT_STATUS_DISPLAY } from './data/home.mock';
+import { HOME_SHEET_TITLES } from './data/home.mock';
 import { resolveChartSheetTitle } from './utils/chartTitle';
 import { useHomeBotControls } from './hooks/useHomeBotControls';
 import { useHomeData } from './hooks/useHomeData';
@@ -35,7 +36,10 @@ export default function HomePage() {
   const botEngine = useMemo(() => {
     if (!data) return null;
 
-    const status = BOT_STATUS_DISPLAY[data.runtime.botStatus];
+    const status = {
+      label: 'Manual Demo',
+      tone: data.botEngine.statusTone,
+    };
 
     return {
       ...data.botEngine,
@@ -194,6 +198,7 @@ export default function HomePage() {
     <>
       <main className={styles.page} aria-label="AI Bot Engine">
         <div className={styles.scroll}>
+          <BackgroundGlow variant="top-right" />
           <PageContent className={styles.content}>
             <HomeHeaderSection content={data.header} />
             <BotEngineSection content={botEngine} />
@@ -209,11 +214,15 @@ export default function HomePage() {
             <HomeConfigSection rows={configRows} onRowClick={sheets.openSheet} />
             <TradeAmountSection
               content={tradeAmount}
-              onSelect={(optionId) => updateRuntime({ tradeAmountId: optionId })}
+              onSelect={() => {
+                /* Coming Soon — amount is set on Trading before placeTrade */
+              }}
             />
             <DurationSection
               content={duration}
-              onSelect={(optionId) => updateRuntime({ durationId: optionId })}
+              onSelect={() => {
+                /* Coming Soon — duration is set on Trading before placeTrade */
+              }}
             />
             <RiskLimitsSection limits={data.riskLimits} />
             <HomeActionsSection actions={data.actions} onAction={sheets.openSheet} />

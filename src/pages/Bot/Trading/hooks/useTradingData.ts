@@ -3,18 +3,35 @@ import { tradingService } from '../data/tradingService';
 import { TRADING_MOCK_CONTENT } from '../data/trading.mock';
 import type { TradingData, TradingRuntimeState } from '../types';
 
+const LIVE_REFRESH_MS = 8_000;
+
 export function useTradingData() {
   const [data, setData] = useState<TradingData | null>(null);
+
+  const reload = useCallback(async () => {
+    const next = await tradingService.fetchTradingData();
+    setData(next);
+    return next;
+  }, []);
 
   useEffect(() => {
     let active = true;
 
-    tradingService.fetchTradingData().then((next) => {
+    void (async () => {
+      const next = await tradingService.fetchTradingData();
       if (active) setData(next);
-    });
+    })();
+
+    const timer = window.setInterval(() => {
+      void (async () => {
+        const next = await tradingService.fetchTradingData();
+        if (active) setData(next);
+      })();
+    }, LIVE_REFRESH_MS);
 
     return () => {
       active = false;
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -29,15 +46,11 @@ export function useTradingData() {
     };
   }, [data]);
 
+  // Static selected duration — not a local fake countdown of an open order.
   const expiryDisplay = useMemo(() => {
-    if (!data) return '00:00';
-
-    const total = Math.max(0, data.runtime.expirySeconds);
-    const minutes = Math.floor(total / 60);
-    const seconds = total % 60;
-
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  }, [data]);
+    if (!duration) return '—';
+    return duration.label;
+  }, [duration]);
 
   const updateRuntime = useCallback(async (partial: Partial<TradingRuntimeState>) => {
     const runtime = await tradingService.updateRuntime(partial);
@@ -49,27 +62,13 @@ export function useTradingData() {
     return tradingService.placeTrade(direction);
   }, []);
 
-  const tickExpiry = useCallback(async () => {
-    setData((current) => {
-      if (!current || current.runtime.expirySeconds <= 0) return current;
-
-      const runtime = {
-        ...current.runtime,
-        expirySeconds: current.runtime.expirySeconds - 1,
-      };
-
-      void tradingService.updateRuntime(runtime);
-      return { ...current, runtime };
-    });
-  }, []);
-
   return {
     data,
     duration,
     expiryDisplay,
     updateRuntime,
     placeTrade,
-    tickExpiry,
+    reload,
   };
 }
 

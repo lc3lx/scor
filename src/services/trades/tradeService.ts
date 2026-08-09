@@ -1,8 +1,6 @@
 import {
   DEFAULT_PAGE_SIZE,
   HISTORY_PAGE_CONTENT,
-  SEED_TRADES,
-  SHARED_CANDLE_DATA,
   TRADE_DETAIL_PAGE_TITLE,
   TRADE_DETAIL_TIMELINE_CHECK_ICON,
   TRADE_DETAIL_TIMELINE_TITLE,
@@ -14,20 +12,90 @@ import type {
   TradeDetailContent,
   TradeListFilter,
   TradeRecord,
+  TradeStatus,
 } from './types';
 import type { TradeDirection } from '@components/types';
+import { ApiClientError, createIdempotencyKey, marketApi, tradesApi } from '@shared/api';
+import type { TradeDto } from '@shared/api';
 
 type TradeChangeListener = () => void;
 
-let trades: TradeRecord[] = SEED_TRADES.map((trade) => ({ ...trade, candleData: [...trade.candleData] }));
 const listeners = new Set<TradeChangeListener>();
-
-function cloneTrades(): TradeRecord[] {
-  return trades.map((trade) => ({ ...trade, candleData: [...trade.candleData] }));
-}
 
 function notifyListeners(): void {
   listeners.forEach((listener) => listener());
+}
+
+function mapStatus(status: string): TradeStatus {
+  const s = status.toLowerCase();
+  if (s === 'running' || s === 'pending') return 'running';
+  if (s === 'profit' || s === 'tie') return 'profit';
+  if (s === 'loss' || s === 'failed' || s === 'cancelled' || s === 'unknown') return 'loss';
+  return 'running';
+}
+
+function mapDirection(direction: string): TradeDirection {
+  const d = direction.toUpperCase();
+  return d === 'PUT' || d === 'DOWN' ? 'down' : 'up';
+}
+
+function formatTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds % 60 === 0) return `${seconds / 60}m`;
+  return `${seconds}s`;
+}
+
+function isToday(iso: string): boolean {
+  const date = new Date(iso);
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+}
+
+function formatPnl(pnl: number | null, status: string): string | undefined {
+  if (pnl === null || pnl === undefined) {
+    if (status.toLowerCase() === 'running' || status.toLowerCase() === 'pending') return undefined;
+    return undefined;
+  }
+  const sign = pnl > 0 ? '+' : '';
+  return `${sign}$${pnl.toFixed(2)}`;
+}
+
+function mapTrade(dto: TradeDto): TradeRecord {
+  const status = mapStatus(dto.status);
+  const pnlLabel = formatPnl(dto.pnl, dto.status);
+  return {
+    id: dto.id,
+    pair: dto.asset,
+    platform: 'binolla',
+    strategy: 'RSI',
+    indicator: 'RSI',
+    duration: formatDuration(dto.durationSeconds),
+    direction: mapDirection(dto.direction),
+    amount: dto.amount,
+    stakeLabel: `$${dto.amount}`,
+    result: pnlLabel,
+    resultTone: dto.pnl !== null && dto.pnl >= 0 ? 'success' : dto.pnl !== null ? 'danger' : undefined,
+    status,
+    source: 'user',
+    timeLabel: formatTime(dto.createdAt),
+    isToday: isToday(dto.createdAt),
+    liveTimerSeconds: status === 'running' ? dto.durationSeconds : undefined,
+    entryTime: formatTime(dto.createdAt),
+    exitTime: status === 'running' ? undefined : formatTime(dto.updatedAt),
+    signalStrength: '—',
+    candleData: [],
+    openedAt: new Date(dto.createdAt).getTime() || Date.now(),
+  };
 }
 
 function matchesFilter(trade: TradeRecord, filter: TradeListFilter): boolean {
@@ -44,8 +112,7 @@ function formatDirectionLabel(direction: TradeDirection): string {
 }
 
 function buildTradeRef(trade: TradeRecord): string {
-  const platformLabel = trade.platform === 'global' ? 'Global' : 'Binolla';
-  return `${trade.id} · ${platformLabel}`;
+  return `${trade.id.slice(0, 8)} · Binolla`;
 }
 
 function buildDetailRows(trade: TradeRecord): TradeDetailContent['detailRows'] {
@@ -65,7 +132,6 @@ function buildDetailRows(trade: TradeRecord): TradeDetailContent['detailRows'] {
 
 function buildTimeline(trade: TradeRecord): TradeDetailContent['timeline'] {
   const signalTime = trade.entryTime ?? trade.timeLabel;
-
   return [
     {
       id: 'signal-detected',
@@ -101,7 +167,6 @@ function buildTimeline(trade: TradeRecord): TradeDetailContent['timeline'] {
 function buildDetailContent(trade: TradeRecord): TradeDetailContent {
   const statusTone =
     trade.status === 'running' ? 'warning' : trade.status === 'profit' ? 'success' : 'danger';
-
   const statusLabel =
     trade.status === 'running' ? 'Live' : trade.status === 'profit' ? 'Won' : 'Lost';
 
@@ -124,41 +189,29 @@ function buildDetailContent(trade: TradeRecord): TradeDetailContent {
   };
 }
 
-function createTradeId(): string {
-  return `T-${Date.now().toString().slice(-4)}`;
+function parseDurationSeconds(label: string): number {
+  const trimmed = label.trim().toLowerCase();
+  if (trimmed.endsWith('min')) {
+    const n = Number.parseInt(trimmed, 10);
+    return Number.isFinite(n) ? n * 60 : 60;
+  }
+  if (trimmed.endsWith('m')) {
+    const n = Number.parseInt(trimmed, 10);
+    return Number.isFinite(n) ? n * 60 : 60;
+  }
+  if (trimmed.endsWith('s')) {
+    const n = Number.parseInt(trimmed, 10);
+    return Number.isFinite(n) ? n : 60;
+  }
+  const n = Number.parseInt(trimmed, 10);
+  return Number.isFinite(n) ? n : 60;
 }
 
-function buildTradeFromInput(input: PlaceTradeInput): TradeRecord {
-  const now = new Date();
-  const timeLabel = now.toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-  const entryTime = now.toLocaleTimeString('en-GB', { hour12: false });
-  const stakeLabel = `$${input.amount}`;
-
-  return {
-    id: createTradeId(),
-    pair: input.pair,
-    platform: input.platform,
-    strategy: input.strategy,
-    indicator: input.indicator,
-    duration: input.durationLabel,
-    direction: input.direction,
-    amount: input.amount,
-    stakeLabel,
-    status: 'running',
-    source: input.source ?? 'user',
-    timeLabel,
-    isToday: true,
-    liveTimerSeconds: 60,
-    entryTime,
-    exitTime: undefined,
-    signalStrength: '82%',
-    candleData: [...SHARED_CANDLE_DATA],
-    openedAt: Date.now(),
-  };
+function backendStatusForFilter(filter: TradeListFilter): string | undefined {
+  if (filter === 'live') return 'Running';
+  if (filter === 'profit') return 'Profit';
+  if (filter === 'loss') return 'Loss';
+  return undefined;
 }
 
 export const tradeService = {
@@ -172,23 +225,53 @@ export const tradeService = {
     const page = params.page ?? 1;
     const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE;
 
-    const filtered = cloneTrades().filter((trade) => matchesFilter(trade, filter));
-    const start = (page - 1) * pageSize;
-    const items = filtered.slice(start, start + pageSize);
+    try {
+      const response = await tradesApi.list({
+        page,
+        pageSize,
+        status: backendStatusForFilter(filter),
+      });
 
-    return {
-      items,
-      total: filtered.length,
-      page,
-      pageSize,
-      hasMore: start + pageSize < filtered.length,
-    };
+      let items = response.items.map(mapTrade);
+      if (filter === 'today') {
+        items = items.filter((trade) => trade.isToday);
+      } else if (filter === 'all' || filter === 'live' || filter === 'profit' || filter === 'loss') {
+        items = items.filter((trade) => matchesFilter(trade, filter));
+      }
+
+      return {
+        items,
+        total: filter === 'today' ? items.length : response.total,
+        page: response.page,
+        pageSize: response.pageSize,
+        hasMore: response.page * response.pageSize < response.total,
+      };
+    } catch (error) {
+      if (error instanceof ApiClientError) throw error;
+      throw new ApiClientError('REQUEST_FAILED', 'Unable to load trades.', 0);
+    }
   },
 
   async getTradeById(tradeId: string): Promise<TradeRecord | null> {
-    const trade = trades.find((item) => item.id === tradeId);
-    if (!trade) return null;
-    return { ...trade, candleData: [...trade.candleData] };
+    try {
+      const dto = await tradesApi.get(tradeId);
+      const trade = mapTrade(dto);
+      try {
+        const candles = await marketApi.candles(dto.asset, 60);
+        trade.candleData = candles.candles.map((c) => ({
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+        }));
+      } catch {
+        trade.candleData = [];
+      }
+      return trade;
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 404) return null;
+      throw error;
+    }
   },
 
   async getTradeDetail(tradeId: string): Promise<TradeDetailContent | null> {
@@ -198,10 +281,23 @@ export const tradeService = {
   },
 
   async placeTrade(input: PlaceTradeInput): Promise<string> {
-    const trade = buildTradeFromInput(input);
-    trades = [trade, ...trades];
+    const direction = input.direction === 'down' ? 'PUT' : 'CALL';
+    const durationSeconds = parseDurationSeconds(input.durationLabel);
+    const strategyId = input.strategy?.toLowerCase() === 'rsi' ? 'rsi' : 'rsi';
+
+    const dto = await tradesApi.place(
+      {
+        asset: input.pair,
+        direction,
+        amount: input.amount,
+        durationSeconds,
+        strategyId,
+      },
+      createIdempotencyKey(),
+    );
+
     notifyListeners();
-    return trade.id;
+    return dto.id;
   },
 
   getHistoryPageContent() {
@@ -209,7 +305,6 @@ export const tradeService = {
   },
 
   reset(): void {
-    trades = SEED_TRADES.map((trade) => ({ ...trade, candleData: [...trade.candleData] }));
     notifyListeners();
   },
 };

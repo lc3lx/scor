@@ -11,7 +11,13 @@ export function ChartSheetContent({ content }: ChartSheetContentProps) {
   return (
     <div className={styles.root}>
       <div className={styles.chartWrap}>
-        <CandlestickChart data={content.candleData} />
+        {content.candleData.length > 0 ? (
+          <CandlestickChart data={content.candleData} />
+        ) : (
+          <Text variant="caption" tone="caption" align="center" className={styles.empty}>
+            No live Binolla candles yet. Connect, get approved, then open the chart again.
+          </Text>
+        )}
       </div>
       <div className={styles.stats}>
         {content.stats.map((stat) => (

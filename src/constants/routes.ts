@@ -3,6 +3,7 @@ export const ROUTES = {
   onboarding: '/onboarding',
   login: '/login',
   signup: '/signup',
+  linkBinolla: '/link-binolla',
   activation: '/activation',
   home: '/home',
   bot: '/bot',
@@ -16,6 +17,7 @@ export const ROUTES = {
   changePassword: '/settings/change-password',
   subscription: '/settings/subscription',
   activationHistory: '/settings/activation-history',
+  admin: '/admin',
 } as const;
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];

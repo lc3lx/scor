@@ -86,6 +86,7 @@ export type StrategyOptionItem = {
   stats: StrategyStatItem[];
   successRate: string;
   previewSrc: string;
+  enabled?: boolean;
 };
 
 export type OptionChipItem = {

@@ -107,16 +107,16 @@ export const HOME_MOCK_CONTENT: HomePageContent = {
       id: 'profit-target',
       iconSrc: notificationAssets.profitTarget,
       label: 'Daily Profit Target',
-      value: '+$50',
-      hint: 'Stop bot when reached',
+      value: '—',
+      hint: 'Managed on Binolla / not auto-enforced here',
       valueTone: 'profit',
     },
     {
       id: 'loss-limit',
       iconSrc: notificationAssets.lossLimit,
       label: 'Daily Loss Limit',
-      value: '-$30',
-      hint: 'Auto-stop protection',
+      value: '—',
+      hint: 'Managed on Binolla / not auto-enforced here',
       valueTone: 'loss',
     },
   ],
@@ -124,46 +124,49 @@ export const HOME_MOCK_CONTENT: HomePageContent = {
     { id: 'show-chart', label: 'Show Chart', sheetTarget: 'chart' },
     { id: 'bot-settings', label: 'Bot Settings', sheetTarget: 'settings' },
   ],
-  disclaimer: 'Simulated results shown. Trading involves risk.',
+  disclaimer: 'Demo trading on Binolla only. RSI from live candles. No automatic orders.',
   sheets: {
     chart: {
       titleTemplate: '{pair} · {duration}',
-      candleData: [
-        { open: 1.082, high: 1.086, low: 1.079, close: 1.084 },
-        { open: 1.084, high: 1.087, low: 1.081, close: 1.082 },
-        { open: 1.082, high: 1.085, low: 1.078, close: 1.079 },
-        { open: 1.079, high: 1.083, low: 1.077, close: 1.081 },
-        { open: 1.081, high: 1.088, low: 1.08, close: 1.087 },
-        { open: 1.087, high: 1.09, low: 1.084, close: 1.085 },
-        { open: 1.085, high: 1.089, low: 1.083, close: 1.088 },
-        { open: 1.088, high: 1.091, low: 1.086, close: 1.087 },
-        { open: 1.087, high: 1.09, low: 1.084, close: 1.086 },
-        { open: 1.086, high: 1.088, low: 1.082, close: 1.083 },
-        { open: 1.083, high: 1.086, low: 1.081, close: 1.085 },
-        { open: 1.085, high: 1.089, low: 1.083, close: 1.088 },
-      ],
+      candleData: [],
       stats: [
-        { id: 'indicator', label: 'Indicator', value: 'Bollinger Bands' },
-        { id: 'strategy', label: 'Strategy', value: 'Alpha Momentum' },
-        { id: 'signal', label: 'Signal', value: 'UP 82%', valueTone: 'success' },
+        { id: 'indicator', label: 'Indicator', value: 'RSI' },
+        { id: 'strategy', label: 'Strategy', value: 'RSI' },
+        { id: 'signal', label: 'Signal', value: 'NONE' },
       ],
     },
     settings: {
       title: 'Bot Settings',
       toggles: [
-        { id: 'auto-profit', label: 'Auto Stop Profit Target', enabled: true },
-        { id: 'auto-loss', label: 'Auto Stop Loss Limit', enabled: true },
-        { id: 'signal-confirm', label: 'Signal Confirmation Mode', enabled: false },
-        { id: 'notifications', label: 'Notifications', enabled: true },
+        {
+          id: 'auto-profit',
+          label: 'Auto Stop Profit Target (Coming Soon)',
+          enabled: false,
+        },
+        {
+          id: 'auto-loss',
+          label: 'Auto Stop Loss Limit (Coming Soon)',
+          enabled: false,
+        },
+        {
+          id: 'signal-confirm',
+          label: 'Signal Confirmation Mode (Coming Soon)',
+          enabled: false,
+        },
+        {
+          id: 'notifications',
+          label: 'Local Notifications',
+          enabled: true,
+        },
       ],
-      riskLabel: 'Risk Level',
+      riskLabel: 'Risk Level (Coming Soon)',
       riskOptions: [
         { id: 'risk-low', label: 'Low' },
         { id: RISK_MEDIUM_ID, label: 'Medium' },
         { id: 'risk-high', label: 'High' },
       ],
       selectedRiskId: RISK_MEDIUM_ID,
-      saveLabel: 'Save Settings',
+      saveLabel: 'Close',
     },
     marketType: {
       title: 'Market Type',
@@ -324,11 +327,11 @@ export const HOME_MOCK_CONTENT: HomePageContent = {
 };
 
 export const HOME_INITIAL_RUNTIME: HomeRuntimeState = {
-  botStatus: 'running',
-  marketTypeId: MARKET_GLOBAL_ID,
-  tradingPairId: PAIR_EUR_USD_ID,
-  technicalIndicatorId: INDICATOR_BOLLINGER_ID,
-  strategyId: STRATEGY_ALPHA_MOMENTUM_ID,
+  botStatus: 'stopped',
+  marketTypeId: MARKET_BINOLLA_ID,
+  tradingPairId: 'EURUSD_otc',
+  technicalIndicatorId: INDICATOR_RSI_ID,
+  strategyId: 'rsi',
   tradeAmountId: AMOUNT_25_ID,
   durationId: DURATION_1M_ID,
   settings: HOME_MOCK_CONTENT.sheets.settings,
@@ -346,9 +349,10 @@ export const BOT_STATUS_DISPLAY: Record<
   HomeRuntimeState['botStatus'],
   { label: string; tone: ChipTone }
 > = {
-  running: { label: 'Running', tone: 'active' },
+  // Start only enables RSI monitoring — it never places Binolla orders automatically.
+  running: { label: 'RSI Monitor', tone: 'active' },
   paused: { label: 'Paused', tone: 'warning' },
-  stopped: { label: 'Stopped', tone: 'neutral' },
+  stopped: { label: 'Manual Trade', tone: 'neutral' },
 };
 
 export { COMPLEXITY_DISPLAY };

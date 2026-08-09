@@ -1,14 +1,13 @@
 import {
   LIVE_TRADE_NOTIFICATION_TITLE,
   NOTIFICATIONS_PAGE_CONTENT,
-  SEED_NOTIFICATIONS,
 } from './activity.mock';
 import { accountService } from '../../Account/services/accountService';
 import type { NotificationItem } from '../types';
 
 type NotificationListener = () => void;
 
-let notifications: NotificationItem[] = SEED_NOTIFICATIONS.map((item) => ({ ...item }));
+let notifications: NotificationItem[] = [];
 const listeners = new Set<NotificationListener>();
 
 function cloneNotifications(): NotificationItem[] {
@@ -89,7 +88,7 @@ export const activityService = {
   },
 
   reset(): void {
-    notifications = SEED_NOTIFICATIONS.map((item) => ({ ...item }));
+    notifications = [];
     syncAccountBadge();
     notifyListeners();
   },

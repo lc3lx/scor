@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --pretty false"
+    "typecheck": "tsc -b --pretty false",
+    "start:pm2": "bash ./start-frontend-pm2.sh"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -19,6 +20,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "serve": "^14.2.4",
     "typescript": "~5.6.3",
     "vite": "^5.4.11"
   }

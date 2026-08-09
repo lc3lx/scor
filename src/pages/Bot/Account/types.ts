@@ -66,6 +66,9 @@ export type EditProfileCopy = {
   telegramPlaceholder: string;
   binollaLabel: string;
   binollaPlaceholder: string;
+  binollaHelpText?: string;
+  binollaRegisterLabel?: string;
+  binollaRegisterHref?: string;
   submitLabel: string;
   successMessage: string;
 };
@@ -133,4 +136,5 @@ export type AccountSnapshot = {
   pageContent: AccountPageContent;
   subscription: SubscriptionDetails;
   activationHistory: ActivationHistoryEntry[];
+  botAccess?: string;
 };

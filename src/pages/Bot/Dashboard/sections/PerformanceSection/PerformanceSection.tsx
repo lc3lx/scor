@@ -50,14 +50,23 @@ export function PerformanceSection({
         src={dashboardAssets.performanceChart}
         alt=""
         className={styles.chart}
+        hidden={performance.value === '—'}
       />
 
+      {performance.value === '—' ? (
+        <Text variant="caption" tone="caption" className={styles.day}>
+          No local chart — P/L comes from Binolla trades only.
+        </Text>
+      ) : null}
+
       <div className={styles.days}>
-        {performance.dayLabels.map((day) => (
-          <Text key={day} variant="caption-xs" className={styles.day}>
-            {day}
-          </Text>
-        ))}
+        {performance.value === '—'
+          ? null
+          : performance.dayLabels.map((day) => (
+              <Text key={day} variant="caption-xs" className={styles.day}>
+                {day}
+              </Text>
+            ))}
       </div>
     </section>
   );

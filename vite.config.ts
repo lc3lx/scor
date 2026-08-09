@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const backendTarget = process.env.VITE_DEV_PROXY_TARGET ?? 'http://localhost:5207';
 
 export default defineConfig({
   plugins: [react()],
@@ -19,6 +20,7 @@ export default defineConfig({
       '@features': path.resolve(__dirname, './src/features'),
       '@router': path.resolve(__dirname, './src/router'),
       '@services': path.resolve(__dirname, './src/services'),
+      '@shared': path.resolve(__dirname, './src/shared'),
       '@styles': path.resolve(__dirname, './src/styles'),
       '@types': path.resolve(__dirname, './src/types'),
       '@utils': path.resolve(__dirname, './src/utils'),
@@ -28,6 +30,36 @@ export default defineConfig({
     modules: {
       localsConvention: 'camelCaseOnly',
       generateScopedName: '[name]__[local]___[hash:base64:5]',
+    },
+  },
+  server: {
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      // Frontend → Backend (same-origin in local Telegram WebApp / browser)
+      '/api': {
+        target: backendTarget,
+        changeOrigin: true,
+        // Binolla credential login/signup can take up to ~60s (Playwright capture).
+        timeout: 120_000,
+        proxyTimeout: 120_000,
+      },
+      '/health': {
+        target: backendTarget,
+        changeOrigin: true,
+      },
+    },
+  },
+    preview: {
+    port: 4173,
+    proxy: {
+      '/api': {
+        target: backendTarget,
+        changeOrigin: true,
+        timeout: 120_000,
+        proxyTimeout: 120_000,
+      },
+      '/health': { target: backendTarget, changeOrigin: true },
     },
   },
 });

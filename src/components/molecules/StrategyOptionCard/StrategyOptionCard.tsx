@@ -14,6 +14,7 @@ export type StrategyOptionCardProps = {
   successRate: string;
   previewSrc: string;
   selected?: boolean;
+  disabled?: boolean;
   onSelect?: () => void;
   className?: string;
 };
@@ -24,6 +25,7 @@ export function StrategyOptionCard({
   successRate,
   previewSrc,
   selected = false,
+  disabled = false,
   onSelect,
   className,
 }: StrategyOptionCardProps) {
@@ -42,10 +44,21 @@ export function StrategyOptionCard({
           ))}
         </dl>
         <div className={styles.footer}>
-          <button type="button" className={styles.action} onClick={onSelect}>
-            {selected ? 'Selected ✓' : 'Select →'}
+          <button
+            type="button"
+            className={styles.action}
+            onClick={onSelect}
+            disabled={disabled}
+            aria-disabled={disabled}
+          >
+            {disabled ? 'Coming Soon' : selected ? 'Selected ✓' : 'Select →'}
           </button>
-          <Chip label={successRate} tone="success" style="outlined" className={styles.badge} />
+          <Chip
+            label={successRate}
+            tone={disabled ? 'neutral' : 'success'}
+            style="outlined"
+            className={styles.badge}
+          />
         </div>
       </div>
       <div className={styles.previewWrap} aria-hidden="true">

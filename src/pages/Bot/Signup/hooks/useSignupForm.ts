@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@constants/routes';
+import { accountApi } from '@shared/api';
 import {
   authService,
   useAuthForm,
@@ -14,8 +15,15 @@ export function useSignupForm() {
 
   const handleSubmit = useCallback(
     async (values: SignupFormValues) => {
-      await authService.signup(values);
-      navigate(ROUTES.activation);
+      await authService.loginWithTelegram();
+      // Optional: if user provided Binolla SSID on signup form, link it.
+      const ssid = values.binollaAccount?.trim();
+      if (ssid) {
+        const { binollaApi } = await import('@shared/api');
+        await binollaApi.connect({ ssid, accountType: 'Demo' });
+      }
+      const status = await accountApi.status();
+      navigate(status.botAccess === 'Allowed' ? ROUTES.home : ROUTES.settings);
     },
     [navigate],
   );

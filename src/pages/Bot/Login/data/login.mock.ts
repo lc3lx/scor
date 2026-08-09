@@ -5,16 +5,16 @@ import type { LoginCopy } from '../types';
  */
 export const LOGIN_COPY: LoginCopy = {
   title: 'Welcome back',
-  description: 'Login to access your AI trading engine',
-  emailLabel: 'Email',
-  emailPlaceholder: 'trader@scaralpha.ai',
-  passwordLabel: 'Password',
+  description: 'Continue with Telegram Mini App authentication',
+  emailLabel: 'Email (unused)',
+  emailPlaceholder: 'Open from Telegram',
+  passwordLabel: 'Password (unused)',
   passwordPlaceholder: '••••••••',
-  forgotPasswordLabel: 'Forgot Password?',
-  submitLabel: 'Login',
+  forgotPasswordLabel: 'Telegram sign-in only',
+  submitLabel: 'Continue with Telegram',
   createAccountLabel: 'Create Account',
-  securityTitle: 'Bank-grade encryption',
-  securitySubtitle: 'Your credentials are always secure',
+  securityTitle: 'Server-side Telegram verification',
+  securitySubtitle: 'JWT issued after backend validates initData',
   footerPrefix: '© 2026 Scar Alpha AI. developed by ',
   footerLinkLabel: 'Hul',
   footerSuffix: ' Company',
@@ -22,6 +22,6 @@ export const LOGIN_COPY: LoginCopy = {
 };
 
 export const LOGIN_INITIAL_VALUES = {
-  email: '',
-  password: '',
+  email: 'telegram@scaralpha.local',
+  password: 'telegram-auth',
 } as const;

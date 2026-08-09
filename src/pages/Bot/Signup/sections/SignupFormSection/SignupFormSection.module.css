@@ -20,3 +20,16 @@
   width: 100%;
   padding-top: var(--signup-actions-padding-top);
 }
+
+.help {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.registerLink {
+  color: #f87171;
+  font-weight: 600;
+  text-decoration: underline;
+}

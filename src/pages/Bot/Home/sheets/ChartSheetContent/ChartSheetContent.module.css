@@ -6,7 +6,13 @@
 
 .chartWrap {
   width: 100%;
+  min-height: 160px;
   overflow: hidden;
+}
+
+.empty {
+  display: block;
+  padding: var(--space-6) var(--space-4);
 }
 
 .stats {

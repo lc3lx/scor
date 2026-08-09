@@ -2,6 +2,7 @@ import { Button } from '@components/atoms/Button';
 import { Icon } from '@components/atoms/Icon';
 import { Input } from '@components/atoms/Input';
 import { Text } from '@components/atoms/Text';
+import { CandlestickChart } from '@components/organisms/CandlestickChart';
 import type { BinollaCardContent } from '../../types';
 import styles from './BinollaTradingCardSection.module.css';
 
@@ -67,13 +68,20 @@ export function BinollaTradingCardSection({
         </div>
 
         <div className={styles.chartWrap}>
-          <img
-            src={content.chartImageSrc}
-            alt=""
-            className={styles.chart}
-            width={345}
-            height={160}
-          />
+          {content.candleData.length > 0 ? (
+            <CandlestickChart
+              data={content.candleData}
+              width={345}
+              height={160}
+              className={styles.chart}
+            />
+          ) : (
+            <div className={styles.chartEmpty} role="img" aria-label="Binolla chart unavailable">
+              <Text variant="caption" tone="caption" align="center">
+                {content.chartStatusLabel ?? 'No Binolla candles yet'}
+              </Text>
+            </div>
+          )}
         </div>
 
         <div className={styles.controls}>
@@ -104,11 +112,19 @@ export function BinollaTradingCardSection({
           </div>
 
           <div className={styles.tradeActions}>
-            <Button className={styles.tradeButtonUp} onClick={onTradeUp}>
+            <Button
+              className={styles.tradeButtonUp}
+              onClick={onTradeUp}
+              disabled={content.tradesDisabled}
+            >
               <Icon src={content.upIconSrc} decorative className={styles.tradeIcon} />
               <span className={styles.tradeLabel}>{content.upLabel}</span>
             </Button>
-            <Button className={styles.tradeButtonDown} onClick={onTradeDown}>
+            <Button
+              className={styles.tradeButtonDown}
+              onClick={onTradeDown}
+              disabled={content.tradesDisabled}
+            >
               <Icon src={content.downIconSrc} decorative className={styles.tradeIcon} />
               <span className={styles.tradeLabel}>{content.downLabel}</span>
             </Button>

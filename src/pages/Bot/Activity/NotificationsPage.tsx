@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContent } from '@components/layouts/PageContent';
+import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { getNotificationDetailPath } from '@constants/routes';
 import { useNotifications } from './hooks/useNotifications';
 import { NotificationsHeaderSection } from './sections/NotificationsHeaderSection';
@@ -24,6 +25,7 @@ export default function NotificationsPage() {
   return (
     <main className={styles.page} aria-label="Notifications">
       <div className={styles.scroll}>
+        <BackgroundGlow variant="top-right" />
         <PageContent className={styles.content}>
           <NotificationsHeaderSection onBack={() => navigate(-1)} onMarkAll={markAllRead} />
           <NotificationsListSection

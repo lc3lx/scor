@@ -1,9 +1,11 @@
 import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Input } from '@components/atoms/Input';
 import { PasswordInput } from '@components/atoms/PasswordInput';
 import { FormField } from '@components/molecules/FormField';
 import { AuthenticationForm } from '@components/organisms/AuthenticationForm';
 import { AuthServerError, AuthSubmitButton, type FormStatus, type SignupFormValues } from '@features/Auth';
+import { ROUTES } from '@constants/routes';
 import type { SignupCopy } from '../../types';
 import styles from './SignupFormSection.module.css';
 
@@ -108,10 +110,16 @@ export function SignupFormSection({
             placeholder={copy.binollaPlaceholder}
             value={values.binollaAccount}
             hasError={Boolean(fieldErrors.binollaAccount)}
-            aria-describedby={fieldErrors.binollaAccount ? 'signup-binolla-error' : undefined}
+            aria-describedby={fieldErrors.binollaAccount ? 'signup-binolla-error' : 'signup-binolla-help'}
             onChange={(event) => onFieldChange('binollaAccount', event.target.value)}
           />
         </FormField>
+        <p id="signup-binolla-help" className={styles.help}>
+          No account yet?{' '}
+          <Link to={ROUTES.linkBinolla} className={styles.registerLink}>
+            Create Binolla account
+          </Link>
+        </p>
       </AuthenticationForm>
 
       <AuthServerError message={serverError} />

@@ -8,6 +8,7 @@ import styles from './BotControl.module.css';
 export type BotControlProps = {
   action: BotControlAction;
   pressed?: boolean;
+  disabled?: boolean;
   onClick?: () => void;
   className?: string;
 };
@@ -22,7 +23,13 @@ const config: Record<
   apply: { label: 'Apply', icon: uiAssets.apply, toneClass: styles.apply },
 };
 
-export function BotControl({ action, pressed = false, onClick, className }: BotControlProps) {
+export function BotControl({
+  action,
+  pressed = false,
+  disabled = false,
+  onClick,
+  className,
+}: BotControlProps) {
   const { label, icon, toneClass } = config[action];
 
   return (
@@ -32,14 +39,18 @@ export function BotControl({ action, pressed = false, onClick, className }: BotC
         styles.control,
         toneClass,
         pressed && styles.pressed,
+        disabled && styles.disabled,
         className,
       )}
       aria-pressed={pressed}
-      onClick={onClick}
+      aria-disabled={disabled}
+      disabled={disabled}
+      title={disabled ? 'Coming Soon — use Trading for manual Demo orders' : undefined}
+      onClick={disabled ? undefined : onClick}
     >
       <Icon src={icon} size="sm" />
       <Text variant="caption" className={styles.label}>
-        {label}
+        {disabled ? 'Soon' : label}
       </Text>
     </button>
   );

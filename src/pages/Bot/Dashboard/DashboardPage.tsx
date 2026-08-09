@@ -25,13 +25,13 @@ export default function DashboardPage() {
 
   return (
     <main className={styles.page} aria-label="Home dashboard">
-      <img
-        src={dashboardAssets.headerGlow}
-        alt=""
-        className={styles.headerGlow}
-        aria-hidden="true"
-      />
       <div className={styles.scroll}>
+        <img
+          src={dashboardAssets.headerGlow}
+          alt=""
+          className={styles.headerGlow}
+          aria-hidden="true"
+        />
         <PageContent className={styles.content}>
           <DashboardHeaderSection
             greeting={data.greeting}

@@ -16,3 +16,9 @@
 .control {
   min-height: 59px;
 }
+
+.soonNote {
+  display: block;
+  margin-top: var(--space-4);
+  opacity: 0.85;
+}

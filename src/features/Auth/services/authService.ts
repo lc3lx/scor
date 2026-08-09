@@ -1,3 +1,6 @@
+import { ApiClientError, authApi } from '@shared/api';
+import { tokenStore } from '@shared/auth/tokenStore';
+import { getTelegramInitData } from '@shared/telegram/telegramWebApp';
 import type {
   ActivationPayload,
   AuthSession,
@@ -6,70 +9,57 @@ import type {
   SignupPayload,
 } from '../types';
 
-const DEMO_INVALID_KEY = 'invalid';
-
-function delay(ms = 400): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
+function toAuthError(error: unknown): AuthServiceError {
+  if (error instanceof ApiClientError) {
+    return { message: error.message };
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return { message: String((error as { message: unknown }).message) };
+  }
+  return { message: 'Authentication failed.' };
 }
 
 /**
- * Authentication adapter — replace mock bodies with real HTTP calls later.
- * UI depends only on this typed contract.
+ * Authenticates via Telegram Mini App initData → backend JWT.
+ * Email/password/activation are obsolete and no longer authorize access.
  */
-export async function login(credentials: LoginCredentials): Promise<AuthSession> {
-  await delay();
-
-  if (!credentials.email || !credentials.password) {
-    const error: AuthServiceError = { message: 'Email and password are required.' };
-    throw error;
+export async function loginWithTelegram(): Promise<AuthSession> {
+  const initData = getTelegramInitData();
+  if (!initData) {
+    throw {
+      message: 'Open Scar Alpha from Telegram to sign in. Telegram initData is required.',
+    } satisfies AuthServiceError;
   }
 
-  return {
-    accessToken: 'mock-access-token',
-    userId: 'mock-user-id',
-  };
-}
-
-export async function signup(payload: SignupPayload): Promise<AuthSession> {
-  await delay();
-
-  if (!payload.email || !payload.password || !payload.fullName) {
-    const error: AuthServiceError = { message: 'Please complete all required fields.' };
-    throw error;
-  }
-
-  return {
-    accessToken: 'mock-access-token',
-    userId: 'mock-user-id',
-  };
-}
-
-export async function activate(payload: ActivationPayload): Promise<AuthSession> {
-  await delay();
-
-  const key = payload.activationKey.trim();
-
-  if (!key) {
-    const error: AuthServiceError = { message: 'Activation key is required.' };
-    throw error;
-  }
-
-  if (key.toLowerCase() === DEMO_INVALID_KEY) {
-    const error: AuthServiceError = {
-      message: 'Invalid activation key. Please check and try again.',
+  try {
+    const result = await authApi.telegram(initData);
+    tokenStore.setSession(result.accessToken, result.userId);
+    return {
+      accessToken: result.accessToken,
+      userId: result.userId,
     };
-    throw error;
+  } catch (error) {
+    throw toAuthError(error);
   }
+}
 
-  return {
-    accessToken: 'mock-access-token',
-    userId: 'mock-user-id',
-  };
+/** @deprecated Email/password is not the product auth model. Uses Telegram auth. */
+export async function login(_credentials: LoginCredentials): Promise<AuthSession> {
+  return loginWithTelegram();
+}
+
+/** @deprecated Signup email flow is obsolete. Uses Telegram auth. */
+export async function signup(_payload: SignupPayload): Promise<AuthSession> {
+  return loginWithTelegram();
+}
+
+/** @deprecated Activation keys are obsolete. Uses Telegram auth. */
+export async function activate(_payload: ActivationPayload): Promise<AuthSession> {
+  return loginWithTelegram();
 }
 
 export const authService = {
+  loginWithTelegram,
   login,
   signup,
   activate,

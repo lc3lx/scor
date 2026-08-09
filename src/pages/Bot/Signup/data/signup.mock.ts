@@ -26,7 +26,7 @@ export type SignupCopy = {
  */
 export const SIGNUP_COPY: SignupCopy = {
   title: 'Join Scar Alpha AI',
-  description: 'Complete your profile for account review.',
+  description: 'Register on Binolla with our partner link, then continue with Telegram.',
   fullNameLabel: 'Full Name',
   fullNamePlaceholder: 'John Trader',
   emailLabel: 'Email',
@@ -37,9 +37,9 @@ export const SIGNUP_COPY: SignupCopy = {
   countryPlaceholder: 'United States',
   telegramLabel: 'Telegram ID',
   telegramPlaceholder: '@yourhandle',
-  binollaLabel: 'Binolla Account ID / Email',
-  binollaPlaceholder: 'ID or email',
-  submitLabel: 'Create Account',
+  binollaLabel: 'Binolla SSID (after registering via partner link)',
+  binollaPlaceholder: 'Paste Binolla session SSID',
+  submitLabel: 'Continue with Telegram',
   dividerLabel: 'or',
   promptLabel: 'Already have an account?',
   signInLabel: 'Sign in',

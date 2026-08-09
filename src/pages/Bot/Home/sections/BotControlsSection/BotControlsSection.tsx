@@ -1,4 +1,5 @@
 import { BotControl } from '@components/molecules/BotControl';
+import { Text } from '@components/atoms/Text';
 import type { BotControlAction } from '@components/types';
 import styles from './BotControlsSection.module.css';
 
@@ -9,6 +10,8 @@ export type BotControlsSectionProps = {
   onPause: () => void;
   onStop: () => void;
   onApply: () => void;
+  /** Phase 9: auto Start/Pause/Stop is out of scope — show Coming Soon. */
+  comingSoon?: boolean;
 };
 
 const handlers: Record<
@@ -28,6 +31,7 @@ export function BotControlsSection({
   onPause,
   onStop,
   onApply,
+  comingSoon = true,
 }: BotControlsSectionProps) {
   const handlerMap = { onStart, onPause, onStop, onApply };
 
@@ -38,12 +42,18 @@ export function BotControlsSection({
           <BotControl
             key={action}
             action={action}
-            pressed={action === 'start' && isStartPressed}
+            pressed={!comingSoon && action === 'start' && isStartPressed}
+            disabled={comingSoon}
             onClick={handlerMap[handlers[action]]}
             className={styles.control}
           />
         ))}
       </div>
+      {comingSoon ? (
+        <Text variant="caption-xs" tone="caption" align="center" className={styles.soonNote}>
+          Coming Soon — auto Start/Pause/Stop is disabled. Place Demo trades manually on Trading.
+        </Text>
+      ) : null}
     </section>
   );
 }

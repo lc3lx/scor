@@ -1,7 +1,10 @@
 import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Input } from '@components/atoms/Input';
+import { Text } from '@components/atoms/Text';
 import { FormField } from '@components/molecules/FormField';
 import { AuthServerError, AuthSubmitButton, type FormStatus } from '@features/Auth';
+import { ROUTES } from '@constants/routes';
 import type { EditProfileCopy, EditProfileFormValues } from '../../types';
 import styles from './EditProfileFormSection.module.css';
 
@@ -67,17 +70,33 @@ export function EditProfileFormSection({
         />
       </FormField>
 
-      <FormField id="edit-binolla" label={copy.binollaLabel}>
+      <FormField id="edit-binolla" label={copy.binollaLabel} error={fieldErrors.binollaAccountId}>
         <Input
           id="edit-binolla"
           name="binollaAccountId"
           autoComplete="off"
           placeholder={copy.binollaPlaceholder}
           value={values.binollaAccountId}
-          readOnly
-          aria-readonly="true"
+          hasError={Boolean(fieldErrors.binollaAccountId)}
+          aria-describedby={
+            fieldErrors.binollaAccountId
+              ? 'edit-binolla-error'
+              : copy.binollaHelpText
+                ? 'edit-binolla-help'
+                : undefined
+          }
+          onChange={(event) => onFieldChange('binollaAccountId', event.target.value)}
         />
       </FormField>
+
+      {copy.binollaHelpText ? (
+        <Text variant="caption" tone="caption" id="edit-binolla-help" className={styles.help}>
+          {copy.binollaHelpText}{' '}
+          <Link to={ROUTES.linkBinolla} className={styles.registerLink}>
+            {copy.binollaRegisterLabel ?? 'Register on Binolla'}
+          </Link>
+        </Text>
+      ) : null}
 
       <AuthServerError message={serverError} />
 

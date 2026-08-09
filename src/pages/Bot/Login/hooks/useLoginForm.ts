@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@constants/routes';
+import { accountApi } from '@shared/api';
 import {
   authService,
   useAuthForm,
@@ -11,11 +12,18 @@ import { LOGIN_INITIAL_VALUES } from '../data/login.mock';
 
 export function useLoginForm() {
   const navigate = useNavigate();
+  const [info, setInfo] = useState<string | null>(null);
 
   const handleSubmit = useCallback(
-    async (values: LoginFormValues) => {
-      await authService.login(values);
-      navigate(ROUTES.activation);
+    async (_values: LoginFormValues) => {
+      setInfo(null);
+      await authService.loginWithTelegram();
+      const status = await accountApi.status();
+      if (status.botAccess === 'Allowed') {
+        navigate(ROUTES.home);
+        return;
+      }
+      navigate(ROUTES.settings);
     },
     [navigate],
   );
@@ -31,12 +39,13 @@ export function useLoginForm() {
   }, [navigate]);
 
   const onForgotPassword = useCallback(() => {
-    // Reserved for future password-reset flow.
+    setInfo('Password login is not used. Open the Mini App from Telegram.');
   }, []);
 
   return {
     ...form,
     goToSignup,
     onForgotPassword,
+    info,
   };
 }
