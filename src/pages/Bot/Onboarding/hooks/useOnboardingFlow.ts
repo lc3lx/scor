@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@constants/routes';
+import { markOnboardingDone } from '@shared/onboarding/onboardingStorage';
 import {
   ONBOARDING_TOTAL_STEPS,
   type OnboardingBodyVariant,
@@ -31,10 +32,12 @@ export function useOnboardingFlow(): OnboardingFlowController {
   }, []);
 
   const skip = useCallback(() => {
+    markOnboardingDone();
     navigate(ROUTES.signup);
   }, [navigate]);
 
   const complete = useCallback(() => {
+    markOnboardingDone();
     navigate(ROUTES.signup);
   }, [navigate]);
 
