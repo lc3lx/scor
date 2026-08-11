@@ -17,7 +17,8 @@ import {
 } from '@shared/api';
 
 let runtimeState: TradingRuntimeState = { ...TRADING_INITIAL_RUNTIME };
-let selectedAsset = 'EURUSD_otc';
+/** Last asset symbol confirmed from Binolla assets API — never invent a pair. */
+let selectedAsset: string | null = null;
 
 const CANDLE_PERIOD_SECONDS = 60;
 const MAX_CANDLES_ON_CHART = 48;
@@ -99,65 +100,87 @@ export const tradingService = {
       content.binollaCard.tradesDisabled = !allowed;
 
       const assets = allowed ? await marketApi.assets().catch(() => null) : null;
-      const firstAsset = assets?.assets.find((a) => a.available)?.symbol ?? selectedAsset;
+      const liveAssets = assets?.assets ?? [];
+      const preferred =
+        (selectedAsset
+          ? liveAssets.find((a) => a.symbol === selectedAsset && a.available)
+          : undefined) ??
+        liveAssets.find((a) => a.available) ??
+        liveAssets[0];
+      const firstAsset = preferred?.symbol ?? null;
       selectedAsset = firstAsset;
 
-      const displayName = assets?.assets.find((a) => a.symbol === firstAsset)?.name ?? firstAsset;
-      content.binollaCard.pairName = displayName.includes('/')
-        ? displayName.split(' ')[0] ?? displayName
-        : firstAsset.replace('_otc', '');
-      content.binollaCard.pairSuffix = firstAsset.toLowerCase().includes('otc') ? 'OTC' : '';
-
-      const price = allowed ? await marketApi.price(firstAsset).catch(() => null) : null;
-      content.binollaCard.priceDisplay = price
-        ? price.price.toFixed(5)
-        : allowed
-          ? 'Unavailable'
-          : '—';
-
-      // Live candles from Binolla via backend — never invent chart data.
-      const candlesResponse = allowed
-        ? await marketApi.candles(firstAsset, CANDLE_PERIOD_SECONDS).catch(() => null)
-        : null;
-      content.binollaCard.candleData = candlesResponse
-        ? mapCandles(candlesResponse.candles)
-        : [];
-      content.binollaCard.chartStatusLabel = chartStatusFor(
-        status,
-        content.binollaCard.candleData.length > 0,
-      );
-
-      const signal = allowed
-        ? await strategiesApi.rsiSignal(firstAsset, CANDLE_PERIOD_SECONDS).catch(() => null)
-        : null;
-      if (signal) {
-        const mapped = formatSignal(signal.signal);
-        content.signalCard.freshLabel = `RSI ${signal.rsi.toFixed(2)}`;
-        content.signalCard.freshTone =
-          signal.signal.toLowerCase() === 'none' ? 'neutral' : 'success';
-        content.signalCard.stats = [
-          { id: 'signal', label: 'Last Signal', value: mapped.value, valueTone: mapped.tone },
-          { id: 'strength', label: 'RSI', value: signal.rsi.toFixed(2) },
-          { id: 'indicator', label: 'Indicator', value: 'RSI' },
-          { id: 'strategy', label: 'Strategy', value: 'RSI' },
-          { id: 'market', label: 'Market', value: firstAsset },
-          {
-            id: 'candle',
-            label: 'Candle',
-            value: new Date(signal.candleTime).toLocaleTimeString('en-GB', { hour12: false }),
-          },
-          { id: 'timeframe', label: 'Timeframe', value: `${signal.timeframe}s` },
-        ];
-      } else {
-        content.signalCard.freshLabel = allowed ? 'No signal' : 'Awaiting access';
+      if (!firstAsset) {
+        content.binollaCard.pairName = allowed ? 'No pairs' : '—';
+        content.binollaCard.pairSuffix = '';
+        content.binollaCard.priceDisplay = allowed ? 'Unavailable' : '—';
+        content.binollaCard.candleData = [];
+        content.binollaCard.chartStatusLabel = allowed
+          ? 'No assets from Binolla session'
+          : chartStatusFor(status, false);
+        content.signalCard.freshLabel = allowed ? 'No assets' : 'Awaiting access';
         content.signalCard.freshTone = 'neutral';
         content.signalCard.stats = [
           { id: 'signal', label: 'Last Signal', value: 'NONE' },
           { id: 'strength', label: 'RSI', value: '—' },
           { id: 'indicator', label: 'Indicator', value: 'RSI' },
           { id: 'strategy', label: 'Strategy', value: 'RSI' },
-          { id: 'market', label: 'Market', value: firstAsset },
+          { id: 'market', label: 'Market', value: '—' },
         ];
+      } else {
+        const displayName = preferred?.name ?? firstAsset;
+        content.binollaCard.pairName = displayName.includes('/')
+          ? displayName.split(' ')[0] ?? displayName
+          : firstAsset.replace('_otc', '');
+        content.binollaCard.pairSuffix = firstAsset.toLowerCase().includes('otc') ? 'OTC' : '';
+
+        const price = await marketApi.price(firstAsset).catch(() => null);
+        content.binollaCard.priceDisplay = price ? price.price.toFixed(5) : 'Unavailable';
+
+        // Live candles from Binolla via backend — never invent chart data.
+        const candlesResponse = await marketApi
+          .candles(firstAsset, CANDLE_PERIOD_SECONDS)
+          .catch(() => null);
+        content.binollaCard.candleData = candlesResponse
+          ? mapCandles(candlesResponse.candles)
+          : [];
+        content.binollaCard.chartStatusLabel = chartStatusFor(
+          status,
+          content.binollaCard.candleData.length > 0,
+        );
+
+        const signal = await strategiesApi
+          .rsiSignal(firstAsset, CANDLE_PERIOD_SECONDS)
+          .catch(() => null);
+        if (signal) {
+          const mapped = formatSignal(signal.signal);
+          content.signalCard.freshLabel = `RSI ${signal.rsi.toFixed(2)}`;
+          content.signalCard.freshTone =
+            signal.signal.toLowerCase() === 'none' ? 'neutral' : 'success';
+          content.signalCard.stats = [
+            { id: 'signal', label: 'Last Signal', value: mapped.value, valueTone: mapped.tone },
+            { id: 'strength', label: 'RSI', value: signal.rsi.toFixed(2) },
+            { id: 'indicator', label: 'Indicator', value: 'RSI' },
+            { id: 'strategy', label: 'Strategy', value: 'RSI' },
+            { id: 'market', label: 'Market', value: firstAsset },
+            {
+              id: 'candle',
+              label: 'Candle',
+              value: new Date(signal.candleTime).toLocaleTimeString('en-GB', { hour12: false }),
+            },
+            { id: 'timeframe', label: 'Timeframe', value: `${signal.timeframe}s` },
+          ];
+        } else {
+          content.signalCard.freshLabel = 'No signal';
+          content.signalCard.freshTone = 'neutral';
+          content.signalCard.stats = [
+            { id: 'signal', label: 'Last Signal', value: 'NONE' },
+            { id: 'strength', label: 'RSI', value: '—' },
+            { id: 'indicator', label: 'Indicator', value: 'RSI' },
+            { id: 'strategy', label: 'Strategy', value: 'RSI' },
+            { id: 'market', label: 'Market', value: firstAsset },
+          ];
+        }
       }
     } catch (error) {
       content.topBar.connectionLabel = 'Error';
@@ -204,6 +227,14 @@ export const tradingService = {
       );
     }
 
+    if (!selectedAsset) {
+      throw new ApiClientError(
+        'MARKET_UNAVAILABLE',
+        'No Binolla asset is available for trading yet.',
+        503,
+      );
+    }
+
     const amount = Number.parseFloat(runtimeState.amount) || 25;
     const durationOption = TRADING_MOCK_CONTENT.durationOptions.find(
       (option) => option.id === runtimeState.durationId,
@@ -237,11 +268,18 @@ export const tradingService = {
     return tradeService.getTradeDetail(tradeId);
   },
 
-  getSelectedAsset(): string {
+  getSelectedAsset(): string | null {
     return selectedAsset;
+  },
+
+  /** Switch pair only to a symbol previously returned by GET /api/market/assets. */
+  setSelectedAsset(symbol: string): void {
+    const cleaned = symbol.trim();
+    if (cleaned) selectedAsset = cleaned;
   },
 
   resetRuntime(): void {
     runtimeState = { ...TRADING_INITIAL_RUNTIME };
+    selectedAsset = null;
   },
 };

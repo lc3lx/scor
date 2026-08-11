@@ -44,7 +44,10 @@ function mapMessage(code: string, fallback: string): string {
     case 'BINOLLA_SESSION_EXPIRED':
       return 'Your Binolla session expired. Please reconnect.';
     case 'BINOLLA_LOGIN_FAILED':
-      return 'Binolla login/signup failed. Check email and password.';
+      // Prefer server detail (e.g. missing Playwright OS libs) over the generic copy.
+      return fallback?.trim()
+        ? fallback
+        : 'Binolla login/signup failed. Check email and password.';
     case 'BINOLLA_CONNECTION_FAILED':
       return 'Unable to connect to Binolla right now.';
     case 'ADMIN_APPROVAL_REQUIRED':
