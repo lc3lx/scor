@@ -1,6 +1,7 @@
 import { DASHBOARD_CONTENT, DASHBOARD_INITIAL_TIMEFRAME } from './dashboard.mock';
 import type { DashboardContent, DashboardTimeframe } from '../types';
 import { accountApi, binollaApi, meApi, tradesApi } from '@shared/api';
+import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
 
 function formatMoney(value: number): string {
   return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -18,7 +19,7 @@ export const dashboardService = {
       const [me, status, balance, trades] = await Promise.all([
         meApi.get().catch(() => null),
         accountApi.status().catch(() => null),
-        binollaApi.balance().catch(() => null),
+        binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
         tradesApi.list({ page: 1, pageSize: 5 }).catch(() => null),
       ]);
 

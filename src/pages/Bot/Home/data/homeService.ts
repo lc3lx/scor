@@ -59,7 +59,7 @@ export const homeService = {
     try {
       const [status, balance, strategies] = await Promise.all([
         accountApi.status().catch(() => null),
-        binollaApi.balance().catch(() => null),
+        binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
         strategiesApi.list().catch(() => null),
       ]);
 

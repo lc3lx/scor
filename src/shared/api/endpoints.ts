@@ -72,8 +72,8 @@ export const binollaApi = {
   status(): Promise<BinollaStatusDto> {
     return apiRequest<BinollaStatusDto>('/api/binolla/status');
   },
-  balance(): Promise<BinollaBalanceDto> {
-    return apiRequest<BinollaBalanceDto>('/api/binolla/balance');
+  balance(signal?: AbortSignal): Promise<BinollaBalanceDto> {
+    return apiRequest<BinollaBalanceDto>('/api/binolla/balance', { signal });
   },
   disconnect(): Promise<{ disconnected: boolean }> {
     return apiRequest<{ disconnected: boolean }>('/api/binolla/disconnect', { method: 'POST' });

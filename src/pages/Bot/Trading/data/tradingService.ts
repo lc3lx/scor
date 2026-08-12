@@ -88,7 +88,7 @@ export const tradingService = {
     try {
       const [status, balance] = await Promise.all([
         accountApi.status().catch(() => null),
-        binollaApi.balance().catch(() => null),
+        binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
       ]);
 
       const connected = Boolean(status?.binollaConnected && balance?.connected);
