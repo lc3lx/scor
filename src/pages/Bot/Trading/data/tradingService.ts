@@ -21,10 +21,17 @@ import {
   canTrade,
 } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
+import {
+  isPreferredMarketSymbol,
+  pickPreferredMarketAsset,
+} from '@shared/market/preferAsset';
 
 let runtimeState: TradingRuntimeState = { ...TRADING_INITIAL_RUNTIME };
 /** Last asset symbol confirmed from Binolla assets API — never invent a pair. */
 let selectedAsset: string | null = null;
+/** Prevent overlapping full refreshes from aborting each other. */
+let fetchInFlight: Promise<TradingData> | null = null;
+let livePriceInFlight = false;
 
 const MAX_CANDLES_ON_CHART = 56;
 
@@ -83,6 +90,14 @@ function chartStatusFor(status: AccountStatusResponse | null, hasCandles: boolea
 
 export const tradingService = {
   async fetchTradingData(): Promise<TradingData> {
+    if (fetchInFlight) return fetchInFlight;
+    fetchInFlight = this.fetchTradingDataInner().finally(() => {
+      fetchInFlight = null;
+    });
+    return fetchInFlight;
+  },
+
+  async fetchTradingDataInner(): Promise<TradingData> {
     const content = structuredClone(TRADING_MOCK_CONTENT);
     content.binollaCard.candleData = [];
     content.binollaCard.balanceValue = '—';
@@ -121,17 +136,20 @@ export const tradingService = {
         ? await marketApi.assets(timedSignal(MARKET_FETCH_MS)).catch(() => null)
         : null;
       const liveAssets = assets?.assets ?? [];
-      const preferred =
-        (selectedAsset
+      const sticky =
+        selectedAsset && isPreferredMarketSymbol(selectedAsset)
           ? liveAssets.find((a) => a.symbol === selectedAsset && a.available)
-          : undefined) ??
+          : undefined;
+      const preferred =
+        sticky ??
+        pickPreferredMarketAsset(liveAssets) ??
         liveAssets.find((a) => a.available) ??
         liveAssets[0];
       const firstAsset = preferred?.symbol ?? null;
       selectedAsset = firstAsset;
 
       // #region agent log
-      fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'660ec2'},body:JSON.stringify({sessionId:'660ec2',runId:'market-fail',hypothesisId:'H18',location:'tradingService.ts:selectAsset',message:'asset_selected',data:{asset:firstAsset,available:preferred?.available??null,assetCount:liveAssets.length,periodId:runtimeState.candlePeriodId,periodSeconds:candlePeriodSecondsFromId(runtimeState.candlePeriodId),sample:liveAssets.slice(0,5).map((a)=>a.symbol)},timestamp:Date.now()})}).catch(()=>{});
+      fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'660ec2'},body:JSON.stringify({sessionId:'660ec2',runId:'post-fix',hypothesisId:'H18',location:'tradingService.ts:selectAsset',message:'asset_selected',data:{asset:firstAsset,available:preferred?.available??null,assetCount:liveAssets.length,periodId:runtimeState.candlePeriodId,periodSeconds:candlePeriodSecondsFromId(runtimeState.candlePeriodId),sample:liveAssets.slice(0,5).map((a)=>a.symbol),preferredPick:true},timestamp:Date.now()})}).catch(()=>{});
       // #endregion
 
       if (!firstAsset) {
@@ -159,11 +177,11 @@ export const tradingService = {
         content.binollaCard.pairSuffix = firstAsset.toLowerCase().includes('otc') ? 'OTC' : '';
 
         const periodSeconds = candlePeriodSecondsFromId(runtimeState.candlePeriodId);
-        const signal = timedSignal(MARKET_FETCH_MS);
+        // Separate abort signals so one slow call does not cancel the others mid-wait.
         const [price, candlesResponse, rsi] = await Promise.all([
-          marketApi.price(firstAsset, signal).catch(() => null),
-          marketApi.candles(firstAsset, periodSeconds, signal).catch(() => null),
-          strategiesApi.rsiSignal(firstAsset, periodSeconds, signal).catch(() => null),
+          marketApi.price(firstAsset, timedSignal(MARKET_FETCH_MS)).catch(() => null),
+          marketApi.candles(firstAsset, periodSeconds, timedSignal(MARKET_FETCH_MS)).catch(() => null),
+          strategiesApi.rsiSignal(firstAsset, periodSeconds, timedSignal(MARKET_FETCH_MS)).catch(() => null),
         ]);
 
         content.binollaCard.priceDisplay = price ? price.price.toFixed(5) : 'Unavailable';
@@ -226,11 +244,16 @@ export const tradingService = {
 
   /** Lightweight tick: update last candle + price from live quote only. */
   async fetchLivePrice(): Promise<number | null> {
-    if (!selectedAsset) return null;
-    const quote = await marketApi
-      .price(selectedAsset, timedSignal(4_000))
-      .catch(() => null);
-    return quote?.price ?? null;
+    if (!selectedAsset || fetchInFlight || livePriceInFlight) return null;
+    livePriceInFlight = true;
+    try {
+      const quote = await marketApi
+        .price(selectedAsset, timedSignal(4_000))
+        .catch(() => null);
+      return quote?.price ?? null;
+    } finally {
+      livePriceInFlight = false;
+    }
   },
 
   applyLiveQuote(current: TradingData, price: number): TradingData {

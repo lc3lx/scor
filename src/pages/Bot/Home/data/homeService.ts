@@ -10,6 +10,10 @@ import {
 } from '@shared/api';
 import { canBrowseMarket } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
+import {
+  isPreferredMarketSymbol,
+  pickPreferredMarketAsset,
+} from '@shared/market/preferAsset';
 
 let runtimeState: HomeRuntimeState = {
   ...HOME_INITIAL_RUNTIME,
@@ -75,7 +79,16 @@ export const homeService = {
           description: a.available ? 'Available' : 'Unavailable',
         }));
         base.sheets.tradingPair.options = options;
-        asset = options.find((o) => o.id === runtimeState.tradingPairId)?.id ?? options[0]?.id ?? asset;
+        const preferred = pickPreferredMarketAsset(
+          assets.assets.map((a) => ({ symbol: a.symbol, available: a.available })),
+        );
+        const kept = options.find((o) => o.id === runtimeState.tradingPairId)?.id;
+        asset =
+          (kept && isPreferredMarketSymbol(kept) ? kept : undefined) ??
+          preferred?.symbol ??
+          kept ??
+          options[0]?.id ??
+          asset;
         runtimeState.tradingPairId = asset;
         base.sheets.tradingPair.selectedId = asset;
       }
