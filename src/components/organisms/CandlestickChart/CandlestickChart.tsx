@@ -293,7 +293,7 @@ export function CandlestickChart({
           const bodyHeight = Math.max(1.5, bodyBottom - bodyTop);
 
           return (
-            <g key={`${index}-${point.time ?? 't'}`}>
+            <g key={point.time != null ? `t-${point.time}` : `i-${index}`}>
               <line
                 x1={xCenter}
                 y1={scaleY(point.high)}

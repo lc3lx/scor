@@ -36,6 +36,8 @@ let livePriceInFlight = false;
 const MAX_CANDLES_STORED = 200;
 /** Last live quote — kept so full candle refresh cannot yank the forming candle. */
 let lastLivePrice: number | null = null;
+/** In-memory candle series from ticks — survives server refreshes that lag a period behind. */
+let liveCandleSeries: CandlestickPoint[] = [];
 
 function cloneRuntime(): TradingRuntimeState {
   return { ...runtimeState };
@@ -85,27 +87,30 @@ function mapCandles(
     };
   });
 
-  // Connect candles: each open sits on the previous close (continuous series).
-  const stitched = stitchOpenToPrevClose(mapped);
+  // Connect closed history only — leave the forming candle's open as Binolla sent it
+  // until live ticks own it (avoids visual “merge” into the previous bar).
+  const stitched =
+    mapped.length <= 1
+      ? mapped
+      : [
+          ...stitchOpenToPrevClose(mapped.slice(0, -1)),
+          { ...mapped[mapped.length - 1]! },
+        ];
 
   // #region agent log
-  const gaps = mapped.slice(1).filter((c, i) => Math.abs(c.open - mapped[i]!.close) > 1e-8).length;
   fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
     body: JSON.stringify({
       sessionId: '660ec2',
-      runId: 'candle-ui',
-      hypothesisId: 'H70',
+      runId: 'candle-merge',
+      hypothesisId: 'H90',
       location: 'tradingService.ts:mapCandles',
-      message: 'candle_continuity',
+      message: 'candle_mapped',
       data: {
         count: stitched.length,
-        gapsBeforeStitch: gaps,
-        sample: stitched.slice(-4).map((c) => ({
-          o: +c.open.toFixed(5),
-          c: +c.close.toFixed(5),
-        })),
+        lastTime: stitched[stitched.length - 1]?.time ?? null,
+        lastClose: stitched[stitched.length - 1]?.close ?? null,
       },
       timestamp: Date.now(),
     }),
@@ -114,6 +119,85 @@ function mapCandles(
 
   if (stitched.length <= MAX_CANDLES_STORED) return stitched;
   return stitched.slice(stitched.length - MAX_CANDLES_STORED);
+}
+
+function bucketOf(time: number | undefined, periodSec: number, fallback: number): number {
+  if (time != null && Number.isFinite(time)) {
+    return Math.floor(time / periodSec) * periodSec;
+  }
+  return fallback;
+}
+
+/**
+ * Keep locally opened candles when the server history is still on the previous period,
+ * and preserve live high/low progress on the forming bar.
+ */
+function mergeServerWithLiveSeries(
+  serverCandles: CandlestickPoint[],
+  localSeries: CandlestickPoint[],
+  periodSec: number,
+  livePrice: number | null,
+): CandlestickPoint[] {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const nowBucket = Math.floor(nowSec / periodSec) * periodSec;
+
+  if (serverCandles.length === 0) {
+    return localSeries.length > 0 ? localSeries.map((c) => ({ ...c })) : [];
+  }
+
+  let merged = serverCandles.map((c) => ({ ...c }));
+  const serverLast = merged[merged.length - 1]!;
+  const serverBucket = bucketOf(serverLast.time, periodSec, nowBucket);
+
+  if (localSeries.length > 0) {
+    const newerLocal = localSeries
+      .filter((c) => bucketOf(c.time, periodSec, -1) > serverBucket)
+      .map((c) => ({ ...c }));
+
+    if (newerLocal.length > 0) {
+      merged = [...merged, ...newerLocal];
+    } else {
+      const localLast = localSeries[localSeries.length - 1]!;
+      const localBucket = bucketOf(localLast.time, periodSec, nowBucket);
+      if (localBucket === serverBucket) {
+        // Same forming candle — keep the wider live range, prefer live close.
+        const close = livePrice ?? localLast.close;
+        merged[merged.length - 1] = {
+          ...serverLast,
+          open: serverLast.open,
+          high: Math.max(serverLast.high, localLast.high, close),
+          low: Math.min(serverLast.low, localLast.low, close),
+          close,
+          time: serverLast.time ?? localLast.time ?? serverBucket,
+        };
+      }
+    }
+  }
+
+  // #region agent log
+  fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+    body: JSON.stringify({
+      sessionId: '660ec2',
+      runId: 'candle-merge',
+      hypothesisId: 'H90',
+      location: 'tradingService.ts:mergeServerWithLiveSeries',
+      message: 'candle_merge',
+      data: {
+        serverCount: serverCandles.length,
+        localCount: localSeries.length,
+        mergedCount: merged.length,
+        serverBucket,
+        nowBucket,
+        keptExtra: merged.length - serverCandles.length,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
+  return merged;
 }
 
 /** Make candles touch: open[i] = close[i-1], keep high/low valid. */
@@ -168,6 +252,7 @@ function applyQuoteToCandles(
     return next;
   }
 
+  // Still the same period — update forming candle only (never rewrite prior bars).
   last.close = price;
   last.high = Math.max(last.high, price);
   last.low = Math.min(last.low, price);
@@ -286,32 +371,13 @@ export const tradingService = {
         content.binollaCard.priceDisplay = price ? price.price.toFixed(5) : 'Unavailable';
         let candles = candlesResponse ? mapCandles(candlesResponse.candles) : [];
         const livePx = price?.price ?? lastLivePrice;
+        candles = mergeServerWithLiveSeries(candles, liveCandleSeries, periodSeconds, livePx);
         if (livePx != null && candles.length > 0) {
-          const serverClose = candles[candles.length - 1]!.close;
-          // #region agent log
-          fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
-            body: JSON.stringify({
-              sessionId: '660ec2',
-              runId: 'candle-jump',
-              hypothesisId: 'H60',
-              location: 'tradingService.ts:overlay',
-              message: 'quote_vs_candle_close',
-              data: {
-                quote: livePx,
-                serverClose,
-                delta: +(livePx - serverClose).toFixed(6),
-                periodSeconds,
-              },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
-          // #endregion
           candles = applyQuoteToCandles(candles, livePx, periodSeconds);
           lastLivePrice = livePx;
           content.binollaCard.priceDisplay = livePx.toFixed(5);
         }
+        liveCandleSeries = candles.map((c) => ({ ...c }));
         content.binollaCard.candleData = candles;
         content.binollaCard.chartStatusLabel = chartStatusFor(
           status,
@@ -385,6 +451,7 @@ export const tradingService = {
     lastLivePrice = price;
     const periodSec = candlePeriodSecondsFromId(current.runtime.candlePeriodId);
     const candles = applyQuoteToCandles(current.binollaCard.candleData, price, periodSec);
+    liveCandleSeries = candles.map((c) => ({ ...c }));
 
     return {
       ...current,
@@ -428,6 +495,8 @@ export const tradingService = {
   async setCandlePeriod(candlePeriodId: string): Promise<TradingRuntimeState> {
     const opt = TRADING_MOCK_CONTENT.timeframeOptions.find((o) => o.id === candlePeriodId);
     if (!opt) return cloneRuntime();
+    liveCandleSeries = [];
+    lastLivePrice = null;
     return this.updateRuntime({ candlePeriodId: opt.id });
   },
 

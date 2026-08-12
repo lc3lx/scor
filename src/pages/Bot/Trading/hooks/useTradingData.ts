@@ -3,8 +3,8 @@ import { tradingService } from '../data/tradingService';
 import { TRADING_MOCK_CONTENT } from '../data/trading.mock';
 import type { TradingData, TradingRuntimeState } from '../types';
 
-/** Full candles/RSI refresh — slower so live ticks own the forming candle */
-const LIVE_REFRESH_MS = 12_000;
+/** Full candles/RSI refresh — rare; live ticks own the forming candle */
+const LIVE_REFRESH_MS = 20_000;
 /** Price tick — moves the active candle in near real time */
 const LIVE_TICK_MS = 1_000;
 
