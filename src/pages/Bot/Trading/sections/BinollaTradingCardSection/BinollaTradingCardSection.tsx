@@ -3,7 +3,7 @@ import { Icon } from '@components/atoms/Icon';
 import { Input } from '@components/atoms/Input';
 import { Text } from '@components/atoms/Text';
 import { CandlestickChart } from '@components/organisms/CandlestickChart';
-import type { BinollaCardContent } from '../../types';
+import type { BinollaCardContent, TradingTimeframeOption } from '../../types';
 import styles from './BinollaTradingCardSection.module.css';
 
 export type BinollaTradingCardSectionProps = {
@@ -11,7 +11,11 @@ export type BinollaTradingCardSectionProps = {
   amount: string;
   durationLabel: string;
   expiryDisplay: string;
+  timeframeOptions: TradingTimeframeOption[];
+  selectedTimeframeId: string;
   onAmountChange: (value: string) => void;
+  onCycleDuration: () => void;
+  onSelectTimeframe: (id: string) => void;
   onTradeUp: () => void;
   onTradeDown: () => void;
 };
@@ -21,10 +25,18 @@ export function BinollaTradingCardSection({
   amount,
   durationLabel,
   expiryDisplay,
+  timeframeOptions,
+  selectedTimeframeId,
   onAmountChange,
+  onCycleDuration,
+  onSelectTimeframe,
   onTradeUp,
   onTradeDown,
 }: BinollaTradingCardSectionProps) {
+  const last = content.candleData[content.candleData.length - 1];
+  const priceTone =
+    last == null ? undefined : last.close >= last.open ? ('up' as const) : ('down' as const);
+
   return (
     <section className={styles.section} aria-label="Binolla trading">
       <article className={styles.card}>
@@ -55,23 +67,13 @@ export function BinollaTradingCardSection({
                 {content.pairSuffix}
               </Text>
             </div>
-            <p
-              className={styles.price}
-              data-tone={
-                content.candleData.length > 0
-                  ? content.candleData[content.candleData.length - 1]!.close >=
-                    content.candleData[content.candleData.length - 1]!.open
-                    ? 'up'
-                    : 'down'
-                  : undefined
-              }
-            >
+            <p className={styles.price} data-tone={priceTone}>
               {content.priceDisplay}
             </p>
           </div>
           <div className={styles.expiryBlock}>
             <Text variant="caption-xs" tone="caption" align="right" className={styles.expiryLabel}>
-              {content.expiryLabel}
+              Trade {content.expiryLabel}
             </Text>
             <Text variant="caption" tone="primary" align="right" className={styles.expiryValue}>
               {expiryDisplay}
@@ -79,12 +81,28 @@ export function BinollaTradingCardSection({
           </div>
         </div>
 
+        <div className={styles.timeframeRow} role="tablist" aria-label="Candle timeframe">
+          {timeframeOptions.map((tf) => (
+            <button
+              key={tf.id}
+              type="button"
+              role="tab"
+              aria-selected={tf.id === selectedTimeframeId}
+              className={styles.timeframeChip}
+              data-active={tf.id === selectedTimeframeId ? 'true' : 'false'}
+              onClick={() => onSelectTimeframe(tf.id)}
+            >
+              {tf.label}
+            </button>
+          ))}
+        </div>
+
         <div className={styles.chartWrap}>
           {content.candleData.length > 0 ? (
             <CandlestickChart
               data={content.candleData}
               width={345}
-              height={160}
+              height={168}
               className={styles.chart}
             />
           ) : (
@@ -114,12 +132,21 @@ export function BinollaTradingCardSection({
 
             <div className={styles.fieldGroup}>
               <span className={styles.fieldLabel}>{content.durationLabel}</span>
-              <div className={styles.field}>
+              <button
+                type="button"
+                className={styles.fieldButton}
+                aria-label={`Trade duration ${durationLabel}. Tap to change.`}
+                onClick={onCycleDuration}
+              >
                 <Text variant="caption" tone="primary" className={styles.durationValue}>
                   {durationLabel}
                 </Text>
-                <Icon src={content.durationChevronSrc} decorative className={styles.durationChevron} />
-              </div>
+                <Icon
+                  src={content.durationChevronSrc}
+                  decorative
+                  className={styles.durationChevron}
+                />
+              </button>
             </div>
           </div>
 

@@ -26,8 +26,7 @@ let runtimeState: TradingRuntimeState = { ...TRADING_INITIAL_RUNTIME };
 /** Last asset symbol confirmed from Binolla assets API — never invent a pair. */
 let selectedAsset: string | null = null;
 
-const CANDLE_PERIOD_SECONDS = 60;
-const MAX_CANDLES_ON_CHART = 48;
+const MAX_CANDLES_ON_CHART = 56;
 
 function cloneRuntime(): TradingRuntimeState {
   return { ...runtimeState };
@@ -45,9 +44,13 @@ function formatSignal(signal: string): { value: string; tone?: 'success' | 'prim
 }
 
 function durationSecondsFromId(id: string): number {
-  if (id === 'duration-3m') return 180;
-  if (id === 'duration-5m') return 300;
-  return 60;
+  const opt = TRADING_MOCK_CONTENT.durationOptions.find((o) => o.id === id);
+  return opt?.seconds ?? 60;
+}
+
+function candlePeriodSecondsFromId(id: string): number {
+  const opt = TRADING_MOCK_CONTENT.timeframeOptions.find((o) => o.id === id);
+  return opt?.periodSeconds ?? 60;
 }
 
 function mapCandles(
@@ -151,11 +154,12 @@ export const tradingService = {
           : firstAsset.replace('_otc', '');
         content.binollaCard.pairSuffix = firstAsset.toLowerCase().includes('otc') ? 'OTC' : '';
 
+        const periodSeconds = candlePeriodSecondsFromId(runtimeState.candlePeriodId);
         const signal = timedSignal(MARKET_FETCH_MS);
         const [price, candlesResponse, rsi] = await Promise.all([
           marketApi.price(firstAsset, signal).catch(() => null),
-          marketApi.candles(firstAsset, CANDLE_PERIOD_SECONDS, signal).catch(() => null),
-          strategiesApi.rsiSignal(firstAsset, CANDLE_PERIOD_SECONDS, signal).catch(() => null),
+          marketApi.candles(firstAsset, periodSeconds, signal).catch(() => null),
+          strategiesApi.rsiSignal(firstAsset, periodSeconds, signal).catch(() => null),
         ]);
 
         content.binollaCard.priceDisplay = price ? price.price.toFixed(5) : 'Unavailable';
@@ -258,6 +262,30 @@ export const tradingService = {
     }
     runtimeState = next;
     return cloneRuntime();
+  },
+
+  /** Cycle trade duration: 1m → 5m → 15m → 1h → … */
+  async cycleTradeDuration(): Promise<TradingRuntimeState> {
+    const options = TRADING_MOCK_CONTENT.durationOptions;
+    const idx = Math.max(
+      0,
+      options.findIndex((o) => o.id === runtimeState.durationId),
+    );
+    const next = options[(idx + 1) % options.length]!;
+    return this.updateRuntime({
+      durationId: next.id,
+      expirySeconds: next.seconds,
+    });
+  },
+
+  async setCandlePeriod(candlePeriodId: string): Promise<TradingRuntimeState> {
+    const opt = TRADING_MOCK_CONTENT.timeframeOptions.find((o) => o.id === candlePeriodId);
+    if (!opt) return cloneRuntime();
+    return this.updateRuntime({ candlePeriodId: opt.id });
+  },
+
+  getCandlePeriodSeconds(): number {
+    return candlePeriodSecondsFromId(runtimeState.candlePeriodId);
   },
 
   async placeTrade(direction: TradeDirection): Promise<string> {

@@ -10,6 +10,15 @@ export type {
 export type TradingDurationOption = {
   id: string;
   label: string;
+  /** Seconds for trade expiry / candle period mapping */
+  seconds: number;
+};
+
+export type TradingTimeframeOption = {
+  id: string;
+  label: string;
+  /** Candle period in seconds for market API */
+  periodSeconds: number;
 };
 
 export type TradingSignalStat = {
@@ -64,11 +73,14 @@ export type TradingPageContent = {
   binollaCard: BinollaCardContent;
   signalCard: ScarAlphaSignalCardContent;
   durationOptions: TradingDurationOption[];
+  timeframeOptions: TradingTimeframeOption[];
 };
 
 export type TradingRuntimeState = {
   amount: string;
   durationId: string;
+  /** Chart candle timeframe */
+  candlePeriodId: string;
   expirySeconds: number;
 };
 

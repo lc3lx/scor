@@ -84,6 +84,19 @@ export function useTradingData() {
     return runtime;
   }, []);
 
+  const cycleTradeDuration = useCallback(async () => {
+    const runtime = await tradingService.cycleTradeDuration();
+    setData((current) => (current ? { ...current, runtime } : current));
+    return runtime;
+  }, []);
+
+  const selectCandlePeriod = useCallback(async (candlePeriodId: string) => {
+    await tradingService.setCandlePeriod(candlePeriodId);
+    const next = await tradingService.fetchTradingData();
+    setData(next);
+    return next;
+  }, []);
+
   const placeTrade = useCallback(async (direction: 'up' | 'down') => {
     return tradingService.placeTrade(direction);
   }, []);
@@ -93,6 +106,8 @@ export function useTradingData() {
     duration,
     expiryDisplay,
     updateRuntime,
+    cycleTradeDuration,
+    selectCandlePeriod,
     placeTrade,
     reload,
   };

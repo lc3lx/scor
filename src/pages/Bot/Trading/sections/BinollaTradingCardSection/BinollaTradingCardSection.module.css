@@ -117,8 +117,56 @@
 }
 
 .chartWrap {
-  padding: 8px 12px 0;
+  padding: 4px 12px 0;
   min-height: var(--trading-chart-height);
+}
+
+.timeframeRow {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 8px 12px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.timeframeRow::-webkit-scrollbar {
+  display: none;
+}
+
+.timeframeChip {
+  flex: 0 0 auto;
+  min-width: 40px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-secondary, #cecece);
+  font-family: var(--font-family-primary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.timeframeChip[data-active='true'] {
+  background: rgba(18, 230, 85, 0.16);
+  border-color: rgba(18, 230, 85, 0.55);
+  color: #12e655;
+}
+
+.fieldButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--trading-field-height);
+  padding: 9.18px 13.18px;
+  background: var(--trading-field-bg);
+  border: var(--trading-card-border-width) solid var(--trading-field-border-color);
+  border-radius: var(--trading-field-radius);
+  cursor: pointer;
+  text-align: left;
 }
 
 .chart {

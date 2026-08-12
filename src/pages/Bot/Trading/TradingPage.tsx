@@ -11,7 +11,8 @@ import styles from './TradingPage.module.css';
 
 export default function TradingPage() {
   const navigate = useNavigate();
-  const { data, duration, expiryDisplay, updateRuntime, placeTrade, reload } = useTradingData();
+  const { data, duration, expiryDisplay, updateRuntime, cycleTradeDuration, selectCandlePeriod, placeTrade, reload } =
+    useTradingData();
 
   const handleTrade = useCallback(
     async (direction: 'up' | 'down') => {
@@ -53,7 +54,11 @@ export default function TradingPage() {
             amount={data.runtime.amount}
             durationLabel={duration.label}
             expiryDisplay={expiryDisplay}
+            timeframeOptions={data.timeframeOptions}
+            selectedTimeframeId={data.runtime.candlePeriodId}
             onAmountChange={(value) => updateRuntime({ amount: value })}
+            onCycleDuration={() => void cycleTradeDuration()}
+            onSelectTimeframe={(id) => void selectCandlePeriod(id)}
             onTradeUp={() => handleTrade('up')}
             onTradeDown={() => handleTrade('down')}
           />

@@ -18,12 +18,12 @@ export const TRADING_MOCK_CONTENT: TradingPageContent = {
     pairName: 'EUR/USD',
     pairSuffix: 'OTC',
     priceDisplay: '—',
-    expiryLabel: 'Duration',
+    expiryLabel: 'expiry',
     candleData: [],
     chartStatusLabel: 'Waiting for Binolla candles…',
     amountLabel: 'Amount',
     amountPrefix: '$',
-    durationLabel: 'Duration',
+    durationLabel: 'Trade time',
     durationChevronSrc: tradingAssets.durationChevron,
     upLabel: 'UP',
     downLabel: 'DOWN',
@@ -43,15 +43,24 @@ export const TRADING_MOCK_CONTENT: TradingPageContent = {
     ctaLabel: 'Open AI Bot',
   },
   durationOptions: [
-    { id: 'duration-1m', label: '1 min' },
-    { id: 'duration-3m', label: '3 min' },
-    { id: 'duration-5m', label: '5 min' },
+    { id: 'duration-1m', label: '1 min', seconds: 60 },
+    { id: 'duration-5m', label: '5 min', seconds: 300 },
+    { id: 'duration-15m', label: '15 min', seconds: 900 },
+    { id: 'duration-1h', label: '1 hour', seconds: 3600 },
+  ],
+  timeframeOptions: [
+    { id: 'tf-1m', label: '1m', periodSeconds: 60 },
+    { id: 'tf-5m', label: '5m', periodSeconds: 300 },
+    { id: 'tf-15m', label: '15m', periodSeconds: 900 },
+    { id: 'tf-1h', label: '1h', periodSeconds: 3600 },
+    { id: 'tf-4h', label: '4h', periodSeconds: 14400 },
   ],
 };
 
 export const TRADING_INITIAL_RUNTIME: TradingRuntimeState = {
   amount: '25',
   durationId: 'duration-1m',
+  candlePeriodId: 'tf-1m',
   // Matches selected duration (1 min). Never use a fake countdown seed.
   expirySeconds: 60,
 };
