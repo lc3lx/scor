@@ -24,9 +24,12 @@ export function ApprovalNoticeSection({
             Binolla session expired
           </Text>
           <Text variant="caption" tone="caption" className={styles.body}>
-            Reconnect with Binolla email login (or SSID fallback in Edit Profile). Your approval
-            status is preserved after reconnect.
+            Your Binolla WebSocket session dropped (token expired or server restart). Approval
+            status stays Pending — just log in again with the same Binolla email and password.
           </Text>
+          <Link className={styles.link} to={ROUTES.login}>
+            Reconnect Binolla login
+          </Link>
         </div>
       </section>
     );
