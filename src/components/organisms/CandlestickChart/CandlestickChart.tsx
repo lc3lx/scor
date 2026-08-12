@@ -67,6 +67,28 @@ function domainFrom(points: CandlestickPoint[]): PriceDomain {
   return { lo: minPrice - pad, hi: maxPrice + pad };
 }
 
+/**
+ * Y-domain that tracks the live price near vertical center so the chart
+ * scrolls up/down as price moves (XY motion), while still fitting visible highs/lows.
+ */
+function domainTrackingFocus(points: CandlestickPoint[], focus: number): PriceDomain {
+  const minPrice = Math.min(...points.map((p) => p.low), focus);
+  const maxPrice = Math.max(...points.map((p) => p.high), focus);
+  const dataSpan = Math.max(maxPrice - minPrice, Math.abs(focus) * 1e-4, 1e-5);
+  const above = Math.max(maxPrice - focus, dataSpan * 0.4);
+  const below = Math.max(focus - minPrice, dataSpan * 0.4);
+  const half = Math.max(above, below) * 1.15;
+  return { lo: focus - half, hi: focus + half };
+}
+
+function lerpDomain(prev: PriceDomain | null, next: PriceDomain, t: number): PriceDomain {
+  if (!prev) return next;
+  return {
+    lo: prev.lo + (next.lo - prev.lo) * t,
+    hi: prev.hi + (next.hi - prev.hi) * t,
+  };
+}
+
 export function CandlestickChart({
   data,
   width = 362,
@@ -79,8 +101,10 @@ export function CandlestickChart({
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{ x: number; pan: number } | null>(null);
   const frozenDomainRef = useRef<PriceDomain | null>(null);
+  const smoothDomainRef = useRef<PriceDomain | null>(null);
   const panPxRef = useRef(0);
   const clipId = useId().replace(/:/g, '');
+  const [, bump] = useState(0);
 
   const sanitized = useMemo(() => data.map(sanitize), [data]);
 
@@ -97,7 +121,6 @@ export function CandlestickChart({
   const clampedPan = Math.min(Math.max(0, panPx), maxPanPx);
   const followLive = clampedPan < slot * 0.25 && !dragging;
 
-  // Visible slice for Y-scale (tight — no sticky hysteresis that pins candles to the floor).
   const rightIndex = sanitized.length === 0
     ? 0
     : sanitized.length - 1 - Math.round(clampedPan / slot);
@@ -109,15 +132,26 @@ export function CandlestickChart({
     return sanitized.slice(start, end);
   }, [sanitized, rightIndex, visibleBars]);
 
-  const targetDomain = useMemo(
-    () => (visiblePoints.length > 0 ? domainFrom(visiblePoints) : { lo: 0, hi: 1 }),
-    [visiblePoints],
-  );
+  const liveClose = sanitized.length > 0 ? sanitized[sanitized.length - 1]!.close : 0;
 
-  const domain: PriceDomain =
-    dragging || !followLive
-      ? (frozenDomainRef.current ?? targetDomain)
-      : targetDomain;
+  const targetDomain = useMemo(() => {
+    if (visiblePoints.length === 0) return { lo: 0, hi: 1 };
+    if (followLive) return domainTrackingFocus(visiblePoints, liveClose);
+    return domainFrom(visiblePoints);
+  }, [visiblePoints, followLive, liveClose]);
+
+  useEffect(() => {
+    if (dragging || !followLive) return;
+    smoothDomainRef.current = lerpDomain(smoothDomainRef.current, targetDomain, 0.4);
+    bump((n) => n + 1);
+  }, [targetDomain, dragging, followLive]);
+
+  const domain: PriceDomain = (() => {
+    if (dragging || !followLive) {
+      return frozenDomainRef.current ?? targetDomain;
+    }
+    return smoothDomainRef.current ?? targetDomain;
+  })();
 
   const lo = domain.lo;
   const hi = domain.hi;
@@ -126,7 +160,7 @@ export function CandlestickChart({
   const onPointerDown = useCallback(
     (event: ReactPointerEvent<SVGSVGElement>) => {
       event.currentTarget.setPointerCapture(event.pointerId);
-      frozenDomainRef.current = targetDomain;
+      frozenDomainRef.current = smoothDomainRef.current ?? targetDomain;
       dragRef.current = { x: event.clientX, pan: clampedPan };
       setDragging(true);
     },
@@ -150,6 +184,7 @@ export function CandlestickChart({
     setDragging(false);
     if (panPxRef.current < slot * 0.25) {
       frozenDomainRef.current = null;
+      smoothDomainRef.current = null;
     }
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);

@@ -85,35 +85,51 @@ function mapCandles(
     };
   });
 
+  // Connect candles: each open sits on the previous close (continuous series).
+  const stitched = stitchOpenToPrevClose(mapped);
+
   // #region agent log
-  const up = mapped.filter((c) => c.close > c.open).length;
-  const down = mapped.filter((c) => c.close < c.open).length;
-  const doji = mapped.filter((c) => c.close === c.open).length;
-  const sample = mapped.slice(-5).map((c) => ({
-    o: +c.open.toFixed(5),
-    h: +c.high.toFixed(5),
-    l: +c.low.toFixed(5),
-    c: +c.close.toFixed(5),
-    up: c.close >= c.open,
-    time: c.time ?? null,
-  }));
+  const gaps = mapped.slice(1).filter((c, i) => Math.abs(c.open - mapped[i]!.close) > 1e-8).length;
   fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
     body: JSON.stringify({
       sessionId: '660ec2',
       runId: 'candle-ui',
-      hypothesisId: 'H50',
+      hypothesisId: 'H70',
       location: 'tradingService.ts:mapCandles',
-      message: 'candle_ohlc_sample',
-      data: { count: mapped.length, up, down, doji, sample },
+      message: 'candle_continuity',
+      data: {
+        count: stitched.length,
+        gapsBeforeStitch: gaps,
+        sample: stitched.slice(-4).map((c) => ({
+          o: +c.open.toFixed(5),
+          c: +c.close.toFixed(5),
+        })),
+      },
       timestamp: Date.now(),
     }),
   }).catch(() => {});
   // #endregion
 
-  if (mapped.length <= MAX_CANDLES_STORED) return mapped;
-  return mapped.slice(mapped.length - MAX_CANDLES_STORED);
+  if (stitched.length <= MAX_CANDLES_STORED) return stitched;
+  return stitched.slice(stitched.length - MAX_CANDLES_STORED);
+}
+
+/** Make candles touch: open[i] = close[i-1], keep high/low valid. */
+function stitchOpenToPrevClose(candles: CandlestickPoint[]): CandlestickPoint[] {
+  if (candles.length === 0) return candles;
+  const out: CandlestickPoint[] = [{ ...candles[0]! }];
+  for (let i = 1; i < candles.length; i++) {
+    const prev = out[i - 1]!;
+    const cur = candles[i]!;
+    const open = prev.close;
+    const close = cur.close;
+    const high = Math.max(cur.high, open, close);
+    const low = Math.min(cur.low, open, close);
+    out.push({ ...cur, open, high, low, close });
+  }
+  return out;
 }
 
 /** Paint live quote onto the forming candle so refresh cannot jump close≠quote. */
@@ -137,7 +153,15 @@ function applyQuoteToCandles(
       : bucket;
 
   if (bucket > lastBucket) {
-    next.push({ open: price, high: price, low: price, close: price, time: bucket });
+    // New candle opens exactly where the previous one closed.
+    const open = last.close;
+    next.push({
+      open,
+      high: Math.max(open, price),
+      low: Math.min(open, price),
+      close: price,
+      time: bucket,
+    });
     if (next.length > MAX_CANDLES_STORED) {
       return next.slice(next.length - MAX_CANDLES_STORED);
     }
