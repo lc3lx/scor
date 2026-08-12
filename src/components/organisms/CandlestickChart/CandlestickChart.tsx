@@ -63,20 +63,8 @@ function domainFrom(points: CandlestickPoint[]): PriceDomain {
   const minPrice = Math.min(...points.map((p) => p.low));
   const maxPrice = Math.max(...points.map((p) => p.high));
   const raw = maxPrice - minPrice || 0.0001;
-  const pad = raw * 0.1;
+  const pad = raw * 0.08;
   return { lo: minPrice - pad, hi: maxPrice + pad };
-}
-
-/** Expand instantly, contract slowly — keeps the live candle from jumping vertically. */
-function easeDomain(prev: PriceDomain | null, next: PriceDomain): PriceDomain {
-  if (!prev) return next;
-  const expandLo = Math.min(prev.lo, next.lo);
-  const expandHi = Math.max(prev.hi, next.hi);
-  // Soften shrink so refresh/tick noise doesn't yank the scale.
-  const lo = expandLo + (next.lo - expandLo) * 0.12;
-  const hi = expandHi + (next.hi - expandHi) * 0.12;
-  if (hi - lo < 1e-9) return next;
-  return { lo, hi };
 }
 
 export function CandlestickChart({
@@ -84,17 +72,15 @@ export function CandlestickChart({
   width = 362,
   height = 188,
   className,
-  visibleBars = 48,
+  visibleBars = 40,
 }: CandlestickChartProps) {
   /** Pixel offset: 0 = glued to latest candle (right edge). Positive = older history. */
   const [panPx, setPanPx] = useState(0);
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{ x: number; pan: number } | null>(null);
   const frozenDomainRef = useRef<PriceDomain | null>(null);
-  const liveDomainRef = useRef<PriceDomain | null>(null);
   const panPxRef = useRef(0);
   const clipId = useId().replace(/:/g, '');
-  const [, bump] = useState(0);
 
   const sanitized = useMemo(() => data.map(sanitize), [data]);
 
@@ -105,39 +91,33 @@ export function CandlestickChart({
   const plotW = width - padL - padR;
   const plotH = height - padT - padB;
   const slot = plotW / Math.max(visibleBars, 1);
-  const bodyW = Math.max(2, Math.min(10, slot * 0.68));
-  const wickW = bodyW >= 5 ? 1.5 : 1.15;
+  const bodyW = Math.max(3, Math.min(12, slot * 0.78));
+  const wickW = bodyW >= 5 ? 1.5 : 1.2;
   const maxPanPx = Math.max(0, (sanitized.length - visibleBars) * slot);
   const clampedPan = Math.min(Math.max(0, panPx), maxPanPx);
   const followLive = clampedPan < slot * 0.25 && !dragging;
 
-  // Live window = rightmost visibleBars — Y scale anchors here so the last candle stays put.
-  const liveWindow = useMemo(() => {
+  // Visible slice for Y-scale (tight — no sticky hysteresis that pins candles to the floor).
+  const rightIndex = sanitized.length === 0
+    ? 0
+    : sanitized.length - 1 - Math.round(clampedPan / slot);
+  const leftIndex = Math.max(0, rightIndex - visibleBars + 1);
+  const visiblePoints = useMemo(() => {
     if (sanitized.length === 0) return [];
-    return sanitized.slice(Math.max(0, sanitized.length - visibleBars));
-  }, [sanitized, visibleBars]);
+    const end = Math.min(sanitized.length, rightIndex + 1);
+    const start = Math.max(0, end - visibleBars);
+    return sanitized.slice(start, end);
+  }, [sanitized, rightIndex, visibleBars]);
 
   const targetDomain = useMemo(
-    () => (liveWindow.length > 0 ? domainFrom(liveWindow) : { lo: 0, hi: 1 }),
-    [liveWindow],
+    () => (visiblePoints.length > 0 ? domainFrom(visiblePoints) : { lo: 0, hi: 1 }),
+    [visiblePoints],
   );
 
-  useEffect(() => {
-    if (dragging || !followLive) return;
-    liveDomainRef.current = easeDomain(liveDomainRef.current, targetDomain);
-    bump((n) => n + 1);
-  }, [targetDomain, dragging, followLive]);
-
-  const domain: PriceDomain = (() => {
-    if (dragging || !followLive) {
-      return (
-        frozenDomainRef.current ??
-        liveDomainRef.current ??
-        targetDomain
-      );
-    }
-    return liveDomainRef.current ?? targetDomain;
-  })();
+  const domain: PriceDomain =
+    dragging || !followLive
+      ? (frozenDomainRef.current ?? targetDomain)
+      : targetDomain;
 
   const lo = domain.lo;
   const hi = domain.hi;
@@ -146,7 +126,7 @@ export function CandlestickChart({
   const onPointerDown = useCallback(
     (event: ReactPointerEvent<SVGSVGElement>) => {
       event.currentTarget.setPointerCapture(event.pointerId);
-      frozenDomainRef.current = liveDomainRef.current ?? targetDomain;
+      frozenDomainRef.current = targetDomain;
       dragRef.current = { x: event.clientX, pan: clampedPan };
       setDragging(true);
     },
@@ -158,7 +138,6 @@ export function CandlestickChart({
       const drag = dragRef.current;
       if (!drag) return;
       const dx = event.clientX - drag.x;
-      // Drag right → older candles (increase pan). Drag left → toward live.
       const next = Math.min(maxPanPx, Math.max(0, drag.pan + dx));
       panPxRef.current = next;
       setPanPx(next);
@@ -179,7 +158,6 @@ export function CandlestickChart({
     }
   }, [slot]);
 
-  // Snap back to live when data shrinks (timeframe change).
   useEffect(() => {
     setPanPx((p) => {
       const next = Math.min(p, maxPanPx);
@@ -192,10 +170,6 @@ export function CandlestickChart({
 
   const scaleY = (price: number) => padT + plotH - ((price - lo) / priceRange) * plotH;
 
-  // Index of rightmost visible candle in full series.
-  const rightIndex = sanitized.length - 1 - Math.round(clampedPan / slot);
-  const leftIndex = rightIndex - visibleBars + 1;
-  // Draw a small buffer so pixel pan doesn't clip mid-candle.
   const drawStart = Math.max(0, leftIndex - 2);
   const drawEnd = Math.min(sanitized.length - 1, rightIndex + 2);
 
@@ -214,8 +188,6 @@ export function CandlestickChart({
   const labelH = 16;
   const labelW = Math.max(44, priceLabel.length * 6.4 + 10);
   const labelY = Math.min(Math.max(lastY - labelH / 2, padT), height - padB - labelH);
-
-  // Right edge of plot aligns with the latest candle when panPx=0.
   const latestCenterX = padL + plotW - slot / 2;
 
   return (
@@ -279,13 +251,11 @@ export function CandlestickChart({
           const point = sanitized[index]!;
           const isUp = point.close >= point.open;
           const color = isUp ? UP : DOWN;
-          // Position relative to latest candle center, then shift by pan.
           const xCenter = latestCenterX - (sanitized.length - 1 - index) * slot + clampedPan;
           const x = xCenter - bodyW / 2;
           const bodyTop = scaleY(Math.max(point.open, point.close));
           const bodyBottom = scaleY(Math.min(point.open, point.close));
-          const bodyHeight = Math.max(1.25, bodyBottom - bodyTop);
-          const isLive = index === sanitized.length - 1 && followLive;
+          const bodyHeight = Math.max(1.5, bodyBottom - bodyTop);
 
           return (
             <g key={`${index}-${point.time ?? 't'}`}>
@@ -299,7 +269,6 @@ export function CandlestickChart({
                 strokeLinecap="butt"
               />
               <rect
-                className={isLive ? styles.liveBody : undefined}
                 x={x}
                 y={bodyTop}
                 width={bodyW}
@@ -313,7 +282,6 @@ export function CandlestickChart({
         })}
       </g>
 
-      {/* Last-price line always uses live candle — scale is anchored so it stays stable. */}
       <line
         x1={padL}
         y1={lastY}

@@ -34,6 +34,8 @@ let fetchInFlight: Promise<TradingData> | null = null;
 let livePriceInFlight = false;
 
 const MAX_CANDLES_STORED = 200;
+/** Last live quote — kept so full candle refresh cannot yank the forming candle. */
+let lastLivePrice: number | null = null;
 
 function cloneRuntime(): TradingRuntimeState {
   return { ...runtimeState };
@@ -112,6 +114,42 @@ function mapCandles(
 
   if (mapped.length <= MAX_CANDLES_STORED) return mapped;
   return mapped.slice(mapped.length - MAX_CANDLES_STORED);
+}
+
+/** Paint live quote onto the forming candle so refresh cannot jump close≠quote. */
+function applyQuoteToCandles(
+  candles: CandlestickPoint[],
+  price: number,
+  periodSec: number,
+): CandlestickPoint[] {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const bucket = Math.floor(nowSec / periodSec) * periodSec;
+  const next = candles.map((c) => ({ ...c }));
+
+  if (next.length === 0) {
+    return [{ open: price, high: price, low: price, close: price, time: bucket }];
+  }
+
+  const last = next[next.length - 1]!;
+  const lastBucket =
+    last.time != null && Number.isFinite(last.time)
+      ? Math.floor(last.time / periodSec) * periodSec
+      : bucket;
+
+  if (bucket > lastBucket) {
+    next.push({ open: price, high: price, low: price, close: price, time: bucket });
+    if (next.length > MAX_CANDLES_STORED) {
+      return next.slice(next.length - MAX_CANDLES_STORED);
+    }
+    return next;
+  }
+
+  last.close = price;
+  last.high = Math.max(last.high, price);
+  last.low = Math.min(last.low, price);
+  if (last.time == null) last.time = lastBucket;
+  next[next.length - 1] = last;
+  return next;
 }
 
 function chartStatusFor(status: AccountStatusResponse | null, hasCandles: boolean): string {
@@ -222,9 +260,35 @@ export const tradingService = {
         ]);
 
         content.binollaCard.priceDisplay = price ? price.price.toFixed(5) : 'Unavailable';
-        content.binollaCard.candleData = candlesResponse
-          ? mapCandles(candlesResponse.candles)
-          : [];
+        let candles = candlesResponse ? mapCandles(candlesResponse.candles) : [];
+        const livePx = price?.price ?? lastLivePrice;
+        if (livePx != null && candles.length > 0) {
+          const serverClose = candles[candles.length - 1]!.close;
+          // #region agent log
+          fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+            body: JSON.stringify({
+              sessionId: '660ec2',
+              runId: 'candle-jump',
+              hypothesisId: 'H60',
+              location: 'tradingService.ts:overlay',
+              message: 'quote_vs_candle_close',
+              data: {
+                quote: livePx,
+                serverClose,
+                delta: +(livePx - serverClose).toFixed(6),
+                periodSeconds,
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
+          candles = applyQuoteToCandles(candles, livePx, periodSeconds);
+          lastLivePrice = livePx;
+          content.binollaCard.priceDisplay = livePx.toFixed(5);
+        }
+        content.binollaCard.candleData = candles;
         content.binollaCard.chartStatusLabel = chartStatusFor(
           status,
           content.binollaCard.candleData.length > 0,
@@ -294,34 +358,9 @@ export const tradingService = {
   },
 
   applyLiveQuote(current: TradingData, price: number): TradingData {
+    lastLivePrice = price;
     const periodSec = candlePeriodSecondsFromId(current.runtime.candlePeriodId);
-    const nowSec = Math.floor(Date.now() / 1000);
-    const bucket = Math.floor(nowSec / periodSec) * periodSec;
-    const candles = current.binollaCard.candleData.map((c) => ({ ...c }));
-
-    if (candles.length === 0) {
-      candles.push({ open: price, high: price, low: price, close: price, time: bucket });
-    } else {
-      const last = candles[candles.length - 1]!;
-      const lastBucket =
-        last.time != null && Number.isFinite(last.time)
-          ? Math.floor(last.time / periodSec) * periodSec
-          : bucket;
-
-      if (bucket > lastBucket) {
-        // Period rolled — seal previous candle and open a new one.
-        candles.push({ open: price, high: price, low: price, close: price, time: bucket });
-        if (candles.length > MAX_CANDLES_STORED) {
-          candles.splice(0, candles.length - MAX_CANDLES_STORED);
-        }
-      } else {
-        last.close = price;
-        last.high = Math.max(last.high, price);
-        last.low = Math.min(last.low, price);
-        if (last.time == null) last.time = lastBucket;
-        candles[candles.length - 1] = last;
-      }
-    }
+    const candles = applyQuoteToCandles(current.binollaCard.candleData, price, periodSec);
 
     return {
       ...current,
