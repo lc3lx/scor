@@ -249,3 +249,10 @@
   line-height: 21px;
   letter-spacing: -0.35px;
 }
+
+.tradeLock {
+  display: block;
+  padding: 8px 4px 0;
+  text-align: center;
+  color: var(--color-warning, #c9a227);
+}

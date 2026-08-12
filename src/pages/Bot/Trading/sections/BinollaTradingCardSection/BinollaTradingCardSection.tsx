@@ -129,6 +129,11 @@ export function BinollaTradingCardSection({
               <span className={styles.tradeLabel}>{content.downLabel}</span>
             </Button>
           </div>
+          {content.tradesDisabled && content.tradeLockMessage ? (
+            <Text variant="caption" tone="caption" className={styles.tradeLock}>
+              {content.tradeLockMessage}
+            </Text>
+          ) : null}
         </div>
       </article>
     </section>

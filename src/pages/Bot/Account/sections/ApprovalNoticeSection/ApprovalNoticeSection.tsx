@@ -62,8 +62,8 @@ export function ApprovalNoticeSection({
             Binolla Connected
           </Text>
           <Text variant="caption" tone="caption" className={styles.body}>
-            Your account is waiting for administrator approval. Once approved, you will have free
-            access to the bot.
+            Administrator has not approved your account yet. You can use markets, charts, and RSI
+            signals. Trading stays locked until an administrator approves you.
           </Text>
         </div>
       </section>

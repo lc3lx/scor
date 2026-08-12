@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@constants/routes';
 import { accountApi } from '@shared/api';
+import { routeForBotAccess } from '@shared/access/botAccess';
 import {
   useAuthForm,
   validateActivationForm,
@@ -19,7 +20,7 @@ export function useActivationForm() {
     void accountApi
       .status()
       .then((status) => {
-        navigate(status.botAccess === 'Allowed' ? ROUTES.home : ROUTES.settings, { replace: true });
+        navigate(routeForBotAccess(status.botAccess), { replace: true });
       })
       .catch(() => {
         navigate(ROUTES.login, { replace: true });
@@ -28,7 +29,7 @@ export function useActivationForm() {
 
   const handleSubmit = useCallback(async (_values: ActivationFormValues) => {
     const status = await accountApi.status();
-    navigate(status.botAccess === 'Allowed' ? ROUTES.home : ROUTES.settings);
+    navigate(routeForBotAccess(status.botAccess));
   }, [navigate]);
 
   const form = useAuthForm<ActivationFormValues>({

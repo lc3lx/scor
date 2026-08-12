@@ -51,7 +51,7 @@ function mapMessage(code: string, fallback: string): string {
     case 'BINOLLA_CONNECTION_FAILED':
       return 'Unable to connect to Binolla right now.';
     case 'ADMIN_APPROVAL_REQUIRED':
-      return 'Your Binolla account is waiting for administrator approval.';
+      return 'Administrator has not approved your account yet. Trading is locked until approval.';
     case 'NOT_ELIGIBLE':
       return 'This account was rejected by an administrator.';
     case 'FORBIDDEN':

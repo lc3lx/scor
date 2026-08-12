@@ -13,9 +13,9 @@ const SPLASH_MIN_MS = 1200;
  * Bootstrap: Telegram initData → JWT → account status → route.
  *
  * First launch (onboarding not done) → Onboarding
- * Allowed → Home
+ * Allowed / AdminApprovalRequired → Home (trading locked until admin approves)
  * BinollaNotConnected / SessionExpired → Binolla login (reconnect)
- * AdminApprovalRequired / NotEligible / other → Account settings
+ * NotEligible / other → Account settings
  */
 export function useSplashBootstrap() {
   const navigate = useNavigate();
@@ -41,7 +41,10 @@ export function useSplashBootstrap() {
 
         const status = await accountApi.status();
 
-        if (status.botAccess === 'Allowed') {
+        if (
+          status.botAccess === 'Allowed' ||
+          status.botAccess === 'AdminApprovalRequired'
+        ) {
           await finish(ROUTES.home);
           return;
         }

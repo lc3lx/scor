@@ -48,6 +48,8 @@ export type BinollaCardContent = {
   upIconSrc: string;
   downIconSrc: string;
   tradesDisabled?: boolean;
+  /** Shown when trades are locked (e.g. admin not approved). */
+  tradeLockMessage?: string;
 };
 
 export type ScarAlphaSignalCardContent = {

@@ -35,7 +35,7 @@ function formatBotAccessLabel(botAccess: string): string {
     case 'BinollaNotConnected':
       return 'Binolla not connected';
     case 'AdminApprovalRequired':
-      return 'Waiting for admin approval';
+      return 'Connected — trading locked until admin approves';
     case 'NotEligible':
       return 'Rejected';
     case 'SessionExpired':
@@ -161,7 +161,7 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
           status.botAccess === 'SessionExpired'
             ? 'Binolla session expired · Reconnect your SSID in Edit Profile'
             : status.botAccess === 'AdminApprovalRequired'
-              ? 'Binolla connected · Waiting for administrator approval · Free after approval'
+              ? 'Binolla connected · Markets/RSI on · Trading locked until admin approves'
               : 'Scar Alpha · Free access after admin approval',
       },
       subscription: {

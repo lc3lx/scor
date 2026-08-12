@@ -8,6 +8,7 @@ import {
   marketApi,
   strategiesApi,
 } from '@shared/api';
+import { canBrowseMarket } from '@shared/access/botAccess';
 
 let runtimeState: HomeRuntimeState = {
   ...HOME_INITIAL_RUNTIME,
@@ -62,7 +63,7 @@ export const homeService = {
       ]);
 
       const assets =
-        status?.botAccess === 'Allowed' ? await marketApi.assets().catch(() => null) : null;
+        canBrowseMarket(status?.botAccess) ? await marketApi.assets().catch(() => null) : null;
 
       if (assets?.assets?.length) {
         const options = assets.assets.map((a) => ({
@@ -134,7 +135,7 @@ export const homeService = {
       });
 
       const signal =
-        status?.botAccess === 'Allowed'
+        canBrowseMarket(status?.botAccess)
           ? await strategiesApi.rsiSignal(asset, 60).catch(() => null)
           : null;
       if (signal) {
@@ -162,7 +163,7 @@ export const homeService = {
 
       try {
         const candles =
-          status?.botAccess === 'Allowed'
+          canBrowseMarket(status?.botAccess)
             ? await marketApi.candles(asset, 60)
             : null;
         const mapped = candles
@@ -209,7 +210,7 @@ export const homeService = {
 
       if (status?.botAccess === 'AdminApprovalRequired') {
         base.disclaimer =
-          'Binolla connected. Your account is waiting for administrator approval. Once approved, you will have free access to the bot.';
+          'Administrator has not approved your account yet. Markets and RSI work; trading unlocks after approval.';
       } else if (status?.botAccess === 'BinollaNotConnected') {
         base.disclaimer = 'Connect your Binolla account in Account settings to use market data and trading.';
       } else if (status?.botAccess === 'NotEligible') {

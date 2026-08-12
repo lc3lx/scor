@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@constants/routes';
 import { authService } from '@features/Auth';
 import { accountApi, ApiClientError, binollaApi } from '@shared/api';
+import { routeForBotAccess } from '@shared/access/botAccess';
 import { tokenStore } from '@shared/auth/tokenStore';
 
 export type BinollaAuthMode = 'login' | 'register';
@@ -45,7 +46,7 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
       setStatus('success');
       // Clear password from memory after successful connect.
       setPassword('');
-      navigate(botAccess === 'Allowed' ? ROUTES.home : ROUTES.settings, { replace: true });
+      navigate(routeForBotAccess(botAccess), { replace: true });
     } catch (err) {
       setStatus('error');
       if (err instanceof ApiClientError) {
@@ -73,7 +74,7 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
       }
       const accountStatus = await accountApi.status();
       setStatus('success');
-      navigate(accountStatus.botAccess === 'Allowed' ? ROUTES.home : ROUTES.settings, {
+      navigate(routeForBotAccess(accountStatus.botAccess), {
         replace: true,
       });
     } catch (err) {

@@ -15,6 +15,11 @@ import {
   strategiesApi,
   type AccountStatusResponse,
 } from '@shared/api';
+import {
+  ADMIN_NOT_APPROVED_TRADE_MESSAGE,
+  canBrowseMarket,
+  canTrade,
+} from '@shared/access/botAccess';
 
 let runtimeState: TradingRuntimeState = { ...TRADING_INITIAL_RUNTIME };
 /** Last asset symbol confirmed from Binolla assets API — never invent a pair. */
@@ -61,11 +66,13 @@ function chartStatusFor(status: AccountStatusResponse | null, hasCandles: boolea
   if (!status) return 'Connect to load Binolla candles';
   if (status.botAccess === 'BinollaNotConnected') return 'Connect Binolla to load live candles';
   if (status.botAccess === 'AdminApprovalRequired') {
-    return 'Waiting for admin approval — candles unlock after approval';
+    return hasCandles
+      ? 'Live candles — trading locked until admin approval'
+      : 'Loading candles — trading locked until admin approval';
   }
   if (status.botAccess === 'NotEligible') return 'Account rejected — candles unavailable';
   if (status.botAccess === 'SessionExpired') return 'Binolla session expired — reconnect SSID';
-  if (status.botAccess !== 'Allowed') return 'Bot access required for live candles';
+  if (!canBrowseMarket(status.botAccess)) return 'Bot access required for live candles';
   if (!hasCandles) return 'No candles from Binolla yet';
   return 'Live Binolla candles';
 }
@@ -96,10 +103,17 @@ export const tradingService = {
         content.topBar.connectionTone = 'warning';
       }
 
-      const allowed = status?.botAccess === 'Allowed';
-      content.binollaCard.tradesDisabled = !allowed;
+      const browse = canBrowseMarket(status?.botAccess);
+      const tradeOk = canTrade(status?.botAccess);
+      content.binollaCard.tradesDisabled = !tradeOk;
+      content.binollaCard.tradeLockMessage =
+        status?.botAccess === 'AdminApprovalRequired'
+          ? ADMIN_NOT_APPROVED_TRADE_MESSAGE
+          : !tradeOk
+            ? 'Trading is not available for this account.'
+            : undefined;
 
-      const assets = allowed ? await marketApi.assets().catch(() => null) : null;
+      const assets = browse ? await marketApi.assets().catch(() => null) : null;
       const liveAssets = assets?.assets ?? [];
       const preferred =
         (selectedAsset
@@ -111,14 +125,14 @@ export const tradingService = {
       selectedAsset = firstAsset;
 
       if (!firstAsset) {
-        content.binollaCard.pairName = allowed ? 'No pairs' : '—';
+        content.binollaCard.pairName = browse ? 'No pairs' : '—';
         content.binollaCard.pairSuffix = '';
-        content.binollaCard.priceDisplay = allowed ? 'Unavailable' : '—';
+        content.binollaCard.priceDisplay = browse ? 'Unavailable' : '—';
         content.binollaCard.candleData = [];
-        content.binollaCard.chartStatusLabel = allowed
+        content.binollaCard.chartStatusLabel = browse
           ? 'No assets from Binolla session'
           : chartStatusFor(status, false);
-        content.signalCard.freshLabel = allowed ? 'No assets' : 'Awaiting access';
+        content.signalCard.freshLabel = browse ? 'No assets' : 'Awaiting access';
         content.signalCard.freshTone = 'neutral';
         content.signalCard.stats = [
           { id: 'signal', label: 'Last Signal', value: 'NONE' },
@@ -213,7 +227,7 @@ export const tradingService = {
 
   async placeTrade(direction: TradeDirection): Promise<string> {
     const status = await accountApi.status().catch(() => null);
-    if (status?.botAccess !== 'Allowed') {
+    if (!canTrade(status?.botAccess)) {
       throw new ApiClientError(
         status?.botAccess === 'AdminApprovalRequired'
           ? 'ADMIN_APPROVAL_REQUIRED'
@@ -221,7 +235,7 @@ export const tradingService = {
             ? 'NOT_ELIGIBLE'
             : 'BINOLLA_NOT_CONNECTED',
         status?.botAccess === 'AdminApprovalRequired'
-          ? 'Your Binolla account is waiting for administrator approval.'
+          ? ADMIN_NOT_APPROVED_TRADE_MESSAGE
           : 'Trading is not available for this account.',
         403,
       );

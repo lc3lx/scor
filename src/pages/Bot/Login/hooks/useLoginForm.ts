@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@constants/routes';
 import { accountApi } from '@shared/api';
+import { routeForBotAccess } from '@shared/access/botAccess';
 import {
   authService,
   useAuthForm,
@@ -19,11 +20,7 @@ export function useLoginForm() {
       setInfo(null);
       await authService.loginWithTelegram();
       const status = await accountApi.status();
-      if (status.botAccess === 'Allowed') {
-        navigate(ROUTES.home);
-        return;
-      }
-      navigate(ROUTES.settings);
+      navigate(routeForBotAccess(status.botAccess));
     },
     [navigate],
   );

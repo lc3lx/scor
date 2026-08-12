@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@constants/routes';
 import { accountApi } from '@shared/api';
+import { routeForBotAccess } from '@shared/access/botAccess';
 import {
   authService,
   useAuthForm,
@@ -23,7 +24,7 @@ export function useSignupForm() {
         await binollaApi.connect({ ssid, accountType: 'Demo' });
       }
       const status = await accountApi.status();
-      navigate(status.botAccess === 'Allowed' ? ROUTES.home : ROUTES.settings);
+      navigate(routeForBotAccess(status.botAccess));
     },
     [navigate],
   );
