@@ -103,7 +103,7 @@ export function BinollaTradingCardSection({
               data={content.candleData}
               width={345}
               height={188}
-              visibleBars={52}
+              visibleBars={48}
               className={styles.chart}
             />
           ) : (

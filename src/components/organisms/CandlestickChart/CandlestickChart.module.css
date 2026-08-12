@@ -4,15 +4,7 @@
   max-width: 100%;
   border-radius: 0;
   background: #131722;
-}
-
-.wick,
-.body {
-  transition:
-    y 0.18s linear,
-    height 0.18s linear,
-    y1 0.18s linear,
-    y2 0.18s linear;
+  user-select: none;
 }
 
 .axisLabel {
@@ -20,6 +12,6 @@
   pointer-events: none;
 }
 
-.liveCandle .body {
-  filter: brightness(1.08);
+.liveBody {
+  filter: brightness(1.12);
 }

@@ -33,7 +33,7 @@ let selectedAsset: string | null = null;
 let fetchInFlight: Promise<TradingData> | null = null;
 let livePriceInFlight = false;
 
-const MAX_CANDLES_ON_CHART = 56;
+const MAX_CANDLES_STORED = 200;
 
 function cloneRuntime(): TradingRuntimeState {
   return { ...runtimeState };
@@ -61,16 +61,57 @@ function candlePeriodSecondsFromId(id: string): number {
 }
 
 function mapCandles(
-  candles: { open: number; high: number; low: number; close: number }[],
+  candles: { open: number; high: number; low: number; close: number; timestamp?: string }[],
 ): CandlestickPoint[] {
-  const mapped = candles.map((c) => ({
-    open: c.open,
-    high: c.high,
-    low: c.low,
-    close: c.close,
+  const mapped = candles.map((c) => {
+    let high = c.high;
+    let low = c.low;
+    if (low > high) {
+      const t = low;
+      low = high;
+      high = t;
+    }
+    high = Math.max(high, c.open, c.close);
+    low = Math.min(low, c.open, c.close);
+    const timeSec = c.timestamp ? Math.floor(new Date(c.timestamp).getTime() / 1000) : undefined;
+    return {
+      open: c.open,
+      high,
+      low,
+      close: c.close,
+      time: Number.isFinite(timeSec) ? timeSec : undefined,
+    };
+  });
+
+  // #region agent log
+  const up = mapped.filter((c) => c.close > c.open).length;
+  const down = mapped.filter((c) => c.close < c.open).length;
+  const doji = mapped.filter((c) => c.close === c.open).length;
+  const sample = mapped.slice(-5).map((c) => ({
+    o: +c.open.toFixed(5),
+    h: +c.high.toFixed(5),
+    l: +c.low.toFixed(5),
+    c: +c.close.toFixed(5),
+    up: c.close >= c.open,
+    time: c.time ?? null,
   }));
-  if (mapped.length <= MAX_CANDLES_ON_CHART) return mapped;
-  return mapped.slice(mapped.length - MAX_CANDLES_ON_CHART);
+  fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+    body: JSON.stringify({
+      sessionId: '660ec2',
+      runId: 'candle-ui',
+      hypothesisId: 'H50',
+      location: 'tradingService.ts:mapCandles',
+      message: 'candle_ohlc_sample',
+      data: { count: mapped.length, up, down, doji, sample },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
+
+  if (mapped.length <= MAX_CANDLES_STORED) return mapped;
+  return mapped.slice(mapped.length - MAX_CANDLES_STORED);
 }
 
 function chartStatusFor(status: AccountStatusResponse | null, hasCandles: boolean): string {
@@ -253,13 +294,33 @@ export const tradingService = {
   },
 
   applyLiveQuote(current: TradingData, price: number): TradingData {
+    const periodSec = candlePeriodSecondsFromId(current.runtime.candlePeriodId);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const bucket = Math.floor(nowSec / periodSec) * periodSec;
     const candles = current.binollaCard.candleData.map((c) => ({ ...c }));
-    if (candles.length > 0) {
+
+    if (candles.length === 0) {
+      candles.push({ open: price, high: price, low: price, close: price, time: bucket });
+    } else {
       const last = candles[candles.length - 1]!;
-      last.close = price;
-      last.high = Math.max(last.high, price);
-      last.low = Math.min(last.low, price);
-      candles[candles.length - 1] = last;
+      const lastBucket =
+        last.time != null && Number.isFinite(last.time)
+          ? Math.floor(last.time / periodSec) * periodSec
+          : bucket;
+
+      if (bucket > lastBucket) {
+        // Period rolled — seal previous candle and open a new one.
+        candles.push({ open: price, high: price, low: price, close: price, time: bucket });
+        if (candles.length > MAX_CANDLES_STORED) {
+          candles.splice(0, candles.length - MAX_CANDLES_STORED);
+        }
+      } else {
+        last.close = price;
+        last.high = Math.max(last.high, price);
+        last.low = Math.min(last.low, price);
+        if (last.time == null) last.time = lastBucket;
+        candles[candles.length - 1] = last;
+      }
     }
 
     return {
