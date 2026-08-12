@@ -27,3 +27,11 @@
   padding-top: var(--trading-content-padding-top);
   padding-bottom: var(--trading-scroll-padding-bottom);
 }
+
+.loading {
+  margin: 48px 16px;
+  text-align: center;
+  color: var(--color-text-secondary, #9aa3b2);
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-md);
+}

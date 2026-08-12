@@ -20,6 +20,7 @@ import {
   canBrowseMarket,
   canTrade,
 } from '@shared/access/botAccess';
+import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
 
 let runtimeState: TradingRuntimeState = { ...TRADING_INITIAL_RUNTIME };
 /** Last asset symbol confirmed from Binolla assets API — never invent a pair. */
@@ -113,7 +114,9 @@ export const tradingService = {
             ? 'Trading is not available for this account.'
             : undefined;
 
-      const assets = browse ? await marketApi.assets().catch(() => null) : null;
+      const assets = browse
+        ? await marketApi.assets(timedSignal(MARKET_FETCH_MS)).catch(() => null)
+        : null;
       const liveAssets = assets?.assets ?? [];
       const preferred =
         (selectedAsset
@@ -148,13 +151,14 @@ export const tradingService = {
           : firstAsset.replace('_otc', '');
         content.binollaCard.pairSuffix = firstAsset.toLowerCase().includes('otc') ? 'OTC' : '';
 
-        const price = await marketApi.price(firstAsset).catch(() => null);
-        content.binollaCard.priceDisplay = price ? price.price.toFixed(5) : 'Unavailable';
+        const signal = timedSignal(MARKET_FETCH_MS);
+        const [price, candlesResponse, rsi] = await Promise.all([
+          marketApi.price(firstAsset, signal).catch(() => null),
+          marketApi.candles(firstAsset, CANDLE_PERIOD_SECONDS, signal).catch(() => null),
+          strategiesApi.rsiSignal(firstAsset, CANDLE_PERIOD_SECONDS, signal).catch(() => null),
+        ]);
 
-        // Live candles from Binolla via backend — never invent chart data.
-        const candlesResponse = await marketApi
-          .candles(firstAsset, CANDLE_PERIOD_SECONDS)
-          .catch(() => null);
+        content.binollaCard.priceDisplay = price ? price.price.toFixed(5) : 'Unavailable';
         content.binollaCard.candleData = candlesResponse
           ? mapCandles(candlesResponse.candles)
           : [];
@@ -163,26 +167,23 @@ export const tradingService = {
           content.binollaCard.candleData.length > 0,
         );
 
-        const signal = await strategiesApi
-          .rsiSignal(firstAsset, CANDLE_PERIOD_SECONDS)
-          .catch(() => null);
-        if (signal) {
-          const mapped = formatSignal(signal.signal);
-          content.signalCard.freshLabel = `RSI ${signal.rsi.toFixed(2)}`;
+        if (rsi) {
+          const mapped = formatSignal(rsi.signal);
+          content.signalCard.freshLabel = `RSI ${rsi.rsi.toFixed(2)}`;
           content.signalCard.freshTone =
-            signal.signal.toLowerCase() === 'none' ? 'neutral' : 'success';
+            rsi.signal.toLowerCase() === 'none' ? 'neutral' : 'success';
           content.signalCard.stats = [
             { id: 'signal', label: 'Last Signal', value: mapped.value, valueTone: mapped.tone },
-            { id: 'strength', label: 'RSI', value: signal.rsi.toFixed(2) },
+            { id: 'strength', label: 'RSI', value: rsi.rsi.toFixed(2) },
             { id: 'indicator', label: 'Indicator', value: 'RSI' },
             { id: 'strategy', label: 'Strategy', value: 'RSI' },
             { id: 'market', label: 'Market', value: firstAsset },
             {
               id: 'candle',
               label: 'Candle',
-              value: new Date(signal.candleTime).toLocaleTimeString('en-GB', { hour12: false }),
+              value: new Date(rsi.candleTime).toLocaleTimeString('en-GB', { hour12: false }),
             },
-            { id: 'timeframe', label: 'Timeframe', value: `${signal.timeframe}s` },
+            { id: 'timeframe', label: 'Timeframe', value: `${rsi.timeframe}s` },
           ];
         } else {
           content.signalCard.freshLabel = 'No signal';

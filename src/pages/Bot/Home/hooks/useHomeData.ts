@@ -44,9 +44,14 @@ export function useHomeData() {
   useEffect(() => {
     let active = true;
 
-    homeService.fetchHomeData().then((next) => {
-      if (active) setData(next);
-    });
+    void homeService
+      .fetchHomeData()
+      .then((next) => {
+        if (active) setData(next);
+      })
+      .catch(() => {
+        /* keep loading UI; fetchHomeData is defensive and should not reject */
+      });
 
     return () => {
       active = false;

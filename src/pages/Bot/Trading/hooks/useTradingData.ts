@@ -18,14 +18,22 @@ export function useTradingData() {
     let active = true;
 
     void (async () => {
-      const next = await tradingService.fetchTradingData();
-      if (active) setData(next);
+      try {
+        const next = await tradingService.fetchTradingData();
+        if (active) setData(next);
+      } catch {
+        /* keep loading UI */
+      }
     })();
 
     const timer = window.setInterval(() => {
       void (async () => {
-        const next = await tradingService.fetchTradingData();
-        if (active) setData(next);
+        try {
+          const next = await tradingService.fetchTradingData();
+          if (active) setData(next);
+        } catch {
+          /* ignore refresh errors */
+        }
       })();
     }, LIVE_REFRESH_MS);
 

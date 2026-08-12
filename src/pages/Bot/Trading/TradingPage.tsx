@@ -29,7 +29,18 @@ export default function TradingPage() {
     [navigate, placeTrade],
   );
 
-  if (!data || !duration) return null;
+  if (!data || !duration) {
+    return (
+      <main className={styles.page} aria-label="Trading" aria-busy="true">
+        <div className={styles.scroll}>
+          <BackgroundGlow variant="top-right" />
+          <PageContent className={styles.content}>
+            <p className={styles.loading}>Loading live market…</p>
+          </PageContent>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className={styles.page} aria-label="Trading">

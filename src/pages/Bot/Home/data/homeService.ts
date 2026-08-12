@@ -9,6 +9,7 @@ import {
   strategiesApi,
 } from '@shared/api';
 import { canBrowseMarket } from '@shared/access/botAccess';
+import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
 
 let runtimeState: HomeRuntimeState = {
   ...HOME_INITIAL_RUNTIME,
@@ -63,7 +64,9 @@ export const homeService = {
       ]);
 
       const assets =
-        canBrowseMarket(status?.botAccess) ? await marketApi.assets().catch(() => null) : null;
+        canBrowseMarket(status?.botAccess)
+          ? await marketApi.assets(timedSignal(MARKET_FETCH_MS)).catch(() => null)
+          : null;
 
       if (assets?.assets?.length) {
         const options = assets.assets.map((a) => ({
@@ -136,7 +139,9 @@ export const homeService = {
 
       const signal =
         canBrowseMarket(status?.botAccess)
-          ? await strategiesApi.rsiSignal(asset, 60).catch(() => null)
+          ? await strategiesApi
+              .rsiSignal(asset, 60, timedSignal(MARKET_FETCH_MS))
+              .catch(() => null)
           : null;
       if (signal) {
         base.botEngine.stats = [
@@ -164,7 +169,7 @@ export const homeService = {
       try {
         const candles =
           canBrowseMarket(status?.botAccess)
-            ? await marketApi.candles(asset, 60)
+            ? await marketApi.candles(asset, 60, timedSignal(MARKET_FETCH_MS)).catch(() => null)
             : null;
         const mapped = candles
           ? candles.candles.map((c) => ({

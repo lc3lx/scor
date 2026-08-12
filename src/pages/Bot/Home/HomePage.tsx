@@ -191,7 +191,16 @@ export default function HomePage() {
     !strategyContent ||
     !settingsContent
   ) {
-    return null;
+    return (
+      <main className={styles.page} aria-label="AI Bot Engine" aria-busy="true">
+        <div className={styles.scroll}>
+          <BackgroundGlow variant="top-right" />
+          <PageContent className={styles.content}>
+            <p className={styles.loading}>Loading bot engine…</p>
+          </PageContent>
+        </div>
+      </main>
+    );
   }
 
   return (
