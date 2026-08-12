@@ -102,7 +102,8 @@ export function BinollaTradingCardSection({
             <CandlestickChart
               data={content.candleData}
               width={345}
-              height={168}
+              height={188}
+              visibleBars={52}
               className={styles.chart}
             />
           ) : (

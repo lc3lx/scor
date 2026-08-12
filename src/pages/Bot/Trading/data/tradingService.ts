@@ -79,7 +79,7 @@ function chartStatusFor(status: AccountStatusResponse | null, hasCandles: boolea
   if (status.botAccess === 'AdminApprovalRequired') {
     return hasCandles
       ? 'Live candles — trading locked until admin approval'
-      : 'Loading candles — trading locked until admin approval';
+      : 'No candles yet — trading locked until admin approval';
   }
   if (status.botAccess === 'NotEligible') return 'Account rejected — candles unavailable';
   if (status.botAccess === 'SessionExpired') return 'Binolla session expired — reconnect SSID';
@@ -147,10 +147,6 @@ export const tradingService = {
         liveAssets[0];
       const firstAsset = preferred?.symbol ?? null;
       selectedAsset = firstAsset;
-
-      // #region agent log
-      fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'660ec2'},body:JSON.stringify({sessionId:'660ec2',runId:'post-fix',hypothesisId:'H18',location:'tradingService.ts:selectAsset',message:'asset_selected',data:{asset:firstAsset,available:preferred?.available??null,assetCount:liveAssets.length,periodId:runtimeState.candlePeriodId,periodSeconds:candlePeriodSecondsFromId(runtimeState.candlePeriodId),sample:liveAssets.slice(0,5).map((a)=>a.symbol),preferredPick:true},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion
 
       if (!firstAsset) {
         content.binollaCard.pairName = browse ? 'No pairs' : '—';

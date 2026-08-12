@@ -2,27 +2,24 @@
   display: block;
   width: 100%;
   max-width: 100%;
+  border-radius: 0;
+  background: #131722;
 }
 
 .wick,
 .body {
   transition:
-    y 0.28s linear,
-    height 0.28s linear,
-    y1 0.28s linear,
-    y2 0.28s linear;
+    y 0.18s linear,
+    height 0.18s linear,
+    y1 0.18s linear,
+    y2 0.18s linear;
 }
 
-.liveCandle {
-  animation: livePulse 1.1s ease-in-out infinite;
+.axisLabel {
+  user-select: none;
+  pointer-events: none;
 }
 
-@keyframes livePulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.82;
-  }
+.liveCandle .body {
+  filter: brightness(1.08);
 }

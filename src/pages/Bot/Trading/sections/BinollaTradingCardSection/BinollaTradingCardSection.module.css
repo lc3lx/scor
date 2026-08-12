@@ -117,8 +117,13 @@
 }
 
 .chartWrap {
-  padding: 4px 12px 0;
-  min-height: var(--trading-chart-height);
+  margin: 6px 0 0;
+  padding: 0;
+  min-height: 188px;
+  overflow: hidden;
+  background: #131722;
+  border-top: 1px solid rgba(42, 46, 57, 0.95);
+  border-bottom: 1px solid rgba(42, 46, 57, 0.95);
 }
 
 .timeframeRow {
@@ -172,7 +177,7 @@
 .chart {
   display: block;
   width: 100%;
-  height: var(--trading-chart-height);
+  height: 188px;
 }
 
 .chartEmpty {
