@@ -1,5 +1,7 @@
 import {
   useCallback,
+  useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -26,13 +28,14 @@ export type CandlestickChartProps = {
   visibleBars?: number;
 };
 
-/** Clear bull/bear colors (TradingView-like, high contrast on dark). */
 const UP = '#12e655';
 const DOWN = '#ef4444';
 const GRID = 'rgba(42, 46, 57, 0.95)';
 const AXIS = '#787b86';
 const CROSS = 'rgba(120, 123, 134, 0.55)';
 const BG = '#131722';
+
+type PriceDomain = { lo: number; hi: number };
 
 function formatPrice(value: number, range: number): string {
   if (range >= 100) return value.toFixed(2);
@@ -56,6 +59,26 @@ function sanitize(point: CandlestickPoint): CandlestickPoint {
   return { ...point, open, high, low, close };
 }
 
+function domainFrom(points: CandlestickPoint[]): PriceDomain {
+  const minPrice = Math.min(...points.map((p) => p.low));
+  const maxPrice = Math.max(...points.map((p) => p.high));
+  const raw = maxPrice - minPrice || 0.0001;
+  const pad = raw * 0.1;
+  return { lo: minPrice - pad, hi: maxPrice + pad };
+}
+
+/** Expand instantly, contract slowly — keeps the live candle from jumping vertically. */
+function easeDomain(prev: PriceDomain | null, next: PriceDomain): PriceDomain {
+  if (!prev) return next;
+  const expandLo = Math.min(prev.lo, next.lo);
+  const expandHi = Math.max(prev.hi, next.hi);
+  // Soften shrink so refresh/tick noise doesn't yank the scale.
+  const lo = expandLo + (next.lo - expandLo) * 0.12;
+  const hi = expandHi + (next.hi - expandHi) * 0.12;
+  if (hi - lo < 1e-9) return next;
+  return { lo, hi };
+}
+
 export function CandlestickChart({
   data,
   width = 362,
@@ -63,48 +86,17 @@ export function CandlestickChart({
   className,
   visibleBars = 48,
 }: CandlestickChartProps) {
-  const [panBars, setPanBars] = useState(0);
+  /** Pixel offset: 0 = glued to latest candle (right edge). Positive = older history. */
+  const [panPx, setPanPx] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const dragRef = useRef<{ x: number; pan: number } | null>(null);
+  const frozenDomainRef = useRef<PriceDomain | null>(null);
+  const liveDomainRef = useRef<PriceDomain | null>(null);
+  const panPxRef = useRef(0);
+  const clipId = useId().replace(/:/g, '');
+  const [, bump] = useState(0);
 
   const sanitized = useMemo(() => data.map(sanitize), [data]);
-
-  const maxPan = Math.max(0, sanitized.length - visibleBars);
-  const clampedPan = Math.min(Math.max(0, panBars), maxPan);
-  const end = sanitized.length - clampedPan;
-  const start = Math.max(0, end - visibleBars);
-  const bars = sanitized.slice(start, end);
-
-  const onPointerDown = useCallback(
-    (event: ReactPointerEvent<SVGSVGElement>) => {
-      event.currentTarget.setPointerCapture(event.pointerId);
-      dragRef.current = { x: event.clientX, pan: clampedPan };
-    },
-    [clampedPan],
-  );
-
-  const onPointerMove = useCallback(
-    (event: ReactPointerEvent<SVGSVGElement>) => {
-      const drag = dragRef.current;
-      if (!drag || bars.length === 0) return;
-      const plotW = width - 56;
-      const slot = plotW / Math.max(bars.length, 1);
-      const dx = event.clientX - drag.x;
-      const deltaBars = Math.round(-dx / slot);
-      setPanBars(Math.min(maxPan, Math.max(0, drag.pan + deltaBars)));
-    },
-    [bars.length, maxPan, width],
-  );
-
-  const endDrag = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
-    dragRef.current = null;
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      /* already released */
-    }
-  }, []);
-
-  if (sanitized.length === 0 || bars.length === 0) return null;
 
   const padL = 4;
   const padR = 52;
@@ -112,26 +104,100 @@ export function CandlestickChart({
   const padB = 6;
   const plotW = width - padL - padR;
   const plotH = height - padT - padB;
-
-  const lows = bars.map((p) => p.low);
-  const highs = bars.map((p) => p.high);
-  const minPrice = Math.min(...lows);
-  const maxPrice = Math.max(...highs);
-  const rawRange = maxPrice - minPrice || 0.0001;
-  const padRange = rawRange * 0.08;
-  const lo = minPrice - padRange;
-  const hi = maxPrice + padRange;
-  const priceRange = hi - lo;
-  const last = bars[bars.length - 1]!;
-  const lastUp = last.close >= last.open;
-  const lastColor = lastUp ? UP : DOWN;
-
-  const slot = plotW / bars.length;
-  const bodyW = Math.max(2, Math.min(10, slot * 0.7));
+  const slot = plotW / Math.max(visibleBars, 1);
+  const bodyW = Math.max(2, Math.min(10, slot * 0.68));
   const wickW = bodyW >= 5 ? 1.5 : 1.15;
-  const gap = Math.max(0.5, slot - bodyW);
+  const maxPanPx = Math.max(0, (sanitized.length - visibleBars) * slot);
+  const clampedPan = Math.min(Math.max(0, panPx), maxPanPx);
+  const followLive = clampedPan < slot * 0.25 && !dragging;
+
+  // Live window = rightmost visibleBars — Y scale anchors here so the last candle stays put.
+  const liveWindow = useMemo(() => {
+    if (sanitized.length === 0) return [];
+    return sanitized.slice(Math.max(0, sanitized.length - visibleBars));
+  }, [sanitized, visibleBars]);
+
+  const targetDomain = useMemo(
+    () => (liveWindow.length > 0 ? domainFrom(liveWindow) : { lo: 0, hi: 1 }),
+    [liveWindow],
+  );
+
+  useEffect(() => {
+    if (dragging || !followLive) return;
+    liveDomainRef.current = easeDomain(liveDomainRef.current, targetDomain);
+    bump((n) => n + 1);
+  }, [targetDomain, dragging, followLive]);
+
+  const domain: PriceDomain = (() => {
+    if (dragging || !followLive) {
+      return (
+        frozenDomainRef.current ??
+        liveDomainRef.current ??
+        targetDomain
+      );
+    }
+    return liveDomainRef.current ?? targetDomain;
+  })();
+
+  const lo = domain.lo;
+  const hi = domain.hi;
+  const priceRange = hi - lo || 1;
+
+  const onPointerDown = useCallback(
+    (event: ReactPointerEvent<SVGSVGElement>) => {
+      event.currentTarget.setPointerCapture(event.pointerId);
+      frozenDomainRef.current = liveDomainRef.current ?? targetDomain;
+      dragRef.current = { x: event.clientX, pan: clampedPan };
+      setDragging(true);
+    },
+    [clampedPan, targetDomain],
+  );
+
+  const onPointerMove = useCallback(
+    (event: ReactPointerEvent<SVGSVGElement>) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const dx = event.clientX - drag.x;
+      // Drag right → older candles (increase pan). Drag left → toward live.
+      const next = Math.min(maxPanPx, Math.max(0, drag.pan + dx));
+      panPxRef.current = next;
+      setPanPx(next);
+    },
+    [maxPanPx],
+  );
+
+  const endDrag = useCallback((event: ReactPointerEvent<SVGSVGElement>) => {
+    dragRef.current = null;
+    setDragging(false);
+    if (panPxRef.current < slot * 0.25) {
+      frozenDomainRef.current = null;
+    }
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      /* already released */
+    }
+  }, [slot]);
+
+  // Snap back to live when data shrinks (timeframe change).
+  useEffect(() => {
+    setPanPx((p) => {
+      const next = Math.min(p, maxPanPx);
+      panPxRef.current = next;
+      return next;
+    });
+  }, [maxPanPx]);
+
+  if (sanitized.length === 0) return null;
 
   const scaleY = (price: number) => padT + plotH - ((price - lo) / priceRange) * plotH;
+
+  // Index of rightmost visible candle in full series.
+  const rightIndex = sanitized.length - 1 - Math.round(clampedPan / slot);
+  const leftIndex = rightIndex - visibleBars + 1;
+  // Draw a small buffer so pixel pan doesn't clip mid-candle.
+  const drawStart = Math.max(0, leftIndex - 2);
+  const drawEnd = Math.min(sanitized.length - 1, rightIndex + 2);
 
   const gridSteps = 4;
   const gridLines = Array.from({ length: gridSteps + 1 }, (_, i) => {
@@ -140,12 +206,17 @@ export function CandlestickChart({
     return { y: padT + plotH * t, price };
   });
 
-  const lastY = scaleY(last.close);
-  const priceLabel = formatPrice(last.close, priceRange);
+  const liveCandle = sanitized[sanitized.length - 1]!;
+  const lastUp = liveCandle.close >= liveCandle.open;
+  const lastColor = lastUp ? UP : DOWN;
+  const lastY = scaleY(liveCandle.close);
+  const priceLabel = formatPrice(liveCandle.close, priceRange);
   const labelH = 16;
   const labelW = Math.max(44, priceLabel.length * 6.4 + 10);
   const labelY = Math.min(Math.max(lastY - labelH / 2, padT), height - padB - labelH);
-  const followLive = clampedPan === 0;
+
+  // Right edge of plot aligns with the latest candle when panPx=0.
+  const latestCenterX = padL + plotW - slot / 2;
 
   return (
     <svg
@@ -159,7 +230,7 @@ export function CandlestickChart({
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
-      style={{ touchAction: 'none', cursor: maxPan > 0 ? 'grab' : 'default' }}
+      style={{ touchAction: 'none', cursor: maxPanPx > 0 ? (dragging ? 'grabbing' : 'grab') : 'default' }}
     >
       <rect x={0} y={0} width={width} height={height} fill={BG} />
 
@@ -196,86 +267,81 @@ export function CandlestickChart({
         strokeWidth={1}
       />
 
-      {bars.map((point, index) => {
-        const isUp = point.close >= point.open;
-        const color = isUp ? UP : DOWN;
-        const x = padL + index * slot + gap / 2;
-        const centerX = x + bodyW / 2;
-        const bodyTop = scaleY(Math.max(point.open, point.close));
-        const bodyBottom = scaleY(Math.min(point.open, point.close));
-        const bodyHeight = Math.max(1.25, bodyBottom - bodyTop);
-        const isLive = followLive && index === bars.length - 1;
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={padL} y={padT} width={plotW} height={plotH} />
+        </clipPath>
+      </defs>
 
-        return (
-          <g key={`${start + index}-${point.time ?? index}`}>
-            <line
-              x1={centerX}
-              y1={scaleY(point.high)}
-              x2={centerX}
-              y2={scaleY(point.low)}
-              stroke={color}
-              strokeWidth={wickW}
-              strokeLinecap="butt"
-            />
-            {/* Hollow-ish body edge for tiny bodies (doji) */}
-            <rect
-              className={isLive ? styles.liveBody : undefined}
-              x={x}
-              y={bodyTop}
-              width={bodyW}
-              height={bodyHeight}
-              fill={color}
-              stroke={color}
-              strokeWidth={0.75}
-            />
-          </g>
-        );
-      })}
+      <g clipPath={`url(#${clipId})`}>
+        {Array.from({ length: Math.max(0, drawEnd - drawStart + 1) }, (_, i) => {
+          const index = drawStart + i;
+          const point = sanitized[index]!;
+          const isUp = point.close >= point.open;
+          const color = isUp ? UP : DOWN;
+          // Position relative to latest candle center, then shift by pan.
+          const xCenter = latestCenterX - (sanitized.length - 1 - index) * slot + clampedPan;
+          const x = xCenter - bodyW / 2;
+          const bodyTop = scaleY(Math.max(point.open, point.close));
+          const bodyBottom = scaleY(Math.min(point.open, point.close));
+          const bodyHeight = Math.max(1.25, bodyBottom - bodyTop);
+          const isLive = index === sanitized.length - 1 && followLive;
 
-      {followLive && (
-        <>
-          <line
-            x1={padL}
-            y1={lastY}
-            x2={width - padR}
-            y2={lastY}
-            stroke={CROSS}
-            strokeWidth={1}
-            strokeDasharray="4 3"
-          />
-          <rect
-            x={width - padR + 1}
-            y={labelY}
-            width={labelW}
-            height={labelH}
-            rx={2}
-            fill={lastColor}
-          />
-          <text
-            x={width - padR + 1 + labelW / 2}
-            y={labelY + 11.5}
-            textAnchor="middle"
-            fill="#fff"
-            fontSize={9}
-            fontWeight={700}
-            fontFamily="Trebuchet MS, Segoe UI, sans-serif"
-          >
-            {priceLabel}
-          </text>
-        </>
-      )}
+          return (
+            <g key={`${index}-${point.time ?? 't'}`}>
+              <line
+                x1={xCenter}
+                y1={scaleY(point.high)}
+                x2={xCenter}
+                y2={scaleY(point.low)}
+                stroke={color}
+                strokeWidth={wickW}
+                strokeLinecap="butt"
+              />
+              <rect
+                className={isLive ? styles.liveBody : undefined}
+                x={x}
+                y={bodyTop}
+                width={bodyW}
+                height={bodyHeight}
+                fill={color}
+                stroke={color}
+                strokeWidth={0.75}
+              />
+            </g>
+          );
+        })}
+      </g>
 
-      {maxPan > 0 && (
-        <text
-          x={padL + 4}
-          y={height - 4}
-          fill={AXIS}
-          fontSize={8}
-          fontFamily="Trebuchet MS, Segoe UI, sans-serif"
-        >
-          drag to scroll
-        </text>
-      )}
+      {/* Last-price line always uses live candle — scale is anchored so it stays stable. */}
+      <line
+        x1={padL}
+        y1={lastY}
+        x2={width - padR}
+        y2={lastY}
+        stroke={CROSS}
+        strokeWidth={1}
+        strokeDasharray="4 3"
+      />
+      <rect
+        x={width - padR + 1}
+        y={labelY}
+        width={labelW}
+        height={labelH}
+        rx={2}
+        fill={lastColor}
+      />
+      <text
+        x={width - padR + 1 + labelW / 2}
+        y={labelY + 11.5}
+        textAnchor="middle"
+        fill="#fff"
+        fontSize={9}
+        fontWeight={700}
+        fontFamily="Trebuchet MS, Segoe UI, sans-serif"
+      >
+        {priceLabel}
+      </text>
     </svg>
   );
 }
