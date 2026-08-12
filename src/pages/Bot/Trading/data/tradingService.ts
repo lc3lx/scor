@@ -87,6 +87,13 @@ function mapCandles(
     };
   });
 
+  // Binolla history often arrives newest-first; chart + live rollover need oldest→newest.
+  const rawFirst = mapped[0]?.time ?? null;
+  const rawLast = mapped[mapped.length - 1]?.time ?? null;
+  const wasNewestFirst =
+    rawFirst != null && rawLast != null && rawFirst > rawLast;
+  mapped.sort((a, b) => (a.time ?? 0) - (b.time ?? 0));
+
   // Connect closed history only — leave the forming candle's open as Binolla sent it
   // until live ticks own it (avoids visual “merge” into the previous bar).
   const stitched =
@@ -103,13 +110,19 @@ function mapCandles(
     headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
     body: JSON.stringify({
       sessionId: '660ec2',
-      runId: 'candle-merge',
-      hypothesisId: 'H90',
+      runId: 'candle-order',
+      hypothesisId: 'H91',
       location: 'tradingService.ts:mapCandles',
       message: 'candle_mapped',
       data: {
         count: stitched.length,
-        lastTime: stitched[stitched.length - 1]?.time ?? null,
+        rawFirst,
+        rawLast,
+        wasNewestFirst,
+        sortedFirst: stitched[0]?.time ?? null,
+        sortedLast: stitched[stitched.length - 1]?.time ?? null,
+        ascending:
+          (stitched[0]?.time ?? 0) <= (stitched[stitched.length - 1]?.time ?? 0),
         lastClose: stitched[stitched.length - 1]?.close ?? null,
       },
       timestamp: Date.now(),
@@ -174,14 +187,19 @@ function mergeServerWithLiveSeries(
     }
   }
 
+  const localLast = localSeries[localSeries.length - 1];
+  const localBucket = localLast
+    ? bucketOf(localLast.time, periodSec, nowBucket)
+    : null;
+
   // #region agent log
   fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
     body: JSON.stringify({
       sessionId: '660ec2',
-      runId: 'candle-merge',
-      hypothesisId: 'H90',
+      runId: 'candle-order',
+      hypothesisId: 'H92',
       location: 'tradingService.ts:mergeServerWithLiveSeries',
       message: 'candle_merge',
       data: {
@@ -189,8 +207,11 @@ function mergeServerWithLiveSeries(
         localCount: localSeries.length,
         mergedCount: merged.length,
         serverBucket,
+        localBucket,
         nowBucket,
         keptExtra: merged.length - serverCandles.length,
+        serverLastTime: serverLast.time ?? null,
+        mergedLastTime: merged[merged.length - 1]?.time ?? null,
       },
       timestamp: Date.now(),
     }),
@@ -246,6 +267,27 @@ function applyQuoteToCandles(
       close: price,
       time: bucket,
     });
+    // #region agent log
+    fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+      body: JSON.stringify({
+        sessionId: '660ec2',
+        runId: 'candle-order',
+        hypothesisId: 'H92',
+        location: 'tradingService.ts:applyQuoteToCandles',
+        message: 'candle_rollover',
+        data: {
+          lastBucket,
+          bucket,
+          count: next.length,
+          open,
+          price,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     if (next.length > MAX_CANDLES_STORED) {
       return next.slice(next.length - MAX_CANDLES_STORED);
     }
