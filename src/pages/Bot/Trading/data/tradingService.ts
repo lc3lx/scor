@@ -216,6 +216,40 @@ export const tradingService = {
     };
   },
 
+  /** Lightweight tick: update last candle + price from live quote only. */
+  async fetchLivePrice(): Promise<number | null> {
+    if (!selectedAsset) return null;
+    const quote = await marketApi
+      .price(selectedAsset, timedSignal(4_000))
+      .catch(() => null);
+    return quote?.price ?? null;
+  },
+
+  applyLiveQuote(current: TradingData, price: number): TradingData {
+    const candles = current.binollaCard.candleData.map((c) => ({ ...c }));
+    if (candles.length > 0) {
+      const last = candles[candles.length - 1]!;
+      last.close = price;
+      last.high = Math.max(last.high, price);
+      last.low = Math.min(last.low, price);
+      candles[candles.length - 1] = last;
+    }
+
+    return {
+      ...current,
+      binollaCard: {
+        ...current.binollaCard,
+        priceDisplay: price.toFixed(5),
+        candleData: candles,
+        chartStatusLabel:
+          candles.length > 0
+            ? 'Live Binolla candles'
+            : current.binollaCard.chartStatusLabel,
+      },
+      runtime: current.runtime,
+    };
+  },
+
   async updateRuntime(partial: Partial<TradingRuntimeState>): Promise<TradingRuntimeState> {
     const next = { ...runtimeState, ...partial };
     // Keep expiry display tied to the selected Binolla trade duration — not a fake timer.

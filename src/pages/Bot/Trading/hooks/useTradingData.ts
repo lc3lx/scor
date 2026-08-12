@@ -3,7 +3,10 @@ import { tradingService } from '../data/tradingService';
 import { TRADING_MOCK_CONTENT } from '../data/trading.mock';
 import type { TradingData, TradingRuntimeState } from '../types';
 
-const LIVE_REFRESH_MS = 8_000;
+/** Full candles/RSI refresh */
+const LIVE_REFRESH_MS = 4_000;
+/** Price tick — moves the active candle in near real time */
+const LIVE_TICK_MS = 1_000;
 
 export function useTradingData() {
   const [data, setData] = useState<TradingData | null>(null);
@@ -26,7 +29,7 @@ export function useTradingData() {
       }
     })();
 
-    const timer = window.setInterval(() => {
+    const refreshTimer = window.setInterval(() => {
       void (async () => {
         try {
           const next = await tradingService.fetchTradingData();
@@ -37,9 +40,24 @@ export function useTradingData() {
       })();
     }, LIVE_REFRESH_MS);
 
+    const tickTimer = window.setInterval(() => {
+      void (async () => {
+        try {
+          const price = await tradingService.fetchLivePrice();
+          if (!active || price == null) return;
+          setData((current) =>
+            current ? tradingService.applyLiveQuote(current, price) : current,
+          );
+        } catch {
+          /* ignore tick errors */
+        }
+      })();
+    }, LIVE_TICK_MS);
+
     return () => {
       active = false;
-      window.clearInterval(timer);
+      window.clearInterval(refreshTimer);
+      window.clearInterval(tickTimer);
     };
   }, []);
 

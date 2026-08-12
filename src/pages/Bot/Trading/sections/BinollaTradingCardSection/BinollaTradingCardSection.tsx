@@ -55,7 +55,19 @@ export function BinollaTradingCardSection({
                 {content.pairSuffix}
               </Text>
             </div>
-            <p className={styles.price}>{content.priceDisplay}</p>
+            <p
+              className={styles.price}
+              data-tone={
+                content.candleData.length > 0
+                  ? content.candleData[content.candleData.length - 1]!.close >=
+                    content.candleData[content.candleData.length - 1]!.open
+                    ? 'up'
+                    : 'down'
+                  : undefined
+              }
+            >
+              {content.priceDisplay}
+            </p>
           </div>
           <div className={styles.expiryBlock}>
             <Text variant="caption-xs" tone="caption" align="right" className={styles.expiryLabel}>

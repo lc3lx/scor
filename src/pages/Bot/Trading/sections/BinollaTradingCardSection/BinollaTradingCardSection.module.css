@@ -88,6 +88,15 @@
   font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-xs);
+  transition: color 0.25s ease;
+}
+
+.price[data-tone='up'] {
+  color: #12e655;
+}
+
+.price[data-tone='down'] {
+  color: #dd0912;
 }
 
 .expiryBlock {

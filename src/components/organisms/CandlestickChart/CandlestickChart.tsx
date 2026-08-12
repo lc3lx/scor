@@ -15,6 +15,10 @@ export type CandlestickChartProps = {
   className?: string;
 };
 
+/** Explicit hex — CSS vars in SVG attrs often fail inside Telegram WebView. */
+const CANDLE_UP = '#12e655';
+const CANDLE_DOWN = '#dd0912';
+
 export function CandlestickChart({
   data,
   width = 362,
@@ -54,20 +58,26 @@ export function CandlestickChart({
         const bodyHeight = Math.max(1, bodyBottom - bodyTop);
         const wickTop = scaleY(point.high);
         const wickBottom = scaleY(point.low);
-        const color = isUp ? 'var(--color-success)' : 'var(--color-red-primary)';
+        const color = isUp ? CANDLE_UP : CANDLE_DOWN;
         const centerX = x + candleWidth / 2;
+        const isLive = index === data.length - 1;
 
         return (
-          <g key={index}>
+          <g
+            key={`${index}-${point.open}-${point.close}`}
+            className={isLive ? styles.liveCandle : undefined}
+          >
             <line
+              className={styles.wick}
               x1={centerX}
               y1={wickTop}
               x2={centerX}
               y2={wickBottom}
               stroke={color}
-              strokeWidth={1}
+              strokeWidth={1.25}
             />
             <rect
+              className={styles.body}
               x={x}
               y={bodyTop}
               width={candleWidth}
