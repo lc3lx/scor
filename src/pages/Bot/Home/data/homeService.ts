@@ -2,7 +2,6 @@ import { imageAssets } from '@assets/index';
 import { HOME_INITIAL_RUNTIME, getHomeMockContent } from './home.mock';
 import type { HomeData, HomeRuntimeState, StrategyOptionItem } from '../types';
 import {
-  accountApi,
   ApiClientError,
   binollaApi,
   marketApi,

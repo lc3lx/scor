@@ -6,7 +6,7 @@ import {
   weekAndMonthSummaries,
 } from '@shared/trades/tradeAggregates';
 import type { DashboardContent, DashboardTimeframe } from '../types';
-import { accountApi, binollaApi, meApi, tradesApi } from '@shared/api';
+import { binollaApi, meApi, tradesApi } from '@shared/api';
 import type { TradeDto } from '@shared/api';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
 import { getAccountStatusCached } from '@shared/api/botSessionCache';

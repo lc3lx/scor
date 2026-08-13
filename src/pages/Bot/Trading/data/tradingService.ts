@@ -8,7 +8,6 @@ import type { TradingData, TradingPairOption, TradingRuntimeState } from '../typ
 import type { TradeDirection } from '@components/types';
 import type { CandlestickPoint } from '@components/organisms/CandlestickChart';
 import {
-  accountApi,
   ApiClientError,
   binollaApi,
   marketApi,
