@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n';
 import type {
   ActivationFormValues,
   FieldErrors,
@@ -11,46 +12,46 @@ const MIN_PASSWORD_LENGTH = 8;
 
 export function required(value: string, label: string): string | undefined {
   if (!value.trim()) {
-    return `${label} is required.`;
+    return t('validation.required', { label });
   }
 
   return undefined;
 }
 
 export function emailRule(value: string): string | undefined {
-  const missing = required(value, 'Email');
+  const missing = required(value, t('validation.label.email'));
   if (missing) {
     return missing;
   }
 
   if (!EMAIL_PATTERN.test(value.trim())) {
-    return 'Enter a valid email address.';
+    return t('validation.emailInvalid');
   }
 
   return undefined;
 }
 
 export function passwordRule(value: string): string | undefined {
-  const missing = required(value, 'Password');
+  const missing = required(value, t('validation.label.password'));
   if (missing) {
     return missing;
   }
 
   if (value.length < MIN_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    return t('validation.passwordMin', { min: MIN_PASSWORD_LENGTH });
   }
 
   return undefined;
 }
 
 export function telegramRule(value: string): string | undefined {
-  const missing = required(value, 'Telegram ID');
+  const missing = required(value, t('validation.label.telegramId'));
   if (missing) {
     return missing;
   }
 
   if (!TELEGRAM_PATTERN.test(value.trim())) {
-    return 'Enter a valid Telegram ID.';
+    return t('validation.telegramInvalid');
   }
 
   return undefined;
@@ -65,10 +66,10 @@ export function validateLoginForm(values: LoginFormValues): FieldErrors<keyof Lo
 
 export function validateSignupForm(values: SignupFormValues): FieldErrors<keyof SignupFormValues> {
   return {
-    fullName: required(values.fullName, 'Full Name'),
+    fullName: required(values.fullName, t('validation.label.fullName')),
     email: emailRule(values.email),
     password: passwordRule(values.password),
-    country: required(values.country, 'Country'),
+    country: required(values.country, t('validation.label.country')),
     telegramId: telegramRule(values.telegramId),
     // Optional: user may register via partner link first, then paste SSID later.
     binollaAccount: undefined,
@@ -79,7 +80,7 @@ export function validateActivationForm(
   values: ActivationFormValues,
 ): FieldErrors<keyof ActivationFormValues> {
   return {
-    activationKey: required(values.activationKey, 'Activation Key'),
+    activationKey: required(values.activationKey, t('validation.label.activationKey')),
   };
 }
 

@@ -146,7 +146,7 @@
 }
 
 .alignLeft {
-  text-align: left;
+  text-align: start;
 }
 
 .alignCenter {
@@ -154,7 +154,7 @@
 }
 
 .alignRight {
-  text-align: right;
+  text-align: end;
 }
 
 .truncate {

@@ -13,7 +13,7 @@ export function useDashboardData() {
     let active = true;
 
     void (async () => {
-      const content = await dashboardService.fetchContent();
+      const content = await dashboardService.fetchContent(timeframe);
       if (!active) return;
       setData(content);
       setIsLoading(false);
@@ -22,10 +22,15 @@ export function useDashboardData() {
     return () => {
       active = false;
     };
+    // Initial load only — timeframe switches recompute locally from tradeSnapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectTimeframe = useCallback((next: DashboardTimeframe) => {
     setTimeframe(next);
+    setData((current) =>
+      current ? dashboardService.performanceForTimeframe(current, next) : current,
+    );
   }, []);
 
   return { data, isLoading, timeframe, selectTimeframe };

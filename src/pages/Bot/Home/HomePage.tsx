@@ -2,7 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { PageContent } from '@components/layouts/PageContent';
 import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { BottomSheet } from '@components/organisms/BottomSheet';
-import { HOME_SHEET_TITLES } from './data/home.mock';
+import { useT } from '@shared/i18n';
+import { getHomeSheetTitles } from './data/home.mock';
 import { resolveChartSheetTitle } from './utils/chartTitle';
 import { useHomeBotControls } from './hooks/useHomeBotControls';
 import { useHomeData } from './hooks/useHomeData';
@@ -26,10 +27,12 @@ import { TradingPairSheetContent } from './sheets/TradingPairSheetContent';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
+  const t = useT();
   const homeData = useHomeData();
   const sheets = useHomeSheets();
   const botControls = useHomeBotControls(homeData);
   const [pairSearchQuery, setPairSearchQuery] = useState('');
+  const sheetTitles = getHomeSheetTitles();
 
   const { data, configRows, tradeAmount, duration, updateRuntime } = homeData;
 
@@ -37,7 +40,7 @@ export default function HomePage() {
     if (!data) return null;
 
     const status = {
-      label: 'Manual Demo',
+      label: t('home.manualDemo'),
       tone: data.botEngine.statusTone,
     };
 
@@ -46,7 +49,7 @@ export default function HomePage() {
       statusLabel: status.label,
       statusTone: status.tone,
     };
-  }, [data]);
+  }, [data, t]);
 
   const settingsContent = data?.runtime.settings ?? data?.sheets.settings;
 
@@ -108,10 +111,10 @@ export default function HomePage() {
 
     return resolveChartSheetTitle({
       template: data.sheets.chart.titleTemplate,
-      pairLabel,
-      durationLabel: duration.displayValue,
+      pairLabel: pairLabel || '—',
+      durationLabel: t('common.rsi'),
     });
-  }, [data, duration, tradingPairContent]);
+  }, [data, tradingPairContent, t]);
 
   const handleMarketTypeSelect = useCallback(
     async (optionId: string) => {
@@ -192,11 +195,11 @@ export default function HomePage() {
     !settingsContent
   ) {
     return (
-      <main className={styles.page} aria-label="AI Bot Engine" aria-busy="true">
+      <main className={styles.page} aria-label={t('home.aria')} aria-busy="true">
         <div className={styles.scroll}>
           <BackgroundGlow variant="top-right" />
           <PageContent className={styles.content}>
-            <p className={styles.loading}>Loading bot engine…</p>
+            <p className={styles.loading}>{t('home.loading')}</p>
           </PageContent>
         </div>
       </main>
@@ -205,7 +208,7 @@ export default function HomePage() {
 
   return (
     <>
-      <main className={styles.page} aria-label="AI Bot Engine">
+      <main className={styles.page} aria-label={t('home.aria')}>
         <div className={styles.scroll}>
           <BackgroundGlow variant="top-right" />
           <PageContent className={styles.content}>
@@ -250,7 +253,7 @@ export default function HomePage() {
 
       <BottomSheet
         open={sheets.activeSheet === 'settings'}
-        title={HOME_SHEET_TITLES.settings}
+        title={sheetTitles.settings}
         onClose={sheets.closeSheet}
       >
         <BotSettingsSheetContent
@@ -263,7 +266,7 @@ export default function HomePage() {
 
       <BottomSheet
         open={sheets.activeSheet === 'marketType'}
-        title={HOME_SHEET_TITLES.marketType}
+        title={sheetTitles.marketType}
         onClose={sheets.closeSheet}
       >
         <MarketTypeSheetContent content={marketTypeContent} onSelect={handleMarketTypeSelect} />
@@ -271,7 +274,7 @@ export default function HomePage() {
 
       <BottomSheet
         open={sheets.activeSheet === 'tradingPair'}
-        title={HOME_SHEET_TITLES.tradingPair}
+        title={sheetTitles.tradingPair}
         onClose={sheets.closeSheet}
       >
         <TradingPairSheetContent
@@ -285,7 +288,7 @@ export default function HomePage() {
 
       <BottomSheet
         open={sheets.activeSheet === 'technicalIndicator'}
-        title={HOME_SHEET_TITLES.technicalIndicator}
+        title={sheetTitles.technicalIndicator}
         onClose={sheets.closeSheet}
       >
         <TechnicalIndicatorSheetContent
@@ -296,7 +299,7 @@ export default function HomePage() {
 
       <BottomSheet
         open={sheets.activeSheet === 'strategy'}
-        title={HOME_SHEET_TITLES.strategy}
+        title={sheetTitles.strategy}
         onClose={sheets.closeSheet}
       >
         <StrategySheetContent content={strategyContent} onSelect={handleStrategySelect} />

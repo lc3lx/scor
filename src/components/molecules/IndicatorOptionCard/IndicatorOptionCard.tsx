@@ -1,6 +1,7 @@
 import { Chip } from '@components/atoms/Chip';
 import { Text } from '@components/atoms/Text';
 import type { ChipTone } from '@components/types';
+import { useT } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import styles from './IndicatorOptionCard.module.css';
 
@@ -27,6 +28,8 @@ export function IndicatorOptionCard({
   onSelect,
   className,
 }: IndicatorOptionCardProps) {
+  const t = useT();
+
   return (
     <article className={cn(styles.card, className)}>
       <div className={styles.body}>
@@ -41,7 +44,7 @@ export function IndicatorOptionCard({
         </Text>
         <div className={styles.footer}>
           <button type="button" className={styles.action} onClick={onSelect}>
-            {selected ? 'Selected ✓' : 'Select →'}
+            {selected ? t('common.selected') : t('common.select')}
           </button>
           <Chip label={complexityLabel} tone={complexityTone} style="outlined" className={styles.badge} />
         </div>

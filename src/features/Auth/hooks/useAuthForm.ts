@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, type FormEvent } from 'react';
+import { t } from '@shared/i18n';
 import type { FieldErrors, FormStatus } from '../types';
 import { hasFieldErrors } from '../validation';
 
@@ -77,7 +78,7 @@ export function useAuthForm<T extends Record<string, string>>({
         const message =
           err && typeof err === 'object' && 'message' in err && typeof err.message === 'string'
             ? err.message
-            : 'Something went wrong. Please try again.';
+            : t('common.errorGeneric');
         setServerError(message);
         setStatus('error');
       }

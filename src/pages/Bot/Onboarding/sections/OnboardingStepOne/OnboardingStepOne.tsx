@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom';
 import { AppLinkTiles, KeyPoint, TradingPreviewCard } from '@components/molecules';
 import { Text } from '@components/atoms/Text';
 import {
-  BINOLLA_REFERRAL_LABEL,
+  getBinollaReferralLabel,
   BINOLLA_REFERRAL_SIGNUP_URL,
 } from '@constants/binolla';
 import { ROUTES } from '@constants/routes';
+import { useT } from '@shared/i18n';
 import { openExternalLink } from '@shared/telegram/telegramWebApp';
 import type { OnboardingStepOneContent } from '../../types';
 import styles from './OnboardingStepOne.module.css';
@@ -15,8 +16,10 @@ export type OnboardingStepOneProps = {
 };
 
 export function OnboardingStepOne({ content }: OnboardingStepOneProps) {
+  const t = useT();
+
   return (
-    <section className={styles.step} aria-label="Onboarding step 1">
+    <section className={styles.step} aria-label={t('onboarding.aria')}>
       <Text as="h1" variant="display" tone="primary" align="center" className={styles.title}>
         {content.title}
       </Text>
@@ -30,7 +33,7 @@ export function OnboardingStepOne({ content }: OnboardingStepOneProps) {
       </div>
 
       <Link className={styles.referralCta} to={ROUTES.signup}>
-        {BINOLLA_REFERRAL_LABEL}
+        {getBinollaReferralLabel()}
       </Link>
 
       <button
@@ -38,7 +41,7 @@ export function OnboardingStepOne({ content }: OnboardingStepOneProps) {
         className={styles.referralCta}
         onClick={() => openExternalLink(BINOLLA_REFERRAL_SIGNUP_URL)}
       >
-        Open partner Binolla signup page
+        {t('onboarding.step1.openPartner')}
       </button>
 
       <div className={styles.cardSection}>

@@ -1,5 +1,5 @@
 import { IndicatorOptionCard } from '@components/molecules/IndicatorOptionCard';
-import { COMPLEXITY_DISPLAY } from '../../data/home.mock';
+import { getComplexityDisplay } from '../../data/home.mock';
 import type { TechnicalIndicatorSheetContent } from '../../types';
 import styles from './TechnicalIndicatorSheetContent.module.css';
 
@@ -12,10 +12,12 @@ export function TechnicalIndicatorSheetContent({
   content,
   onSelect,
 }: TechnicalIndicatorSheetContentProps) {
+  const complexityDisplay = getComplexityDisplay();
+
   return (
     <div className={styles.root}>
       {content.options.map((option) => {
-        const complexity = COMPLEXITY_DISPLAY[option.complexity];
+        const complexity = complexityDisplay[option.complexity];
 
         return (
           <IndicatorOptionCard

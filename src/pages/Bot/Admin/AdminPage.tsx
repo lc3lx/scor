@@ -9,6 +9,7 @@ import { Chip } from '@components/atoms/Chip';
 import { Text } from '@components/atoms/Text';
 import { ROUTES } from '@constants/routes';
 import { adminApi, ApiClientError, meApi, type AdminBinollaAccountDto } from '@shared/api';
+import { useT } from '@shared/i18n';
 import styles from './AdminPage.module.css';
 
 type FilterStatus = 'Pending' | 'Approved' | 'Rejected';
@@ -23,12 +24,19 @@ function formatWhen(iso: string | null): string {
 }
 
 export default function AdminPage() {
+  const t = useT();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterStatus>('Pending');
   const [items, setItems] = useState<AdminBinollaAccountDto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const filterLabels: Record<FilterStatus, string> = {
+    Pending: t('admin.filter.pending'),
+    Approved: t('admin.filter.approved'),
+    Rejected: t('admin.filter.rejected'),
+  };
 
   const load = useCallback(
     async (status: FilterStatus) => {
@@ -37,7 +45,7 @@ export default function AdminPage() {
       try {
         const me = await meApi.get();
         if (!me.isAdmin) {
-          setError('Admin access required.');
+          setError(t('admin.accessRequired'));
           setItems([]);
           navigate(ROUTES.settings, { replace: true });
           return;
@@ -46,7 +54,7 @@ export default function AdminPage() {
         setItems(response.items);
       } catch (err) {
         const message =
-          err instanceof ApiClientError ? err.message : 'Unable to load accounts.';
+          err instanceof ApiClientError ? err.message : t('admin.loadFailed');
         setError(message);
         setItems([]);
         if (err instanceof ApiClientError && (err.status === 403 || err.code === 'FORBIDDEN')) {
@@ -56,7 +64,7 @@ export default function AdminPage() {
         setLoading(false);
       }
     },
-    [navigate],
+    [navigate, t],
   );
 
   useEffect(() => {
@@ -71,12 +79,12 @@ export default function AdminPage() {
         await adminApi.approve(id);
         await load(filter);
       } catch (err) {
-        setError(err instanceof ApiClientError ? err.message : 'Approve failed.');
+        setError(err instanceof ApiClientError ? err.message : t('admin.approveFailed'));
       } finally {
         setBusyId(null);
       }
     },
-    [filter, load],
+    [filter, load, t],
   );
 
   const handleReject = useCallback(
@@ -87,30 +95,37 @@ export default function AdminPage() {
         await adminApi.reject(id);
         await load(filter);
       } catch (err) {
-        setError(err instanceof ApiClientError ? err.message : 'Reject failed.');
+        setError(err instanceof ApiClientError ? err.message : t('admin.rejectFailed'));
       } finally {
         setBusyId(null);
       }
     },
-    [filter, load],
+    [filter, load, t],
   );
 
+  const formatApprovalStatus = (status: string): string => {
+    if (status === 'Pending') return t('admin.filter.pending');
+    if (status === 'Approved') return t('admin.filter.approved');
+    if (status === 'Rejected') return t('admin.filter.rejected');
+    return status;
+  };
+
   return (
-    <main className={styles.page} aria-label="Admin approvals">
+    <main className={styles.page} aria-label={t('admin.title')}>
       <div className={styles.scroll}>
         <BackgroundGlow variant="top-right" />
         <PageContent className={styles.content}>
-          <PageHeader title="Admin Approvals" onBack={() => navigate(-1)} />
+          <PageHeader title={t('admin.title')} onBack={() => navigate(-1)} />
 
           <Text variant="caption" tone="caption" className={styles.intro}>
-            Review linked Binolla accounts. Approval grants free bot access. SSID is never shown.
+            {t('admin.intro')}
           </Text>
 
-          <div className={styles.filters} role="tablist" aria-label="Approval filter">
+          <div className={styles.filters} role="tablist" aria-label={t('admin.title')}>
             {(['Pending', 'Approved', 'Rejected'] as const).map((status) => (
               <OptionChip
                 key={status}
-                label={status}
+                label={filterLabels[status]}
                 selected={filter === status}
                 onSelect={() => setFilter(status)}
               />
@@ -125,18 +140,18 @@ export default function AdminPage() {
 
           {loading ? (
             <Text variant="caption" tone="caption">
-              Loading…
+              {t('admin.loading')}
             </Text>
           ) : items.length === 0 ? (
             <Text variant="caption" tone="caption" className={styles.empty}>
-              No {filter.toLowerCase()} accounts.
+              {t('admin.empty', { filter: filterLabels[filter] })}
             </Text>
           ) : (
             <ul className={styles.list}>
               {items.map((account) => {
                 const displayName =
                   account.fullName?.trim() ||
-                  (account.username ? `@${account.username.replace(/^@/, '')}` : 'User');
+                  (account.username ? `@${account.username.replace(/^@/, '')}` : t('common.user'));
                 const telegram = account.username
                   ? `@${account.username.replace(/^@/, '')}`
                   : String(account.telegramUserId);
@@ -149,23 +164,23 @@ export default function AdminPage() {
                           {displayName}
                         </Text>
                         <Text variant="caption-xs" tone="caption">
-                          Telegram: {telegram}
+                          {t('admin.telegram')} {telegram}
                         </Text>
                         <Text variant="caption-xs" tone="caption">
-                          Binolla ID: {account.binollaAccountIdentifier ?? '—'}
+                          {t('admin.binollaId')} {account.binollaAccountIdentifier ?? '—'}
                         </Text>
                         <Text variant="caption-xs" tone="caption">
-                          Linked: {formatWhen(account.lastConnectedAt ?? account.createdAt)}
+                          {t('admin.linked')} {formatWhen(account.lastConnectedAt ?? account.createdAt)}
                         </Text>
                         {account.approvedAt ? (
                           <Text variant="caption-xs" tone="caption">
-                            Decision: {formatWhen(account.approvedAt)}
+                            {t('admin.decision')} {formatWhen(account.approvedAt)}
                             {account.approvedBy ? ` · ${account.approvedBy}` : ''}
                           </Text>
                         ) : null}
                       </div>
                       <Chip
-                        label={account.approvalStatus}
+                        label={formatApprovalStatus(account.approvalStatus)}
                         tone={
                           account.approvalStatus === 'Approved'
                             ? 'success'
@@ -184,7 +199,7 @@ export default function AdminPage() {
                           disabled={busyId === account.id}
                           onClick={() => void handleApprove(account.id)}
                         >
-                          Approve
+                          {t('admin.approve')}
                         </Button>
                       ) : null}
                       {account.approvalStatus !== 'Rejected' ? (
@@ -193,7 +208,7 @@ export default function AdminPage() {
                           disabled={busyId === account.id}
                           onClick={() => void handleReject(account.id)}
                         >
-                          Reject
+                          {t('admin.reject')}
                         </Button>
                       ) : null}
                     </div>

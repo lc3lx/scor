@@ -1,6 +1,5 @@
-import { dashboardAssets } from '@assets/index';
 import { Text } from '@components/atoms/Text';
-import { cn } from '@utils/cn';
+import { useT } from '@shared/i18n';
 import type { DashboardPerformance, DashboardTimeframe } from '../../types';
 import styles from './PerformanceSection.module.css';
 
@@ -15,6 +14,9 @@ export function PerformanceSection({
   activeTimeframe,
   onTimeframeChange,
 }: PerformanceSectionProps) {
+  const t = useT();
+  const empty = performance.value === '—';
+
   return (
     <section className={styles.card} aria-label={performance.label}>
       <div className={styles.top}>
@@ -22,12 +24,24 @@ export function PerformanceSection({
           <Text variant="caption" tone="primary" className={styles.label}>
             {performance.label}
           </Text>
-          <Text variant="h3" tone="success" className={styles.value}>
+          <Text
+            variant="h3"
+            tone={
+              empty
+                ? 'primary'
+                : performance.value.startsWith('-')
+                  ? 'danger'
+                  : performance.value.startsWith('+')
+                    ? 'success'
+                    : 'primary'
+            }
+            className={styles.value}
+          >
             {performance.value}
           </Text>
         </div>
 
-        <div className={styles.tabs} role="tablist" aria-label="Performance timeframe">
+        <div className={styles.tabs} role="tablist" aria-label={t('dashboard.performanceAria')}>
           {performance.timeframes.map((tab) => {
             const active = tab.id === activeTimeframe;
             return (
@@ -36,7 +50,7 @@ export function PerformanceSection({
                 type="button"
                 role="tab"
                 aria-selected={active}
-                className={cn(styles.tab, active && styles.tabActive)}
+                className={active ? `${styles.tab} ${styles.tabActive}` : styles.tab}
                 onClick={() => onTimeframeChange(tab.id)}
               >
                 {tab.label}
@@ -46,28 +60,9 @@ export function PerformanceSection({
         </div>
       </div>
 
-      <img
-        src={dashboardAssets.performanceChart}
-        alt=""
-        className={styles.chart}
-        hidden={performance.value === '—'}
-      />
-
-      {performance.value === '—' ? (
-        <Text variant="caption" tone="caption" className={styles.day}>
-          No local chart — P/L comes from Binolla trades only.
-        </Text>
-      ) : null}
-
-      <div className={styles.days}>
-        {performance.value === '—'
-          ? null
-          : performance.dayLabels.map((day) => (
-              <Text key={day} variant="caption-xs" className={styles.day}>
-                {day}
-              </Text>
-            ))}
-      </div>
+      <Text variant="caption" tone="caption" className={styles.empty}>
+        {empty ? t('dashboard.performance.empty') : t('dashboard.performance.fromTrades')}
+      </Text>
     </section>
   );
 }

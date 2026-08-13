@@ -1,4 +1,5 @@
 import { Button } from '@components/atoms/Button';
+import { useT } from '@shared/i18n';
 import type { FormStatus } from '../../types';
 import { cn } from '@utils/cn';
 import styles from './AuthSubmitButton.module.css';
@@ -10,19 +11,19 @@ export type AuthSubmitButtonProps = {
   className?: string;
 };
 
-const statusLabel: Record<FormStatus, string | null> = {
-  idle: null,
-  loading: 'Please wait…',
-  success: 'Success',
-  error: null,
-};
-
 export function AuthSubmitButton({
   label,
   status,
   disabled = false,
   className,
 }: AuthSubmitButtonProps) {
+  const t = useT();
+  const statusLabel: Record<FormStatus, string | null> = {
+    idle: null,
+    loading: t('common.pleaseWait'),
+    success: t('common.success'),
+    error: null,
+  };
   const displayLabel = statusLabel[status] ?? label;
   const isBusy = status === 'loading' || status === 'success';
 

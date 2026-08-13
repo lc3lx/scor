@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageContent } from '@components/layouts/PageContent';
 import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { getTradeDetailPath, ROUTES } from '@constants/routes';
+import { useT } from '@shared/i18n';
 import { useTradingData } from './hooks/useTradingData';
 import { BinollaTradingCardSection } from './sections/BinollaTradingCardSection';
 import { ScarAlphaSignalCardSection } from './sections/ScarAlphaSignalCardSection';
@@ -10,6 +11,7 @@ import { TradingTopBarSection } from './sections/TradingTopBarSection';
 import styles from './TradingPage.module.css';
 
 export default function TradingPage() {
+  const t = useT();
   const navigate = useNavigate();
   const { data, duration, expiryDisplay, updateRuntime, cycleTradeDuration, selectCandlePeriod, placeTrade, reload } =
     useTradingData();
@@ -23,20 +25,20 @@ export default function TradingPage() {
         const message =
           error && typeof error === 'object' && 'message' in error
             ? String((error as { message: unknown }).message)
-            : 'Trade failed.';
+            : t('trading.tradeFailed');
         window.alert(message);
       }
     },
-    [navigate, placeTrade],
+    [navigate, placeTrade, t],
   );
 
   if (!data || !duration) {
     return (
-      <main className={styles.page} aria-label="Trading" aria-busy="true">
+      <main className={styles.page} aria-label={t('trading.aria')} aria-busy="true">
         <div className={styles.scroll}>
           <BackgroundGlow variant="top-right" />
           <PageContent className={styles.content}>
-            <p className={styles.loading}>Loading live market…</p>
+            <p className={styles.loading}>{t('trading.loading')}</p>
           </PageContent>
         </div>
       </main>
@@ -44,7 +46,7 @@ export default function TradingPage() {
   }
 
   return (
-    <main className={styles.page} aria-label="Trading">
+    <main className={styles.page} aria-label={t('trading.aria')}>
       <div className={styles.scroll}>
         <BackgroundGlow variant="top-right" />
         <PageContent className={styles.content}>

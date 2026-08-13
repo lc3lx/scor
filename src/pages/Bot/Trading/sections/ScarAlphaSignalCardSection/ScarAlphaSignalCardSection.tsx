@@ -1,6 +1,7 @@
 import { Button } from '@components/atoms/Button';
 import { Chip } from '@components/atoms/Chip';
 import { Text } from '@components/atoms/Text';
+import { useT } from '@shared/i18n';
 import type { ScarAlphaSignalCardContent, TradingSignalStat } from '../../types';
 import { TradingBrandIcon, TradingBrandWordmark } from '../../components/TradingBrandMark';
 import styles from './ScarAlphaSignalCardSection.module.css';
@@ -11,8 +12,10 @@ export type ScarAlphaSignalCardSectionProps = {
 };
 
 function SignalStatValue({ stat }: { stat: TradingSignalStat }) {
+  const t = useT();
+
   if (stat.id === 'signal') {
-    const value = stat.value || 'NONE';
+    const value = stat.value || t('common.none');
     const isCall = /call|up/i.test(value);
     const isPut = /put|down/i.test(value);
     return (
@@ -31,11 +34,12 @@ function SignalStatValue({ stat }: { stat: TradingSignalStat }) {
 }
 
 export function ScarAlphaSignalCardSection({ content, onOpenBot }: ScarAlphaSignalCardSectionProps) {
+  const t = useT();
   const primaryStats = content.stats.slice(0, 4);
   const marketStat = content.stats.find((stat) => stat.id === 'market');
 
   return (
-    <section className={styles.section} aria-label="Scar Alpha AI signal">
+    <section className={styles.section} aria-label={t('trading.signalAria')}>
       <article className={styles.card}>
         <header className={styles.header}>
           <TradingBrandIcon variant="signal" />

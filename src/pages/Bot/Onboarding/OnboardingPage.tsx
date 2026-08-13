@@ -1,8 +1,9 @@
 import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { PageContent } from '@components/layouts/PageContent';
+import { useT } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import { OnboardingFooter } from './components/OnboardingFooter';
-import { ONBOARDING_MOCK_CONTENT } from './data/onboarding.mock';
+import { getOnboardingMockContent } from './data/onboarding.mock';
 import { useOnboardingFlow } from './hooks/useOnboardingFlow';
 import { OnboardingStepOne } from './sections/OnboardingStepOne';
 import { OnboardingStepTwo } from './sections/OnboardingStepTwo';
@@ -10,8 +11,9 @@ import { OnboardingStepThree } from './sections/OnboardingStepThree';
 import styles from './OnboardingPage.module.css';
 
 export default function OnboardingPage() {
+  const t = useT();
   const flow = useOnboardingFlow();
-  const { step1, step2, step3 } = ONBOARDING_MOCK_CONTENT;
+  const { step1, step2, step3 } = getOnboardingMockContent();
 
   const bodyClassName = cn(
     styles.body,
@@ -20,13 +22,13 @@ export default function OnboardingPage() {
   );
 
   return (
-    <main className={styles.page} aria-label="Onboarding">
+    <main className={styles.page} aria-label={t('onboarding.aria')}>
       <BackgroundGlow variant="top-right" />
 
       <header className={styles.header}>
         <div className={styles.skipRow}>
           <button type="button" className={styles.skipButton} onClick={flow.skip}>
-            <span className={styles.skipLabel}>sKIP</span>
+            <span className={styles.skipLabel}>{t('common.skip')}</span>
           </button>
         </div>
       </header>

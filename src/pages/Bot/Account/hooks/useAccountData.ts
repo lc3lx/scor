@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@constants/routes';
 import { ApiClientError } from '@shared/api';
 import { tokenStore } from '@shared/auth/tokenStore';
+import { t } from '@shared/i18n';
 import { accountService } from '../services/accountService';
 import type { AccountSnapshot } from '../types';
 
@@ -29,7 +30,7 @@ export function useAccountData() {
           return;
         }
         if (activeRef.current) {
-          setError(err instanceof ApiClientError ? err.message : 'Unable to load account.');
+          setError(err instanceof ApiClientError ? err.message : t('account.loadError'));
         }
       }
     };

@@ -3,6 +3,7 @@ import { uiAssets } from '@assets/index';
 import { Button } from '@components/atoms/Button';
 import { Icon } from '@components/atoms/Icon';
 import { Text } from '@components/atoms/Text';
+import { useT } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import styles from './PageHeader.module.css';
 
@@ -14,10 +15,11 @@ export type PageHeaderProps = {
 };
 
 export function PageHeader({ title, onBack, action, className }: PageHeaderProps) {
+  const t = useT();
   return (
     <header className={cn(styles.header, className)}>
       {onBack ? (
-        <Button variant="icon" onClick={onBack} aria-label="Go back">
+        <Button variant="icon" onClick={onBack} aria-label={t('common.goBack')}>
           <Icon src={uiAssets.back} size="sm" />
         </Button>
       ) : (

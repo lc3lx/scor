@@ -1,5 +1,6 @@
 import { CandlestickChart } from '@components/organisms/CandlestickChart';
 import { Text } from '@components/atoms/Text';
+import { useT } from '@shared/i18n';
 import type { ChartSheetContent } from '../../types';
 import styles from './ChartSheetContent.module.css';
 
@@ -8,6 +9,8 @@ export type ChartSheetContentProps = {
 };
 
 export function ChartSheetContent({ content }: ChartSheetContentProps) {
+  const t = useT();
+
   return (
     <div className={styles.root}>
       <div className={styles.chartWrap}>
@@ -15,7 +18,7 @@ export function ChartSheetContent({ content }: ChartSheetContentProps) {
           <CandlestickChart data={content.candleData} />
         ) : (
           <Text variant="caption" tone="caption" align="center" className={styles.empty}>
-            No live Binolla candles yet. Connect, get approved, then open the chart again.
+            {t('home.chart.empty')}
           </Text>
         )}
       </div>

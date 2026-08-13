@@ -17,7 +17,11 @@
   flex: 1;
   flex-direction: column;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   width: 100%;
 }
 
@@ -36,7 +40,7 @@
   padding: 0 var(--layout-page-padding-x) var(--login-footer-padding-bottom);
 }
 
-@media (max-width: 402px) {
+@media (max-width: 480px) {
   .page {
     border-radius: 0;
   }

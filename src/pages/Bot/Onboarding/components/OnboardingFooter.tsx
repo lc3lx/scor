@@ -2,6 +2,7 @@ import { uiAssets } from '@assets/index';
 import { Button } from '@components/atoms/Button';
 import { Icon } from '@components/atoms/Icon';
 import { ProgressBar } from '@components/molecules';
+import { useT } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import type { OnboardingFooterVariant } from '../types';
 import styles from './OnboardingFooter.module.css';
@@ -25,6 +26,7 @@ export function OnboardingFooter({
   onComplete,
   className,
 }: OnboardingFooterProps) {
+  const t = useT();
   const usesNavPadding = variant === 'nav' || variant === 'get-started';
 
   return (
@@ -33,7 +35,7 @@ export function OnboardingFooter({
 
       {variant === 'next-full' && (
         <Button variant="primary" fullWidth onClick={onNext} className={styles.nextButton}>
-          Next
+          {t('common.next')}
           <Icon src={uiAssets.nextChevron} decorative className={styles.nextChevron} />
         </Button>
       )}
@@ -42,10 +44,10 @@ export function OnboardingFooter({
         <div className={styles.navRow}>
           <Button variant="ghost" onClick={onBack} className={styles.backButton}>
             <Icon src={uiAssets.backChevron} decorative className={styles.backChevron} />
-            Back
+            {t('common.back')}
           </Button>
           <Button variant="primary" onClick={onNext} className={styles.nextButtonCompact}>
-            Next
+            {t('common.next')}
             <Icon src={uiAssets.nextChevron} decorative className={styles.nextChevron} />
           </Button>
         </div>
@@ -53,7 +55,7 @@ export function OnboardingFooter({
 
       {variant === 'get-started' && (
         <Button variant="primary" fullWidth onClick={onComplete} className={styles.getStartedButton}>
-          Get Started
+          {t('common.getStarted')}
         </Button>
       )}
     </footer>

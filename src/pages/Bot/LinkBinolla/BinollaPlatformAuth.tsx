@@ -3,6 +3,7 @@ import { PasswordInput } from '@components/atoms/PasswordInput';
 import { FormField } from '@components/molecules/FormField';
 import { AuthBrand, AuthHero, AuthServerError, AuthShell } from '@features/Auth';
 import { BINOLLA_REFERRAL_SIGNUP_URL } from '@constants/binolla';
+import { useT } from '@shared/i18n';
 import {
   useBinollaPlatformAuth,
   type BinollaAuthMode,
@@ -14,12 +15,13 @@ export type BinollaPlatformAuthProps = {
 };
 
 export function BinollaPlatformAuth({ mode }: BinollaPlatformAuthProps) {
+  const t = useT();
   const flow = useBinollaPlatformAuth(mode);
   const isLogin = mode === 'login';
 
   return (
     <AuthShell
-      ariaLabel={isLogin ? 'Binolla login' : 'Binolla signup'}
+      ariaLabel={isLogin ? t('binolla.auth.loginAria') : t('binolla.auth.signupAria')}
       glows={['top-right']}
       bodyClassName={styles.body}
     >
@@ -27,12 +29,8 @@ export function BinollaPlatformAuth({ mode }: BinollaPlatformAuthProps) {
 
       <div className={styles.hero}>
         <AuthHero
-          title={isLogin ? 'Log in to Binolla' : 'Sign up on Binolla'}
-          description={
-            isLogin
-              ? "Enter your Binolla email and password. We authenticate through Binolla and connect the bot — no website paste needed."
-              : 'Create a Binolla account with our partner referral. Email/password go to Binolla; Scar Alpha has no separate accounts.'
-          }
+          title={isLogin ? t('binolla.auth.loginTitle') : t('binolla.auth.signupTitle')}
+          description={isLogin ? t('binolla.auth.loginDesc') : t('binolla.auth.signupDesc')}
           titleVariant="h2"
           descriptionTone="caption"
         />
@@ -46,19 +44,19 @@ export function BinollaPlatformAuth({ mode }: BinollaPlatformAuthProps) {
         }}
         noValidate
       >
-        <FormField id="binolla-email" label="Binolla email" error={undefined}>
+        <FormField id="binolla-email" label={t('binolla.auth.emailLabel')} error={undefined}>
           <Input
             id="binolla-email"
             type="email"
             name="email"
             autoComplete="username"
-            placeholder="you@email.com"
+            placeholder={t('binolla.auth.emailPlaceholder')}
             value={flow.email}
             onChange={(event) => flow.setEmail(event.target.value)}
           />
         </FormField>
 
-        <FormField id="binolla-password" label="Binolla password" error={undefined}>
+        <FormField id="binolla-password" label={t('binolla.auth.passwordLabel')} error={undefined}>
           <PasswordInput
             id="binolla-password"
             name="password"
@@ -70,9 +68,7 @@ export function BinollaPlatformAuth({ mode }: BinollaPlatformAuthProps) {
         </FormField>
 
         <p className={styles.help}>
-          Credentials are sent to our server only to log into Binolla and open your session. The
-          password is never stored. Partner signup uses {BINOLLA_REFERRAL_SIGNUP_URL}. Referral is
-          attribution only — access requires admin approval.
+          {t('binolla.auth.help', { url: BINOLLA_REFERRAL_SIGNUP_URL })}
         </p>
 
         <AuthServerError message={flow.error} />
@@ -85,13 +81,13 @@ export function BinollaPlatformAuth({ mode }: BinollaPlatformAuthProps) {
           >
             {flow.status === 'loading'
               ? isLogin
-                ? 'Logging into Binolla…'
-                : 'Creating Binolla account…'
+                ? t('binolla.auth.loggingIn')
+                : t('binolla.auth.creating')
               : flow.status === 'success'
-                ? 'Entering bot…'
+                ? t('binolla.auth.entering')
                 : isLogin
-                  ? 'Log in & enter bot'
-                  : 'Sign up & enter bot'}
+                  ? t('binolla.auth.loginCta')
+                  : t('binolla.auth.signupCta')}
           </button>
 
           <button
@@ -100,11 +96,11 @@ export function BinollaPlatformAuth({ mode }: BinollaPlatformAuthProps) {
             onClick={() => void flow.enterBotWithTelegram()}
             disabled={flow.status === 'loading'}
           >
-            Already linked? Enter bot via Telegram
+            {t('binolla.auth.enterViaTelegram')}
           </button>
 
           <button type="button" className={styles.secondaryBtn} onClick={flow.goToOtherMode}>
-            {isLogin ? 'New on Binolla? Sign up' : 'Already have Binolla? Log in'}
+            {isLogin ? t('binolla.auth.goSignup') : t('binolla.auth.goLogin')}
           </button>
         </div>
       </form>

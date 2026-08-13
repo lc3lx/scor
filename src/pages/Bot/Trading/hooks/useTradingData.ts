@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { tradingService } from '../data/tradingService';
-import { TRADING_MOCK_CONTENT } from '../data/trading.mock';
+import { getTradingMockContent } from '../data/trading.mock';
 import type { TradingData, TradingRuntimeState } from '../types';
 
 /** Full candles/RSI refresh — rare; live ticks own the forming candle */
@@ -68,7 +68,7 @@ export function useTradingData() {
 
     return {
       selectedId: data.runtime.durationId,
-      label: selected?.label ?? TRADING_MOCK_CONTENT.durationOptions[0].label,
+      label: selected?.label ?? getTradingMockContent().durationOptions[0].label,
     };
   }, [data]);
 

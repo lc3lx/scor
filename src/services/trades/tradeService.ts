@@ -1,9 +1,9 @@
 import {
   DEFAULT_PAGE_SIZE,
-  HISTORY_PAGE_CONTENT,
-  TRADE_DETAIL_PAGE_TITLE,
+  getHistoryPageContent as getHistoryPageContentMock,
+  getTradeDetailPageTitle,
+  getTradeDetailTimelineTitle,
   TRADE_DETAIL_TIMELINE_CHECK_ICON,
-  TRADE_DETAIL_TIMELINE_TITLE,
 } from './trade.mock';
 import type {
   ListTradesParams,
@@ -17,6 +17,7 @@ import type {
 import type { TradeDirection } from '@components/types';
 import { ApiClientError, createIdempotencyKey, marketApi, tradesApi } from '@shared/api';
 import type { TradeDto } from '@shared/api';
+import { t } from '@shared/i18n';
 
 type TradeChangeListener = () => void;
 
@@ -108,25 +109,35 @@ function matchesFilter(trade: TradeRecord, filter: TradeListFilter): boolean {
 }
 
 function formatDirectionLabel(direction: TradeDirection): string {
-  return direction === 'up' ? 'Up ↑' : 'Down ↓';
+  return direction === 'up' ? t('trade.detail.up') : t('trade.detail.down');
 }
 
 function buildTradeRef(trade: TradeRecord): string {
-  return `${trade.id.slice(0, 8)} · Binolla`;
+  return t('trade.detail.idBinolla', { id: trade.id.slice(0, 8) });
+}
+
+function formatTradeStatusValue(status: TradeRecord['status']): string {
+  if (status === 'running') return t('history.status.running');
+  if (status === 'profit') return t('history.status.profit');
+  return t('history.status.loss');
 }
 
 function buildDetailRows(trade: TradeRecord): TradeDetailContent['detailRows'] {
   return [
-    { id: 'direction', label: 'Direction', value: formatDirectionLabel(trade.direction) },
-    { id: 'amount', label: 'Amount', value: trade.stakeLabel },
-    { id: 'duration', label: 'Duration', value: trade.duration },
-    { id: 'entry-time', label: 'Entry time', value: trade.entryTime ?? trade.timeLabel },
-    { id: 'exit-time', label: 'Exit time', value: trade.exitTime ?? '—' },
-    { id: 'indicator', label: 'Indicator', value: trade.indicator },
-    { id: 'strategy', label: 'Strategy', value: trade.strategy },
-    { id: 'signal-strength', label: 'Signal strength', value: trade.signalStrength },
-    { id: 'trade-source', label: 'Trade source', value: trade.source === 'bot' ? 'Bot' : 'User' },
-    { id: 'status', label: 'Status', value: trade.status },
+    { id: 'direction', label: t('trade.detail.direction'), value: formatDirectionLabel(trade.direction) },
+    { id: 'amount', label: t('trade.detail.amount'), value: trade.stakeLabel },
+    { id: 'duration', label: t('trade.detail.duration'), value: trade.duration },
+    { id: 'entry-time', label: t('trade.detail.entry'), value: trade.entryTime ?? trade.timeLabel },
+    { id: 'exit-time', label: t('trade.detail.exit'), value: trade.exitTime ?? '—' },
+    { id: 'indicator', label: t('trade.detail.indicator'), value: trade.indicator },
+    { id: 'strategy', label: t('trade.detail.strategy'), value: trade.strategy },
+    { id: 'signal-strength', label: t('trade.detail.strength'), value: trade.signalStrength },
+    {
+      id: 'trade-source',
+      label: t('trade.detail.source'),
+      value: trade.source === 'bot' ? t('trade.detail.sourceBot') : t('trade.detail.sourceUser'),
+    },
+    { id: 'status', label: t('trade.detail.result'), value: formatTradeStatusValue(trade.status) },
   ];
 }
 
@@ -135,28 +146,28 @@ function buildTimeline(trade: TradeRecord): TradeDetailContent['timeline'] {
   return [
     {
       id: 'signal-detected',
-      title: 'Signal detected',
+      title: t('trade.timeline.signalDetected'),
       timestamp: signalTime,
       status: 'completed',
       showCheck: true,
     },
     {
       id: 'trade-opened',
-      title: 'Trade opened',
+      title: t('trade.timeline.opened'),
       timestamp: trade.entryTime ?? trade.timeLabel,
       status: 'completed',
       showCheck: true,
     },
     {
       id: 'trade-closed',
-      title: 'Trade closed',
+      title: t('trade.timeline.closed'),
       timestamp: trade.exitTime ?? '—',
       status: trade.status === 'running' ? 'pending' : 'completed',
       showCheck: trade.status !== 'running',
     },
     {
       id: 'result-calculated',
-      title: 'Result calculated',
+      title: t('trade.timeline.result'),
       timestamp: trade.exitTime ?? '—',
       status: trade.status === 'running' ? 'pending' : 'completed',
       showCheck: false,
@@ -168,22 +179,26 @@ function buildDetailContent(trade: TradeRecord): TradeDetailContent {
   const statusTone =
     trade.status === 'running' ? 'warning' : trade.status === 'profit' ? 'success' : 'danger';
   const statusLabel =
-    trade.status === 'running' ? 'Live' : trade.status === 'profit' ? 'Won' : 'Lost';
+    trade.status === 'running'
+      ? t('trade.detail.statusLive')
+      : trade.status === 'profit'
+        ? t('trade.detail.statusWon')
+        : t('trade.detail.statusLost');
 
   return {
     id: trade.id,
-    pageTitle: TRADE_DETAIL_PAGE_TITLE,
+    pageTitle: getTradeDetailPageTitle(),
     statusLabel,
     statusTone,
     hero: {
       direction: trade.direction,
       pair: trade.pair,
       tradeRef: buildTradeRef(trade),
-      amountLabel: `on ${trade.stakeLabel}`,
+      amountLabel: t('trade.detail.onStake', { stake: trade.stakeLabel }),
     },
     candleData: [...trade.candleData],
     detailRows: buildDetailRows(trade),
-    timelineTitle: TRADE_DETAIL_TIMELINE_TITLE,
+    timelineTitle: getTradeDetailTimelineTitle(),
     timelineCheckIconSrc: TRADE_DETAIL_TIMELINE_CHECK_ICON,
     timeline: buildTimeline(trade),
   };
@@ -248,7 +263,7 @@ export const tradeService = {
       };
     } catch (error) {
       if (error instanceof ApiClientError) throw error;
-      throw new ApiClientError('REQUEST_FAILED', 'Unable to load trades.', 0);
+      throw new ApiClientError('REQUEST_FAILED', t('history.loadFailed'), 0);
     }
   },
 
@@ -301,7 +316,7 @@ export const tradeService = {
   },
 
   getHistoryPageContent() {
-    return HISTORY_PAGE_CONTENT;
+    return getHistoryPageContentMock();
   },
 
   reset(): void {

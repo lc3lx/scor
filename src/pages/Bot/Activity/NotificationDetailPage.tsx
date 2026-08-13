@@ -4,12 +4,14 @@ import { PageContent } from '@components/layouts/PageContent';
 import { PageHeader } from '@components/organisms/PageHeader';
 import { Text } from '@components/atoms/Text';
 import { getTradeDetailPath, ROUTES } from '@constants/routes';
+import { useT } from '@shared/i18n';
 import { activityService } from './data/activityService';
 import { useNotificationDetail } from './hooks/useNotificationDetail';
 import { NotificationDetailSection } from './sections/NotificationDetailSection';
 import styles from './NotificationDetailPage.module.css';
 
 export default function NotificationDetailPage() {
+  const t = useT();
   const { notificationId } = useParams<{ notificationId: string }>();
   const navigate = useNavigate();
   const { notification, status } = useNotificationDetail(notificationId);
@@ -34,14 +36,14 @@ export default function NotificationDetailPage() {
   if (status === 'loading') return null;
 
   return (
-    <main className={styles.page} aria-label="Notification detail">
+    <main className={styles.page} aria-label={t('notifications.aria')}>
       <div className={styles.scroll}>
         <PageContent className={styles.content}>
           <PageHeader title={content.title} onBack={() => navigate(ROUTES.notifications)} />
 
           {status === 'missing' || !notification ? (
             <Text variant="body-sm" className={styles.missing}>
-              Notification not found.
+              {t('notifications.notFound')}
             </Text>
           ) : (
             <NotificationDetailSection

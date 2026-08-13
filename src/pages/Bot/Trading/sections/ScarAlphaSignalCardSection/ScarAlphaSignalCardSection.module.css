@@ -20,7 +20,7 @@
 }
 
 .freshChip {
-  margin-left: auto;
+  margin-inline-start: auto;
   min-height: var(--trading-chip-height);
   padding: 3px 8px;
   gap: 6px;
@@ -55,10 +55,14 @@
 .statLabel {
   color: var(--trading-stat-label-color);
   line-height: 18px;
+  min-width: 0;
 }
 
 .statValue {
   line-height: 18px;
+  text-align: end;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .signalValue {

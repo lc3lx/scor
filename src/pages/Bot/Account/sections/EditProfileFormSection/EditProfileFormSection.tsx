@@ -5,6 +5,7 @@ import { Text } from '@components/atoms/Text';
 import { FormField } from '@components/molecules/FormField';
 import { AuthServerError, AuthSubmitButton, type FormStatus } from '@features/Auth';
 import { ROUTES } from '@constants/routes';
+import { useT } from '@shared/i18n';
 import type { EditProfileCopy, EditProfileFormValues } from '../../types';
 import styles from './EditProfileFormSection.module.css';
 
@@ -29,6 +30,8 @@ export function EditProfileFormSection({
   onFieldChange,
   onSubmit,
 }: EditProfileFormSectionProps) {
+  const t = useT();
+
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
       <FormField id="edit-full-name" label={copy.fullNameLabel} error={fieldErrors.fullName}>
@@ -93,7 +96,7 @@ export function EditProfileFormSection({
         <Text variant="caption" tone="caption" id="edit-binolla-help" className={styles.help}>
           {copy.binollaHelpText}{' '}
           <Link to={ROUTES.linkBinolla} className={styles.registerLink}>
-            {copy.binollaRegisterLabel ?? 'Register on Binolla'}
+            {copy.binollaRegisterLabel ?? t('account.edit.registerFallback')}
           </Link>
         </Text>
       ) : null}

@@ -3,6 +3,7 @@ import { Icon } from '@components/atoms/Icon';
 import { Text } from '@components/atoms/Text';
 import { KeyPoint } from '@components/molecules';
 import { ActivationPanel } from '@components/organisms';
+import { useT } from '@shared/i18n';
 import type { OnboardingStepTwoContent } from '../../types';
 import styles from './OnboardingStepTwo.module.css';
 
@@ -11,8 +12,9 @@ export type OnboardingStepTwoProps = {
 };
 
 export function OnboardingStepTwo({ content }: OnboardingStepTwoProps) {
+  const t = useT();
   return (
-    <section className={styles.step} aria-label="Onboarding step 2">
+    <section className={styles.step} aria-label={t('onboarding.aria')}>
       <Text as="h1" variant="display" tone="primary" align="center" className={styles.title}>
         {content.title}
       </Text>
@@ -25,7 +27,7 @@ export function OnboardingStepTwo({ content }: OnboardingStepTwoProps) {
         <ActivationPanel variant="promo" items={content.activationItems}>
           <div className={styles.keySection}>
             <Text variant="caption" tone="primary" className={styles.keyLabel}>
-              Activation Key
+              {t('onboarding.step2.activationKeyLabel')}
             </Text>
             <div className={styles.keyField}>
               <Text variant="body-sm" tone="body" className={styles.keyValue}>
@@ -40,7 +42,7 @@ export function OnboardingStepTwo({ content }: OnboardingStepTwoProps) {
           </div>
 
           <button type="button" className={styles.activateButton}>
-            Activate
+            {t('onboarding.step2.activate')}
           </button>
         </ActivationPanel>
       </div>

@@ -3,6 +3,7 @@ import { brandAssets } from '@assets/index';
 import { Icon } from '@components/atoms/Icon';
 import { Text } from '@components/atoms/Text';
 import { ROUTES } from '@constants/routes';
+import { useT } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import styles from './AppLinkTiles.module.css';
 
@@ -11,6 +12,8 @@ export type AppLinkTilesProps = {
 };
 
 export function AppLinkTiles({ className }: AppLinkTilesProps) {
+  const t = useT();
+
   return (
     <div className={cn(styles.tiles, className)}>
       <div className={styles.tile}>
@@ -23,7 +26,7 @@ export function AppLinkTiles({ className }: AppLinkTilesProps) {
           />
         </div>
         <Text variant="caption" tone="primary" align="center" className={styles.tileLabel}>
-          Scar Alpha AI
+          {t('appLink.scarAlpha')}
         </Text>
       </div>
 
@@ -34,14 +37,14 @@ export function AppLinkTiles({ className }: AppLinkTilesProps) {
           <span className={cn(styles.dot, styles.dotHigh)} />
         </div>
         <Text variant="caption-xs" tone="connector" align="center">
-          Linked
+          {t('appLink.linked')}
         </Text>
       </div>
 
       <Link
         className={styles.tile}
         to={ROUTES.signup}
-        aria-label="Create Binolla account with partner referral"
+        aria-label={t('appLink.createAccountAria')}
       >
         <div className={cn(styles.tileIcon, styles.binollaTile)}>
           <Icon
@@ -52,7 +55,7 @@ export function AppLinkTiles({ className }: AppLinkTilesProps) {
           />
         </div>
         <Text variant="caption" tone="primary" align="center" className={styles.tileLabel}>
-          Binolla
+          {t('appLink.binolla')}
         </Text>
       </Link>
     </div>

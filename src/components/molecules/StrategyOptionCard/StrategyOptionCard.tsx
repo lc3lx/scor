@@ -1,5 +1,6 @@
 import { Chip } from '@components/atoms/Chip';
 import { Text } from '@components/atoms/Text';
+import { useT } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import styles from './StrategyOptionCard.module.css';
 
@@ -29,6 +30,8 @@ export function StrategyOptionCard({
   onSelect,
   className,
 }: StrategyOptionCardProps) {
+  const t = useT();
+
   return (
     <article className={cn(styles.card, className)}>
       <div className={styles.body}>
@@ -51,7 +54,11 @@ export function StrategyOptionCard({
             disabled={disabled}
             aria-disabled={disabled}
           >
-            {disabled ? 'Coming Soon' : selected ? 'Selected ✓' : 'Select →'}
+            {disabled
+              ? t('common.comingSoon')
+              : selected
+                ? t('common.selected')
+                : t('common.select')}
           </button>
           <Chip
             label={successRate}

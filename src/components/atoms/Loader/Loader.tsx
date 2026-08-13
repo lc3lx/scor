@@ -1,4 +1,5 @@
 import { uiAssets } from '@assets/index';
+import { useT } from '@shared/i18n';
 import { Icon } from '../Icon';
 import styles from './Loader.module.css';
 
@@ -7,9 +8,11 @@ export type LoaderProps = {
   animated?: boolean;
 };
 
-export function Loader({ label = 'Loading', animated = false }: LoaderProps) {
+export function Loader({ label, animated = false }: LoaderProps) {
+  const t = useT();
+  const resolvedLabel = label ?? t('common.loading');
   return (
-    <div className={styles.loader} role="status" aria-label={label}>
+    <div className={styles.loader} role="status" aria-label={resolvedLabel}>
       <Icon
         src={uiAssets.loader}
         size="loader"

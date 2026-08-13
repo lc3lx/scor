@@ -1,8 +1,10 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContent } from '@components/layouts/PageContent';
+import { LanguageSwitcher } from '@components/molecules/LanguageSwitcher';
 import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { ROUTES } from '@constants/routes';
+import { useT } from '@shared/i18n';
 import { useAccountData } from './hooks/useAccountData';
 import { AccountDetailsSection } from './sections/AccountDetailsSection';
 import { AccountFooterSection } from './sections/AccountFooterSection';
@@ -14,6 +16,7 @@ import type { AccountMenuItem } from './types';
 import styles from './AccountPage.module.css';
 
 export default function AccountPage() {
+  const t = useT();
   const navigate = useNavigate();
   const { snapshot, isLoading, error, logout } = useAccountData();
 
@@ -38,7 +41,7 @@ export default function AccountPage() {
 
   if (error) {
     return (
-      <main className={styles.page} aria-label="Account">
+      <main className={styles.page} aria-label={t('account.aria')}>
         <PageContent className={styles.content}>
           <p>{error}</p>
         </PageContent>
@@ -48,8 +51,13 @@ export default function AccountPage() {
 
   if (isLoading || !snapshot) return null;
 
+  const binollaConnected =
+    snapshot.botAccess !== undefined
+      ? snapshot.botAccess !== 'BinollaNotConnected'
+      : snapshot.profile.binollaAccountId === t('account.value.connected');
+
   return (
-    <main className={styles.page} aria-label="Account">
+    <main className={styles.page} aria-label={t('account.aria')}>
       <div className={styles.scroll}>
         <BackgroundGlow variant="top-right" />
         <PageContent className={styles.content}>
@@ -57,7 +65,7 @@ export default function AccountPage() {
           <AccountProfileSection profile={snapshot.profile} badges={snapshot.badges} />
           <ApprovalNoticeSection
             accountStatus={snapshot.profile.accountStatus}
-            binollaConnected={snapshot.profile.binollaAccountId === 'Connected'}
+            binollaConnected={binollaConnected}
             botAccess={snapshot.botAccess}
           />
           <AccountDetailsSection items={snapshot.details} />
@@ -67,6 +75,7 @@ export default function AccountPage() {
             onItemSelect={handleMenuSelect}
             onLogout={handleLogout}
           />
+          <LanguageSwitcher />
           <AccountFooterSection versionLabel={snapshot.pageContent.versionLabel} />
         </PageContent>
       </div>

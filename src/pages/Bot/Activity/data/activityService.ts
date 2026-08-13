@@ -1,8 +1,9 @@
 import {
-  LIVE_TRADE_NOTIFICATION_TITLE,
-  NOTIFICATIONS_PAGE_CONTENT,
+  getLiveTradeNotificationTitle,
+  getNotificationsPageContent as getNotificationsPageContentMock,
 } from './activity.mock';
 import { accountService } from '../../Account/services/accountService';
+import { t } from '@shared/i18n';
 import type { NotificationItem } from '../types';
 
 type NotificationListener = () => void;
@@ -69,10 +70,10 @@ export const activityService = {
     const notification: NotificationItem = {
       id: `notif-${input.tradeId}-${Date.now()}`,
       variant: input.variant ?? 'live-trade',
-      title: input.title ?? LIVE_TRADE_NOTIFICATION_TITLE,
+      title: input.title ?? getLiveTradeNotificationTitle(),
       description: input.description,
-      timestamp: 'Just now',
-      detailTimestamp: 'Today · Just now',
+      timestamp: t('notifications.justNow'),
+      detailTimestamp: t('notifications.todayJustNow'),
       read: false,
       tradeId: input.tradeId,
     };
@@ -84,7 +85,7 @@ export const activityService = {
   },
 
   getNotificationsPageContent() {
-    return NOTIFICATIONS_PAGE_CONTENT;
+    return getNotificationsPageContentMock();
   },
 
   reset(): void {

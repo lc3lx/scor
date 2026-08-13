@@ -1,6 +1,7 @@
 import { navigationAssets } from '@assets/index';
 import { Icon } from '@components/atoms/Icon';
 import { NavigationItem } from '@components/molecules/NavigationItem';
+import { useT } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import type { NavTab } from '../../types';
 import styles from './BottomNavigation.module.css';
@@ -14,40 +15,6 @@ export type BottomNavigationProps = {
   className?: string;
 };
 
-const tabs: Array<{
-  id: NavTab;
-  icon: string;
-  activeIcon: string;
-  label: string;
-  iconClassName?: string;
-}> = [
-  {
-    id: 'home',
-    icon: navigationAssets.home,
-    activeIcon: navigationAssets.homeActive,
-    label: 'Home',
-  },
-  {
-    id: 'bot',
-    icon: navigationAssets.bot,
-    activeIcon: navigationAssets.botActive,
-    label: 'Alpha Bot',
-  },
-  {
-    id: 'trades',
-    icon: navigationAssets.trades,
-    activeIcon: navigationAssets.tradesActive,
-    label: 'Trades',
-    iconClassName: styles.tradesIcon,
-  },
-  {
-    id: 'profile',
-    icon: navigationAssets.user,
-    activeIcon: navigationAssets.userActive,
-    label: 'Account',
-  },
-];
-
 export function BottomNavigation({
   activeTab,
   fabActive = false,
@@ -55,11 +22,47 @@ export function BottomNavigation({
   onFabClick,
   className,
 }: BottomNavigationProps) {
+  const t = useT();
+
+  const tabs: Array<{
+    id: NavTab;
+    icon: string;
+    activeIcon: string;
+    label: string;
+    iconClassName?: string;
+  }> = [
+    {
+      id: 'home',
+      icon: navigationAssets.home,
+      activeIcon: navigationAssets.homeActive,
+      label: t('nav.home'),
+    },
+    {
+      id: 'bot',
+      icon: navigationAssets.bot,
+      activeIcon: navigationAssets.botActive,
+      label: t('nav.bot'),
+    },
+    {
+      id: 'trades',
+      icon: navigationAssets.trades,
+      activeIcon: navigationAssets.tradesActive,
+      label: t('nav.trades'),
+      iconClassName: styles.tradesIcon,
+    },
+    {
+      id: 'profile',
+      icon: navigationAssets.user,
+      activeIcon: navigationAssets.userActive,
+      label: t('nav.account'),
+    },
+  ];
+
   const leftTabs = tabs.slice(0, 2);
   const rightTabs = tabs.slice(2);
 
   return (
-    <nav className={cn(styles.nav, className)} aria-label="Main navigation">
+    <nav className={cn(styles.nav, className)} aria-label={t('nav.main')}>
       <Icon src={navigationAssets.bottomNavUnion} decorative className={styles.union} />
 
       <div className={styles.items}>
@@ -100,7 +103,7 @@ export function BottomNavigation({
         type="button"
         className={styles.fab}
         onClick={onFabClick}
-        aria-label="Scar Alpha"
+        aria-label={t('nav.fab')}
         aria-current={fabActive ? 'page' : undefined}
       >
         <Icon src={navigationAssets.fabIcon} decorative className={styles.fabIcon} />

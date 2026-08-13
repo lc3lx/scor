@@ -1,5 +1,6 @@
 import { ApiClientError, authApi } from '@shared/api';
 import { tokenStore } from '@shared/auth/tokenStore';
+import { t } from '@shared/i18n';
 import { getTelegramInitData } from '@shared/telegram/telegramWebApp';
 import type {
   ActivationPayload,
@@ -16,7 +17,7 @@ function toAuthError(error: unknown): AuthServiceError {
   if (error && typeof error === 'object' && 'message' in error) {
     return { message: String((error as { message: unknown }).message) };
   }
-  return { message: 'Authentication failed.' };
+  return { message: t('auth.authFailed') };
 }
 
 /**
@@ -27,7 +28,7 @@ export async function loginWithTelegram(): Promise<AuthSession> {
   const initData = getTelegramInitData();
   if (!initData) {
     throw {
-      message: 'Open Scar Alpha from Telegram to sign in. Telegram initData is required.',
+      message: t('auth.openFromTelegram'),
     } satisfies AuthServiceError;
   }
 

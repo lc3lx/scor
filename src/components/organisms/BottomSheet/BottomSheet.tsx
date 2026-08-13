@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@components/atoms/Button';
 import { Text } from '@components/atoms/Text';
+import { t } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import styles from './BottomSheet.module.css';
 
@@ -120,7 +121,7 @@ export function BottomSheet({ open, title, onClose, children, className }: Botto
             {title}
           </Text>
           <Button variant="text-link" onClick={onClose}>
-            Close
+            {t('common.close')}
           </Button>
         </div>
         <div className={styles.content}>{children}</div>

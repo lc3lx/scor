@@ -1,4 +1,5 @@
 import { uiAssets } from '@assets/index';
+import { t } from '@shared/i18n';
 import type { TradeRecord } from './types';
 
 export const SHARED_CANDLE_DATA: TradeRecord['candleData'] = [
@@ -16,9 +17,15 @@ export const SHARED_CANDLE_DATA: TradeRecord['candleData'] = [
   { open: 1.085, high: 1.089, low: 1.083, close: 1.088 },
 ];
 
-export const TRADE_DETAIL_PAGE_TITLE = 'Trade Details';
-export const TRADE_DETAIL_TIMELINE_TITLE = 'Timeline';
 export const TRADE_DETAIL_TIMELINE_CHECK_ICON = uiAssets.timelineCheck;
+
+export function getTradeDetailPageTitle(): string {
+  return t('trade.detail.title');
+}
+
+export function getTradeDetailTimelineTitle(): string {
+  return t('trade.detail.timeline');
+}
 
 export const SEED_TRADES: TradeRecord[] = [
   {
@@ -176,22 +183,24 @@ export const SEED_TRADES: TradeRecord[] = [
   },
 ];
 
-export const HISTORY_PAGE_CONTENT = {
-  title: 'Trades',
-  filterAriaLabel: 'Filter trades',
-  filterOptions: [
-    { id: 'all' as const, label: 'All' },
-    { id: 'live' as const, label: 'Live' },
-    { id: 'profit' as const, label: 'Profit' },
-    { id: 'loss' as const, label: 'Loss' },
-    { id: 'today' as const, label: 'Today' },
-  ],
-  emptyAllMessage: 'No trades yet',
-  emptyAllDescription: 'Trades placed from Trading will appear here.',
-  emptyFilterMessage: 'No trades match this filter',
-  emptyFilterDescription: 'Try another filter or place a new trade.',
-  detailsLabel: 'Details',
-  viewChartLabel: 'View Chart',
-};
+export function getHistoryPageContent() {
+  return {
+    title: t('history.title'),
+    filterAriaLabel: t('history.filterAria'),
+    filterOptions: [
+      { id: 'all' as const, label: t('history.filter.all') },
+      { id: 'live' as const, label: t('history.filter.live') },
+      { id: 'profit' as const, label: t('history.filter.profit') },
+      { id: 'loss' as const, label: t('history.filter.loss') },
+      { id: 'today' as const, label: t('history.filter.today') },
+    ],
+    emptyAllMessage: t('history.emptyAll'),
+    emptyAllDescription: t('history.emptyAllDesc'),
+    emptyFilterMessage: t('history.emptyFilter'),
+    emptyFilterDescription: t('history.emptyFilterDesc'),
+    detailsLabel: t('history.details'),
+    viewChartLabel: t('history.viewChart'),
+  };
+}
 
 export const DEFAULT_PAGE_SIZE = 20;

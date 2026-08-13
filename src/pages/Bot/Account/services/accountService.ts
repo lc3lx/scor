@@ -1,13 +1,13 @@
-import { BINOLLA_REFERRAL_LABEL } from '@constants/binolla';
+import { getBinollaReferralLabel } from '@constants/binolla';
 import { accountAssets } from '@assets/index';
 import { ROUTES } from '@constants/routes';
 import {
-  ACCOUNT_PAGE_CONTENT,
-  ACTIVATION_HISTORY_PAGE_CONTENT,
-  CHANGE_PASSWORD_COPY,
-  EDIT_PROFILE_COPY,
-  SEED_ACCOUNT_SNAPSHOT,
-  SUBSCRIPTION_PAGE_CONTENT,
+  getAccountPageContent,
+  getActivationHistoryPageContent as getActivationHistoryPageContentMock,
+  getChangePasswordCopy as getChangePasswordCopyMock,
+  getEditProfileCopy as getEditProfileCopyMock,
+  getSeedAccountSnapshot,
+  getSubscriptionPageContent as getSubscriptionPageContentMock,
 } from '../data/account.mock';
 import type {
   AccountSnapshot,
@@ -17,6 +17,7 @@ import type {
 } from '../types';
 import { accountApi, ApiClientError, binollaApi, meApi } from '@shared/api';
 import { tokenStore } from '@shared/auth/tokenStore';
+import { t } from '@shared/i18n';
 
 type AccountListener = () => void;
 
@@ -28,18 +29,31 @@ function notifyListeners(): void {
   listeners.forEach((listener) => listener());
 }
 
+function formatApprovalStatus(status: string): string {
+  switch (status) {
+    case 'Pending':
+      return t('common.pending');
+    case 'Approved':
+      return t('common.approved');
+    case 'Rejected':
+      return t('common.rejected');
+    default:
+      return status;
+  }
+}
+
 function formatBotAccessLabel(botAccess: string): string {
   switch (botAccess) {
     case 'Allowed':
-      return 'Allowed';
+      return t('account.access.allowed');
     case 'BinollaNotConnected':
-      return 'Binolla not connected';
+      return t('account.access.binollaNotConnected');
     case 'AdminApprovalRequired':
-      return 'Connected — trading locked until admin approves';
+      return t('account.access.adminRequired');
     case 'NotEligible':
-      return 'Rejected';
+      return t('account.access.rejected');
     case 'SessionExpired':
-      return 'Session expired';
+      return t('account.access.sessionExpired');
     default:
       return botAccess;
   }
@@ -49,10 +63,12 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
   return (async () => {
     const [me, status] = await Promise.all([meApi.get(), accountApi.status()]);
 
-    const fullName = me.fullName?.trim() || me.username?.trim() || 'Trader';
+    const fullName = me.fullName?.trim() || me.username?.trim() || t('common.trader');
     const telegram = me.username ? `@${me.username.replace(/^@/, '')}` : String(me.telegramUserId);
     const accessLabel = formatBotAccessLabel(status.botAccess);
-    const approvalLabel = status.approvalStatus;
+    const approvalLabel = formatApprovalStatus(status.approvalStatus);
+    const connectedLabel = t('account.value.connected');
+    const notConnectedLabel = t('account.value.notConnected');
 
     const badges = [
       {
@@ -67,7 +83,7 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
       },
       {
         id: 'approval',
-        label: `Approval: ${approvalLabel}`,
+        label: t('account.approvalBadge', { status: approvalLabel }),
         tone: status.adminApproved ? ('success' as const) : ('warning' as const),
       },
     ];
@@ -75,13 +91,13 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
     const menuItems: AccountMenuItem[] = [
       {
         id: 'edit-profile',
-        label: 'Edit Profile / Link Binolla',
+        label: t('account.menu.editProfile'),
         iconSrc: accountAssets.editProfile,
         route: ROUTES.editProfile,
       },
       {
         id: 'notifications',
-        label: 'Notifications',
+        label: t('account.menu.notifications'),
         iconSrc: accountAssets.notifications,
         route: ROUTES.notifications,
       },
@@ -90,7 +106,7 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
     if (me.isAdmin) {
       menuItems.unshift({
         id: 'admin',
-        label: 'Admin Approvals',
+        label: t('account.menu.admin'),
         iconSrc: accountAssets.subscriptionCrown,
         route: ROUTES.admin,
       });
@@ -102,9 +118,9 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
         email: '',
         country: me.country ?? '—',
         telegramId: telegram,
-        binollaAccountId: status.binollaConnected ? 'Connected' : 'Not connected',
-        accountType: status.accountType || 'Demo',
-        expirationLabel: 'None',
+        binollaAccountId: status.binollaConnected ? connectedLabel : notConnectedLabel,
+        accountType: status.accountType || t('common.demo'),
+        expirationLabel: t('account.value.none'),
         accountStatus:
           status.botAccess === 'Allowed'
             ? 'approved'
@@ -113,67 +129,67 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
               : status.botAccess === 'SessionExpired'
                 ? 'pending'
                 : 'pending',
-        planLabel: 'Free (admin approved)',
+        planLabel: t('account.value.freePlan'),
         avatarIconSrc: accountAssets.profileUser,
       },
       badges,
       details: [
         {
           id: 'telegram',
-          label: 'Telegram',
+          label: t('account.detail.telegram'),
           value: telegram,
           iconSrc: accountAssets.telegram,
         },
         {
           id: 'binolla',
-          label: 'Binolla',
+          label: t('account.detail.binolla'),
           value:
             status.botAccess === 'SessionExpired'
-              ? 'Session expired — reconnect'
+              ? t('account.value.sessionExpiredReconnect')
               : status.binollaConnected
-                ? 'Connected'
-                : 'Not connected',
+                ? connectedLabel
+                : notConnectedLabel,
           iconSrc: accountAssets.binollaId,
         },
         {
           id: 'account-type',
-          label: 'Account Type',
-          value: status.accountType || 'Demo',
+          label: t('account.detail.accountType'),
+          value: status.accountType || t('common.demo'),
           iconSrc: accountAssets.accountType,
         },
         {
           id: 'approval',
-          label: 'Approval Status',
+          label: t('account.detail.approval'),
           value: approvalLabel,
           iconSrc: accountAssets.expiration,
         },
         {
           id: 'bot-access',
-          label: 'Bot Access',
+          label: t('account.detail.botAccess'),
           value: accessLabel,
           iconSrc: accountAssets.accountType,
         },
       ],
       menuItems,
       pageContent: {
-        ...ACCOUNT_PAGE_CONTENT,
+        ...getAccountPageContent(),
         versionLabel:
           status.botAccess === 'SessionExpired'
-            ? 'Binolla session expired · Reconnect your SSID in Edit Profile'
+            ? t('account.versionSessionExpired')
             : status.botAccess === 'AdminApprovalRequired'
-              ? 'Binolla connected · Markets/RSI on · Trading locked until admin approves'
-              : 'Scar Alpha · Free access after admin approval',
+              ? t('account.versionPending')
+              : t('account.versionOk'),
       },
       subscription: {
-        ...SEED_ACCOUNT_SNAPSHOT.subscription,
-        planName: 'Free (admin approved)',
+        ...getSeedAccountSnapshot().subscription,
+        planName: t('account.value.freePlan'),
         status: status.botAccess === 'Allowed' ? 'active' : 'pending',
         statusLabel: accessLabel,
         statusTone: status.botAccess === 'Allowed' ? 'success' : 'warning',
         startDate: '—',
-        endDate: 'None',
+        endDate: t('account.value.none'),
         daysLeft: 0,
-        keyUsedLabel: `Approval: ${approvalLabel}`,
+        keyUsedLabel: t('account.approvalBadge', { status: approvalLabel }),
       },
       activationHistory: [],
       botAccess: status.botAccess,
@@ -203,9 +219,11 @@ export const accountService = {
 
   async updateProfile(values: EditProfileFormValues): Promise<AccountSnapshot> {
     const ssid = values.binollaAccountId.trim();
-    if (ssid && ssid !== 'Connected' && ssid !== 'Not connected' && ssid !== lastSsidHint) {
+    const connectedLabel = t('account.value.connected');
+    const notConnectedLabel = t('account.value.notConnected');
+    if (ssid && ssid !== connectedLabel && ssid !== notConnectedLabel && ssid !== lastSsidHint) {
       await binollaApi.connect({ ssid, accountType: 'Demo' });
-      lastSsidHint = 'Connected';
+      lastSsidHint = connectedLabel;
     }
 
     const snapshot = await buildSnapshotFromApi();
@@ -214,7 +232,7 @@ export const accountService = {
   },
 
   async changePassword(_values: ChangePasswordFormValues): Promise<void> {
-    throw { message: 'Password login is not used. Authenticate via Telegram Mini App.' };
+    throw { message: t('auth.passwordLoginUnusedLong') };
   },
 
   async logout(): Promise<void> {
@@ -229,14 +247,13 @@ export const accountService = {
 
   getEditProfileCopy() {
     return {
-      ...EDIT_PROFILE_COPY,
-      binollaLabel: 'Binolla SSID (fallback)',
-      binollaPlaceholder: 'Optional — paste SSID only if credential login is unavailable',
-      binollaHelpText:
-        'Preferred: use Sign up / Log in with Binolla email. SSID paste is a fallback. New accounts should use partner signup (lid=15968).',
-      binollaRegisterLabel: BINOLLA_REFERRAL_LABEL,
+      ...getEditProfileCopyMock(),
+      binollaLabel: t('account.edit.binollaFallback'),
+      binollaPlaceholder: t('account.edit.binollaFallbackPh'),
+      binollaHelpText: t('account.edit.binollaHelp'),
+      binollaRegisterLabel: getBinollaReferralLabel(),
       binollaRegisterHref: '/signup',
-      successMessage: 'Saved. If Binolla was linked, wait for administrator approval.',
+      successMessage: t('account.edit.successLinked'),
     };
   },
 
@@ -250,33 +267,34 @@ export const accountService = {
   },
 
   getChangePasswordCopy() {
-    return CHANGE_PASSWORD_COPY;
+    return getChangePasswordCopyMock();
   },
 
   getSubscriptionPageContent() {
     return {
-      ...SUBSCRIPTION_PAGE_CONTENT,
-      pageTitle: 'Access',
-      enterKeyLabel: 'Link Binolla account',
-      viewHistoryLabel: 'Back to account',
+      ...getSubscriptionPageContentMock(),
+      pageTitle: t('account.subscription.accessTitle'),
+      enterKeyLabel: t('account.subscription.linkBinolla'),
+      viewHistoryLabel: t('account.subscription.back'),
     };
   },
 
   getActivationHistoryPageContent() {
-    return ACTIVATION_HISTORY_PAGE_CONTENT;
+    return getActivationHistoryPageContentMock();
   },
 
   async getSubscriptionDetails() {
     const status = await accountApi.status();
+    const approvalLabel = formatApprovalStatus(status.approvalStatus);
     return {
-      planName: 'Free (admin approved)',
+      planName: t('account.value.freePlan'),
       status: status.botAccess === 'Allowed' ? ('active' as const) : ('pending' as const),
       statusLabel: formatBotAccessLabel(status.botAccess),
       statusTone: status.botAccess === 'Allowed' ? ('success' as const) : ('warning' as const),
       startDate: '—',
-      endDate: 'None',
+      endDate: t('account.value.none'),
       daysLeft: 0,
-      keyUsedLabel: `Approval: ${status.approvalStatus}`,
+      keyUsedLabel: t('account.approvalBadge', { status: approvalLabel }),
       iconSrc: accountAssets.subscriptionCrown,
     };
   },

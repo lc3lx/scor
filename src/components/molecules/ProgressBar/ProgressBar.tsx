@@ -1,3 +1,4 @@
+import { useT } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import styles from './ProgressBar.module.css';
 
@@ -8,6 +9,8 @@ export type ProgressBarProps = {
 };
 
 export function ProgressBar({ totalSteps, currentStep, className }: ProgressBarProps) {
+  const t = useT();
+
   return (
     <div
       className={cn(styles.progress, className)}
@@ -15,7 +18,7 @@ export function ProgressBar({ totalSteps, currentStep, className }: ProgressBarP
       aria-valuemin={1}
       aria-valuemax={totalSteps}
       aria-valuenow={currentStep}
-      aria-label={`Step ${currentStep} of ${totalSteps}`}
+      aria-label={t('onboarding.stepOf', { n: currentStep, total: totalSteps })}
     >
       {Array.from({ length: totalSteps }, (_, index) => {
         const step = index + 1;

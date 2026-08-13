@@ -7,7 +7,7 @@
   background: var(--gradient-button-primary);
   border: none;
   border-radius: var(--radius-card);
-  text-align: left;
+  text-align: start;
 }
 
 .interactive {

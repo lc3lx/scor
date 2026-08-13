@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { tokenStore } from '../auth/tokenStore';
 import type { ApiErrorBody } from './types';
 
@@ -32,7 +33,7 @@ function resolveBaseUrl(): string {
 
   throw new ApiClientError(
     'CONFIG_ERROR',
-    'VITE_API_BASE_URL is not configured.',
+    t('api.configMissing'),
     0,
   );
 }
@@ -40,42 +41,40 @@ function resolveBaseUrl(): string {
 function mapMessage(code: string, fallback: string): string {
   switch (code) {
     case 'BINOLLA_NOT_CONNECTED':
-      return 'Connect your Binolla account to continue.';
+      return t('api.binollaNotConnected');
     case 'BINOLLA_SESSION_EXPIRED':
-      return 'Your Binolla session expired. Please reconnect.';
+      return t('api.binollaSessionExpired');
     case 'BINOLLA_LOGIN_FAILED':
       // Prefer server detail (e.g. missing Playwright OS libs) over the generic copy.
-      return fallback?.trim()
-        ? fallback
-        : 'Binolla login/signup failed. Check email and password.';
+      return fallback?.trim() ? fallback : t('api.binollaLoginFailed');
     case 'BINOLLA_CONNECTION_FAILED':
-      return 'Unable to connect to Binolla right now.';
+      return t('api.binollaConnectionFailed');
     case 'ADMIN_APPROVAL_REQUIRED':
-      return 'Administrator has not approved your account yet. Trading is locked until approval.';
+      return t('api.adminApprovalRequired');
     case 'NOT_ELIGIBLE':
-      return 'This account was rejected by an administrator.';
+      return t('api.notEligible');
     case 'FORBIDDEN':
-      return 'You do not have permission to perform this action.';
+      return t('api.forbidden');
     case 'MARKET_UNAVAILABLE':
-      return 'Market data is temporarily unavailable.';
+      return t('api.marketUnavailable');
     case 'INSUFFICIENT_BALANCE':
-      return 'Insufficient Demo balance for this trade.';
+      return t('api.insufficientBalance');
     case 'RATE_LIMITED':
-      return 'Too many trade requests. Please wait and try again.';
+      return t('api.rateLimited');
     case 'INVALID_TRADE':
-      return 'Trade request is invalid.';
+      return t('api.invalidTrade');
     case 'STRATEGY_DISABLED':
-      return 'This strategy is not available yet.';
+      return t('api.strategyDisabled');
     case 'STRATEGY_NOT_FOUND':
-      return 'Strategy was not found.';
+      return t('api.strategyNotFound');
     case 'REAL_TRADING_DISABLED':
-      return 'Real trading is disabled.';
+      return t('api.realTradingDisabled');
     case 'TELEGRAM_AUTH_INVALID':
-      return 'Telegram authentication failed. Open the app from Telegram.';
+      return t('api.telegramAuthInvalid');
     case 'UNAUTHORIZED':
-      return 'Your session expired. Please sign in again.';
+      return t('api.unauthorized');
     default:
-      return fallback || 'Something went wrong. Please try again.';
+      return fallback || t('common.errorGeneric');
   }
 }
 
@@ -102,7 +101,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (auth) {
     const token = tokenStore.getAccessToken();
     if (!token) {
-      throw new ApiClientError('UNAUTHORIZED', mapMessage('UNAUTHORIZED', 'Not authenticated.'), 401);
+      throw new ApiClientError('UNAUTHORIZED', mapMessage('UNAUTHORIZED', t('api.notAuthenticated')), 401);
     }
     headers.Authorization = `Bearer ${token}`;
   }
@@ -116,7 +115,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       signal: options.signal,
     });
   } catch {
-    throw new ApiClientError('NETWORK_ERROR', 'Network error. Check your connection.', 0);
+    throw new ApiClientError('NETWORK_ERROR', t('api.network'), 0);
   }
 
   if (response.status === 204) {
@@ -136,7 +135,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (!response.ok) {
     const err = (payload ?? {}) as Partial<ApiErrorBody>;
     const code = err.code ?? (response.status === 401 ? 'UNAUTHORIZED' : 'REQUEST_FAILED');
-    const message = mapMessage(code, err.message ?? `Request failed (${response.status})`);
+    const message = mapMessage(
+      code,
+      err.message ?? t('api.requestFailed', { status: response.status }),
+    );
 
     // Only clear Telegram JWT when the Scar Alpha session itself is invalid —
     // never on Binolla credential / session errors (same HTTP 401 status).

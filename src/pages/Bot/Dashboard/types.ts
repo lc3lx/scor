@@ -1,4 +1,5 @@
 import type { TextTone } from '@components/types';
+import type { TradeDto } from '@shared/api';
 
 export type DashboardTimeframe = 'today' | '7d' | '30d' | 'all';
 
@@ -26,6 +27,7 @@ export type DashboardBalance = {
   growth: string;
   growthSuffix: string;
   statusLabel: string;
+  statusTone: 'success' | 'danger' | 'warning' | 'neutral' | 'active';
   todayProfitLabel: string;
   todayProfitValue: string;
   todayLossLabel: string;
@@ -50,4 +52,6 @@ export type DashboardContent = {
   stats: DashboardStatCard[];
   performance: DashboardPerformance;
   markets: DashboardMarketRow[];
+  /** Raw server trades used to recompute performance by timeframe (no invented series). */
+  tradeSnapshot: TradeDto[];
 };

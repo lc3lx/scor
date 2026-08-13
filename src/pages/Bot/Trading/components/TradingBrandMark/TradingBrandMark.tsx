@@ -1,4 +1,5 @@
 import { tradingAssets } from '@assets/index';
+import { useT } from '@shared/i18n';
 import { cn } from '@utils/cn';
 import styles from './TradingBrandMark.module.css';
 
@@ -27,8 +28,10 @@ export type TradingBrandWordmarkProps = {
 };
 
 export function TradingBrandWordmark({ className }: TradingBrandWordmarkProps) {
+  const t = useT();
+
   return (
-    <div className={cn(styles.wordmark, className)} role="img" aria-label="Scar Alpha AI">
+    <div className={cn(styles.wordmark, className)} role="img" aria-label={t('trading.brandAria')}>
       <img src={tradingAssets.wordmarkScar} alt="" className={styles.scar} />
       <img src={tradingAssets.wordmarkAlphaAi} alt="" className={styles.alphaAi} />
     </div>

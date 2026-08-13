@@ -1,3 +1,5 @@
+import { t } from '@shared/i18n';
+
 /**
  * Binolla is the broker platform users log into / register on.
  * Scar Alpha does not create its own email/password accounts.
@@ -10,5 +12,11 @@
 export const BINOLLA_REFERRAL_SIGNUP_URL =
   'https://binolla.com/signup/?lid=15968' as const;
 export const BINOLLA_LOGIN_URL = 'https://binolla.com/login/' as const;
-export const BINOLLA_REFERRAL_LABEL = 'Sign up on Binolla' as const;
-export const BINOLLA_LOGIN_LABEL = 'Log in on Binolla' as const;
+
+export function getBinollaReferralLabel(): string {
+  return t('binolla.signupLabel');
+}
+
+export function getBinollaLoginLabel(): string {
+  return t('binolla.loginLabel');
+}

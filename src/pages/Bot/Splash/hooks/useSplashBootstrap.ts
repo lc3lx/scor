@@ -4,6 +4,7 @@ import { ROUTES } from '@constants/routes';
 import { accountApi, ApiClientError } from '@shared/api';
 import { tokenStore } from '@shared/auth/tokenStore';
 import { authService } from '@features/Auth';
+import { t } from '@shared/i18n';
 import { isOnboardingDone } from '@shared/onboarding/onboardingStorage';
 import { bootstrapTelegramWebApp } from '@shared/telegram/telegramWebApp';
 
@@ -13,7 +14,7 @@ const SPLASH_MIN_MS = 1200;
  * Bootstrap: Telegram initData → JWT → account status → route.
  *
  * First launch (onboarding not done) → Onboarding
- * Allowed / AdminApprovalRequired → Home (trading locked until admin approves)
+ * Allowed / AdminApprovalRequired → Trading (place-order locked until admin approves)
  * BinollaNotConnected / SessionExpired → Binolla login (reconnect)
  * NotEligible / other → Account settings
  */
@@ -45,7 +46,7 @@ export function useSplashBootstrap() {
           status.botAccess === 'Allowed' ||
           status.botAccess === 'AdminApprovalRequired'
         ) {
-          await finish(ROUTES.home);
+          await finish(ROUTES.trading);
           return;
         }
 
@@ -70,7 +71,7 @@ export function useSplashBootstrap() {
             ? err.message
             : err && typeof err === 'object' && 'message' in err
               ? String((err as { message: unknown }).message)
-              : 'Unable to sign in with Telegram.';
+              : t('splash.telegramSignInFailed');
         if (active) {
           setError(message);
           if (!isOnboardingDone()) {

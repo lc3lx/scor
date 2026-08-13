@@ -1,4 +1,5 @@
 import { Text } from '@components/atoms/Text';
+import { useT } from '@shared/i18n';
 import type { DashboardStatCard } from '../../types';
 import styles from './DashboardStatsSection.module.css';
 
@@ -7,8 +8,10 @@ export type DashboardStatsSectionProps = {
 };
 
 export function DashboardStatsSection({ stats }: DashboardStatsSectionProps) {
+  const t = useT();
+
   return (
-    <section className={styles.grid} aria-label="Dashboard statistics">
+    <section className={styles.grid} aria-label={t('dashboard.statsAria')}>
       {stats.map((stat) => (
         <article key={stat.id} className={styles.card}>
           <Text variant="caption" tone="primary" className={styles.label}>

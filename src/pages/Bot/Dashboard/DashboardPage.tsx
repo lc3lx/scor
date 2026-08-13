@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { dashboardAssets } from '@assets/index';
 import { PageContent } from '@components/layouts/PageContent';
 import { ROUTES } from '@constants/routes';
+import { useT } from '@shared/i18n';
 import { useNotifications } from '../Activity/hooks/useNotifications';
 import { useDashboardData } from './hooks/useDashboardData';
 import { BalanceCardSection } from './sections/BalanceCardSection';
@@ -13,6 +14,7 @@ import { RecentTradesSection } from './sections/RecentTradesSection';
 import styles from './DashboardPage.module.css';
 
 export default function DashboardPage() {
+  const t = useT();
   const navigate = useNavigate();
   const { data, isLoading, timeframe, selectTimeframe } = useDashboardData();
   const { notifications } = useNotifications();
@@ -24,7 +26,7 @@ export default function DashboardPage() {
   if (isLoading || !data) return null;
 
   return (
-    <main className={styles.page} aria-label="Home dashboard">
+    <main className={styles.page} aria-label={t('dashboard.aria')}>
       <div className={styles.scroll}>
         <img
           src={dashboardAssets.headerGlow}

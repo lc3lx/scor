@@ -4,6 +4,7 @@ import { BottomNavigation } from '@components/organisms/BottomNavigation';
 import type { NavTab } from '@components/types';
 import { ROUTES } from '@constants/routes';
 import { tokenStore } from '@shared/auth/tokenStore';
+import { t } from '@shared/i18n';
 import type { RouteHandle } from '@/types/routing';
 import styles from './BotLayout.module.css';
 
@@ -25,7 +26,7 @@ function resolveActiveTab(pathname: string): NavTab | null {
 
 function resolveFabState(pathname: string): { fabActive: boolean; fabLabel?: string } {
   if (pathname === ROUTES.trading) {
-    return { fabActive: true, fabLabel: 'Trading' };
+    return { fabActive: true, fabLabel: t('nav.trading') };
   }
 
   return { fabActive: false };
@@ -62,7 +63,7 @@ export function BotLayout() {
   if (!ready) return null;
 
   return (
-    <section className={styles.layout} aria-label="Bot application">
+    <section className={styles.layout} aria-label={t('layout.botApp')}>
       <div className={styles.content}>
         <Outlet />
       </div>

@@ -2,6 +2,7 @@ import { Button } from '@components/atoms/Button';
 import { OptionChip } from '@components/molecules/OptionChip';
 import { ToggleRow } from '@components/molecules/ToggleRow';
 import { Text } from '@components/atoms/Text';
+import { useT } from '@shared/i18n';
 import type { BotSettingsSheetContent } from '../../types';
 import styles from './BotSettingsSheetContent.module.css';
 
@@ -22,10 +23,12 @@ export function BotSettingsSheetContent({
   onRiskSelect: _onRiskSelect,
   onSave,
 }: BotSettingsSheetContentProps) {
+  const t = useT();
+
   return (
     <div className={styles.root}>
       <Text variant="caption-xs" tone="caption">
-        Auto-trading controls are Coming Soon and do not affect Binolla orders.
+        {t('home.settings.note')}
       </Text>
       <div className={styles.toggles}>
         {content.toggles.map((toggle) => (

@@ -9,6 +9,7 @@ import {
   validateLoginForm,
   type LoginFormValues,
 } from '@features/Auth';
+import { t } from '@shared/i18n';
 import { LOGIN_INITIAL_VALUES } from '../data/login.mock';
 
 export function useLoginForm() {
@@ -36,7 +37,7 @@ export function useLoginForm() {
   }, [navigate]);
 
   const onForgotPassword = useCallback(() => {
-    setInfo('Password login is not used. Open the Mini App from Telegram.');
+    setInfo(t('login.forgotInfo'));
   }, []);
 
   return {

@@ -2,23 +2,24 @@ import type { ChipTone } from '@components/types';
 import type { TradeRecord } from '@services/trades';
 import { tradeService } from '@services/trades';
 import type { TradeCardProps } from '@components/molecules/TradeCard';
+import { t } from '@shared/i18n';
 
 function resolvePlatform(trade: TradeRecord): { label: string; tone: ChipTone } {
   if (trade.platform === 'binolla') {
-    return { label: 'Binolla', tone: 'warning' };
+    return { label: t('history.platform.binolla'), tone: 'warning' };
   }
 
-  return { label: 'Global', tone: 'info' };
+  return { label: t('history.platform.global'), tone: 'info' };
 }
 
 function resolveStatus(trade: TradeRecord): { label: string; tone: ChipTone } {
-  if (trade.status === 'running') return { label: 'Running', tone: 'warning' };
-  if (trade.status === 'profit') return { label: 'Profit', tone: 'success' };
-  return { label: 'Loss', tone: 'danger' };
+  if (trade.status === 'running') return { label: t('history.status.running'), tone: 'warning' };
+  if (trade.status === 'profit') return { label: t('history.status.profit'), tone: 'success' };
+  return { label: t('history.status.loss'), tone: 'danger' };
 }
 
 function resolveSourceLabel(trade: TradeRecord): string {
-  return trade.source === 'bot' ? 'Source: Bot' : 'Source: User';
+  return trade.source === 'bot' ? t('history.source.bot') : t('history.source.user');
 }
 
 function resolveActionLabel(trade: TradeRecord): string {

@@ -1,6 +1,7 @@
 import { BotControl } from '@components/molecules/BotControl';
 import { Text } from '@components/atoms/Text';
 import type { BotControlAction } from '@components/types';
+import { useT } from '@shared/i18n';
 import styles from './BotControlsSection.module.css';
 
 export type BotControlsSectionProps = {
@@ -33,10 +34,11 @@ export function BotControlsSection({
   onApply,
   comingSoon = true,
 }: BotControlsSectionProps) {
+  const t = useT();
   const handlerMap = { onStart, onPause, onStop, onApply };
 
   return (
-    <section className={styles.section} aria-label="Bot controls">
+    <section className={styles.section} aria-label={t('home.aria')}>
       <div className={styles.card}>
         {controls.map((action) => (
           <BotControl
@@ -51,7 +53,7 @@ export function BotControlsSection({
       </div>
       {comingSoon ? (
         <Text variant="caption-xs" tone="caption" align="center" className={styles.soonNote}>
-          Coming Soon — auto Start/Pause/Stop is disabled. Place Demo trades manually on Trading.
+          {t('home.controls.note')}
         </Text>
       ) : null}
     </section>

@@ -1,6 +1,7 @@
 import { Badge } from '@components/atoms/Chip';
 import { Icon } from '@components/atoms/Icon';
 import { Text } from '@components/atoms/Text';
+import { useT } from '@shared/i18n';
 import type { SubscriptionDetails } from '../../types';
 import styles from './SubscriptionCardSection.module.css';
 
@@ -9,15 +10,16 @@ export type SubscriptionCardSectionProps = {
 };
 
 export function SubscriptionCardSection({ subscription }: SubscriptionCardSectionProps) {
+  const t = useT();
   const rows = [
-    { label: 'Start', value: subscription.startDate },
-    { label: 'End', value: subscription.endDate },
-    { label: 'Days left', value: String(subscription.daysLeft) },
-    { label: 'Key used', value: subscription.keyUsedLabel },
+    { label: t('account.subscription.start'), value: subscription.startDate },
+    { label: t('account.subscription.end'), value: subscription.endDate },
+    { label: t('account.subscription.daysLeft'), value: String(subscription.daysLeft) },
+    { label: t('account.subscription.keyUsed'), value: subscription.keyUsedLabel },
   ];
 
   return (
-    <section className={styles.section} aria-label="Subscription details">
+    <section className={styles.section} aria-label={t('account.subscription.title')}>
       <div className={styles.card}>
         <div className={styles.header}>
           <span className={styles.iconWrap}>

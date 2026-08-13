@@ -2,8 +2,15 @@ type TelegramOpenLinkOptions = {
   try_instant_view?: boolean;
 };
 
+type TelegramWebAppUser = {
+  language_code?: string;
+};
+
 type TelegramWebAppLike = {
   initData?: string;
+  initDataUnsafe?: {
+    user?: TelegramWebAppUser;
+  };
   ready?: () => void;
   expand?: () => void;
   openLink?: (url: string, options?: TelegramOpenLinkOptions) => void;
@@ -28,6 +35,16 @@ export function getTelegramInitData(): string {
   // Local/dev override only — never used as production auth source of truth.
   const fromEnv = (import.meta.env.VITE_DEV_TELEGRAM_INIT_DATA as string | undefined)?.trim() ?? '';
   return fromEnv;
+}
+
+/** Prefer Telegram client language when choosing the initial UI locale (not for auth). */
+export function getTelegramLanguageCode(): string | null {
+  try {
+    const code = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
+    return typeof code === 'string' ? code.trim().toLowerCase() : null;
+  } catch {
+    return null;
+  }
 }
 
 export function bootstrapTelegramWebApp(): void {

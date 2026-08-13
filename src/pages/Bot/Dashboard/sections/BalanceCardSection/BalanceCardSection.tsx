@@ -1,6 +1,4 @@
-import { dashboardAssets } from '@assets/index';
 import { Chip } from '@components/atoms/Chip';
-import { Icon } from '@components/atoms/Icon';
 import { Text } from '@components/atoms/Text';
 import type { DashboardBalance } from '../../types';
 import styles from './BalanceCardSection.module.css';
@@ -14,7 +12,7 @@ export function BalanceCardSection({ balance }: BalanceCardSectionProps) {
     <section className={styles.card} aria-label={balance.label}>
       <Chip
         label={balance.statusLabel}
-        tone="danger"
+        tone={balance.statusTone}
         showDot
         className={styles.status}
       />
@@ -27,13 +25,14 @@ export function BalanceCardSection({ balance }: BalanceCardSectionProps) {
       </Text>
 
       <div className={styles.growthRow}>
-        <Icon src={dashboardAssets.growthArrow} decorative className={styles.growthArrow} />
-        <Text variant="caption" tone="success" className={styles.growth}>
+        <Text variant="caption" tone="primary" className={styles.growth}>
           {balance.growth}
         </Text>
-        <Text variant="caption-xs" className={styles.growthSuffix}>
-          {balance.growthSuffix}
-        </Text>
+        {balance.growthSuffix ? (
+          <Text variant="caption-xs" className={styles.growthSuffix}>
+            {balance.growthSuffix}
+          </Text>
+        ) : null}
       </div>
 
       <hr className={styles.divider} />

@@ -5,6 +5,7 @@ import { authService } from '@features/Auth';
 import { accountApi, ApiClientError, binollaApi } from '@shared/api';
 import { routeForBotAccess } from '@shared/access/botAccess';
 import { tokenStore } from '@shared/auth/tokenStore';
+import { t } from '@shared/i18n';
 
 export type BinollaAuthMode = 'login' | 'register';
 
@@ -22,7 +23,7 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
   const submitCredentials = useCallback(async () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
-      setError('Enter your Binolla email and password.');
+      setError(t('binolla.auth.enterCredentials'));
       setStatus('error');
       return;
     }
@@ -57,11 +58,7 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
         setError(String((err as { message: unknown }).message));
         return;
       }
-      setError(
-        mode === 'login'
-          ? 'Binolla login failed. Check email/password and try again.'
-          : 'Binolla signup failed. Check details and try again.',
-      );
+      setError(mode === 'login' ? t('binolla.auth.loginFailed') : t('binolla.auth.signupFailed'));
     }
   }, [email, mode, navigate, password]);
 
@@ -87,7 +84,7 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
         setError(String((err as { message: unknown }).message));
         return;
       }
-      setError('Open Scar Alpha from Telegram to enter the bot.');
+      setError(t('binolla.auth.openFromTelegram'));
     }
   }, [navigate]);
 

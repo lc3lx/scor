@@ -3,6 +3,7 @@ import { Icon } from '@components/atoms/Icon';
 import { Input } from '@components/atoms/Input';
 import { Text } from '@components/atoms/Text';
 import { CandlestickChart } from '@components/organisms/CandlestickChart';
+import { useT } from '@shared/i18n';
 import type { BinollaCardContent, TradingTimeframeOption } from '../../types';
 import styles from './BinollaTradingCardSection.module.css';
 
@@ -33,12 +34,13 @@ export function BinollaTradingCardSection({
   onTradeUp,
   onTradeDown,
 }: BinollaTradingCardSectionProps) {
+  const t = useT();
   const last = content.candleData[content.candleData.length - 1];
   const priceTone =
     last == null ? undefined : last.close >= last.open ? ('up' as const) : ('down' as const);
 
   return (
-    <section className={styles.section} aria-label="Binolla trading">
+    <section className={styles.section} aria-label={t('nav.trading')}>
       <article className={styles.card}>
         <header className={styles.header}>
           <div className={styles.platform}>
@@ -73,7 +75,7 @@ export function BinollaTradingCardSection({
           </div>
           <div className={styles.expiryBlock}>
             <Text variant="caption-xs" tone="caption" align="right" className={styles.expiryLabel}>
-              Trade {content.expiryLabel}
+              {t('trading.tradeExpiry', { expiryLabel: content.expiryLabel })}
             </Text>
             <Text variant="caption" tone="primary" align="right" className={styles.expiryValue}>
               {expiryDisplay}
@@ -81,7 +83,7 @@ export function BinollaTradingCardSection({
           </div>
         </div>
 
-        <div className={styles.timeframeRow} role="tablist" aria-label="Candle timeframe">
+        <div className={styles.timeframeRow} role="tablist" aria-label={t('trading.timeframe')}>
           {timeframeOptions.map((tf) => (
             <button
               key={tf.id}
@@ -101,15 +103,18 @@ export function BinollaTradingCardSection({
           {content.candleData.length > 0 ? (
             <CandlestickChart
               data={content.candleData}
-              width={345}
-              height={188}
-              visibleBars={40}
+              height={228}
+              visibleBars={28}
               className={styles.chart}
             />
           ) : (
-            <div className={styles.chartEmpty} role="img" aria-label="Binolla chart unavailable">
+            <div
+              className={styles.chartEmpty}
+              role="img"
+              aria-label={t('trading.noCandlesFallback')}
+            >
               <Text variant="caption" tone="caption" align="center">
-                {content.chartStatusLabel ?? 'No Binolla candles yet'}
+                {content.chartStatusLabel ?? t('trading.noCandlesFallback')}
               </Text>
             </div>
           )}
@@ -136,7 +141,7 @@ export function BinollaTradingCardSection({
               <button
                 type="button"
                 className={styles.fieldButton}
-                aria-label={`Trade duration ${durationLabel}. Tap to change.`}
+                aria-label={t('trading.durationAria', { label: durationLabel })}
                 onClick={onCycleDuration}
               >
                 <Text variant="caption" tone="primary" className={styles.durationValue}>

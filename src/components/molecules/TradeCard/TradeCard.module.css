@@ -72,7 +72,7 @@
 }
 
 .details {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);

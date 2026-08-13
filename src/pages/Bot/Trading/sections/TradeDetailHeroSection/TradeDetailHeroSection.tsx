@@ -44,7 +44,7 @@ export function TradeDetailHeroSection({ content, candleData }: TradeDetailHeroS
         </div>
 
         <div className={styles.chartWrap}>
-          <CandlestickChart data={candleData} width={344} height={146} className={styles.chart} />
+          <CandlestickChart data={candleData} height={146} className={styles.chart} />
         </div>
       </article>
     </section>

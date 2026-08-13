@@ -1,35 +1,37 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { homeService } from '../data/homeService';
-import { HOME_MOCK_CONTENT } from '../data/home.mock';
 import type { HomeConfigRow, HomeData, HomeRuntimeState } from '../types';
 
 function resolveConfigValue(
   row: HomeConfigRow,
   runtime: HomeRuntimeState,
+  data: HomeData,
 ): string {
+  const sheets = data.sheets;
+
   if (row.sheetTarget === 'marketType') {
-    const selected = HOME_MOCK_CONTENT.sheets.marketType.options.find(
+    const selected = sheets.marketType.options.find(
       (option) => option.id === runtime.marketTypeId,
     );
     return selected?.title ?? row.value;
   }
 
   if (row.sheetTarget === 'tradingPair') {
-    const selected = HOME_MOCK_CONTENT.sheets.tradingPair.options.find(
+    const selected = sheets.tradingPair.options.find(
       (option) => option.id === runtime.tradingPairId,
     );
     return selected?.title ?? row.value;
   }
 
   if (row.sheetTarget === 'technicalIndicator') {
-    const selected = HOME_MOCK_CONTENT.sheets.technicalIndicator.options.find(
+    const selected = sheets.technicalIndicator.options.find(
       (option) => option.id === runtime.technicalIndicatorId,
     );
     return selected?.title ?? row.value;
   }
 
   if (row.sheetTarget === 'strategy') {
-    const selected = HOME_MOCK_CONTENT.sheets.strategy.options.find(
+    const selected = sheets.strategy.options.find(
       (option) => option.id === runtime.strategyId,
     );
     return selected?.title ?? row.value;
@@ -40,6 +42,7 @@ function resolveConfigValue(
 
 export function useHomeData() {
   const [data, setData] = useState<HomeData | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -56,14 +59,14 @@ export function useHomeData() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [reloadToken]);
 
   const configRows = useMemo(() => {
     if (!data) return [];
 
     return data.configRows.map((row) => ({
       ...row,
-      value: resolveConfigValue(row, data.runtime),
+      value: resolveConfigValue(row, data.runtime, data),
     }));
   }, [data]);
 
@@ -95,9 +98,19 @@ export function useHomeData() {
     };
   }, [data]);
 
+  const refresh = useCallback(() => {
+    setReloadToken((n) => n + 1);
+  }, []);
+
   const updateRuntime = useCallback(async (partial: Partial<HomeRuntimeState>) => {
     const runtime = await homeService.updateRuntime(partial);
     setData((current) => (current ? { ...current, runtime } : current));
+
+    // Pair / strategy changes need a live RSI + candles refresh.
+    if (partial.tradingPairId !== undefined || partial.strategyId !== undefined) {
+      setReloadToken((n) => n + 1);
+    }
+
     return runtime;
   }, []);
 
@@ -107,6 +120,7 @@ export function useHomeData() {
     tradeAmount,
     duration,
     updateRuntime,
+    refresh,
   };
 }
 

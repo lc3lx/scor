@@ -1,4 +1,6 @@
 import { StrategyOptionCard } from '@components/molecules/StrategyOptionCard';
+import { Text } from '@components/atoms/Text';
+import { useT } from '@shared/i18n';
 import type { StrategySheetContent } from '../../types';
 import styles from './StrategySheetContent.module.css';
 
@@ -8,6 +10,18 @@ export type StrategySheetContentProps = {
 };
 
 export function StrategySheetContent({ content, onSelect }: StrategySheetContentProps) {
+  const t = useT();
+
+  if (content.options.length === 0) {
+    return (
+      <div className={styles.root}>
+        <Text variant="caption" tone="caption" align="center">
+          {t('home.strategy.empty')}
+        </Text>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.root}>
       {content.options.map((option) => {

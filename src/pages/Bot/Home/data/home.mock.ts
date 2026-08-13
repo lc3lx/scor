@@ -1,358 +1,236 @@
 import { brandAssets, imageAssets, notificationAssets, uiAssets } from '@assets/index';
 import type { ChipTone } from '@components/types';
+import { t } from '@shared/i18n';
 import type { HomePageContent, HomeRuntimeState } from '../types';
 
-const MARKET_GLOBAL_ID = 'global-indicators';
 const MARKET_BINOLLA_ID = 'binolla-market';
-const PAIR_EUR_USD_ID = 'eur-usd';
-const PAIR_GBP_USD_ID = 'gbp-usd';
-const PAIR_USD_JPY_ID = 'usd-jpy';
-const INDICATOR_BOLLINGER_ID = 'bollinger-bands';
 const INDICATOR_RSI_ID = 'rsi';
-const STRATEGY_ALPHA_MOMENTUM_ID = 'alpha-momentum';
-const AMOUNT_25_ID = 'amount-25';
-const DURATION_1M_ID = 'duration-1m';
 const RISK_MEDIUM_ID = 'risk-medium';
 
-const COMPLEXITY_DISPLAY: Record<'low' | 'medium', { label: string; tone: ChipTone }> = {
-  low: { label: 'Low', tone: 'success' },
-  medium: { label: 'Medium', tone: 'warning' },
-};
-
 /**
- * Temporary Home content — replace with API responses when backend is ready.
- * Figma nodes: 222:2106 (main), 222:2234 (settings sheet), 222:2537 (chart sheet)
+ * Honest Home shell — labels/i18n only. No fabricated balances, signals,
+ * pairs, strategies, or success rates. Live values come from homeService APIs.
  */
-export const HOME_MOCK_CONTENT: HomePageContent = {
-  header: {
-    title: 'AI Bot Engine',
-    subtitle: 'Scar Alpha neural core',
-  },
-  botEngine: {
-    name: 'Scar Alpha AI',
-    iconSrc: brandAssets.botSetupLogo,
-    statusLabel: 'Running',
-    statusTone: 'active',
-    stats: [
-      { id: 'signal', label: 'Signal', value: 'UP ↑', valueTone: 'success' },
-      { id: 'strength', label: 'Strength', value: '82%' },
-      { id: 'updated', label: 'Updated', value: '2s ago' },
-    ],
-  },
-  stats: [
-    { id: 'balance', label: 'Balance', value: '$4,821' },
-    { id: 'today-gain', label: 'Today +', value: '+$142', valueTone: 'success' },
-    { id: 'today-loss', label: 'Today -', value: '-$44', valueTone: 'danger' },
-    { id: 'net', label: 'Net', value: '+$98', valueTone: 'success' },
-    { id: 'active', label: 'Active', value: '3', valueTone: 'warning' },
-    { id: 'win-rate', label: 'Win Rate', value: '78%' },
-  ],
-  controls: ['start', 'pause', 'stop', 'apply'],
-  configRows: [
-    {
-      id: 'market-type',
-      iconSrc: uiAssets.marketWave,
-      label: 'Market Type',
-      value: 'Global Indicators',
-      sheetTarget: 'marketType',
+export function getHomeMockContent(): HomePageContent {
+  return {
+    header: {
+      title: t('home.header.title'),
+      subtitle: t('home.header.subtitle'),
     },
-    {
-      id: 'trading-pair',
-      iconSrc: uiAssets.tradingPair,
-      label: 'Trading Pair',
-      value: 'EUR/USD',
-      sheetTarget: 'tradingPair',
-    },
-    {
-      id: 'indicator',
-      iconSrc: uiAssets.chart,
-      label: 'Technical Indicator',
-      value: 'Bollinger Bands',
-      sheetTarget: 'technicalIndicator',
-    },
-    {
-      id: 'strategy',
-      iconSrc: uiAssets.botAvatar,
-      label: 'Strategy',
-      value: 'Alpha Momentum',
-      sheetTarget: 'strategy',
-    },
-  ],
-  tradeAmount: {
-    label: 'Trade Amount',
-    selectedId: AMOUNT_25_ID,
-    displayValue: '$25',
-    options: [
-      { id: 'amount-10', label: '$10' },
-      { id: AMOUNT_25_ID, label: '$25' },
-      { id: 'amount-50', label: '$50' },
-      { id: 'amount-100', label: '$100' },
-    ],
-  },
-  duration: {
-    label: 'Duration',
-    selectedId: DURATION_1M_ID,
-    displayValue: '1m',
-    options: [
-      { id: 'duration-30s', label: '30s' },
-      { id: DURATION_1M_ID, label: '1m' },
-      { id: 'duration-3m', label: '3m' },
-      { id: 'duration-5m', label: '5m' },
-      { id: 'duration-15m', label: '15m' },
-      { id: 'duration-custom', label: 'Custom' },
-    ],
-  },
-  riskLimits: [
-    {
-      id: 'profit-target',
-      iconSrc: notificationAssets.profitTarget,
-      label: 'Daily Profit Target',
-      value: '—',
-      hint: 'Managed on Binolla / not auto-enforced here',
-      valueTone: 'profit',
-    },
-    {
-      id: 'loss-limit',
-      iconSrc: notificationAssets.lossLimit,
-      label: 'Daily Loss Limit',
-      value: '—',
-      hint: 'Managed on Binolla / not auto-enforced here',
-      valueTone: 'loss',
-    },
-  ],
-  actions: [
-    { id: 'show-chart', label: 'Show Chart', sheetTarget: 'chart' },
-    { id: 'bot-settings', label: 'Bot Settings', sheetTarget: 'settings' },
-  ],
-  disclaimer: 'Demo trading on Binolla only. RSI from live candles. No automatic orders.',
-  sheets: {
-    chart: {
-      titleTemplate: '{pair} · {duration}',
-      candleData: [],
+    botEngine: {
+      name: t('home.bot.name'),
+      iconSrc: brandAssets.botSetupLogo,
+      statusLabel: t('home.bot.statusManual'),
+      statusTone: 'neutral',
       stats: [
-        { id: 'indicator', label: 'Indicator', value: 'RSI' },
-        { id: 'strategy', label: 'Strategy', value: 'RSI' },
-        { id: 'signal', label: 'Signal', value: 'NONE' },
+        { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
+        { id: 'strength', label: t('common.rsi'), value: '—' },
+        { id: 'updated', label: t('home.stat.candle'), value: '—' },
       ],
     },
+    stats: [
+      { id: 'balance', label: t('home.stat.balance'), value: '—' },
+      { id: 'today-gain', label: t('home.stat.todayGain'), value: '—' },
+      { id: 'today-loss', label: t('home.stat.todayLoss'), value: '—' },
+      { id: 'net', label: t('home.stat.net'), value: '—' },
+      { id: 'active', label: t('home.stat.active'), value: '—' },
+      { id: 'win-rate', label: t('home.stat.winRate'), value: '—' },
+    ],
+    controls: ['start', 'pause', 'stop', 'apply'],
+    configRows: [
+      {
+        id: 'market-type',
+        iconSrc: uiAssets.marketWave,
+        label: t('home.row.marketType'),
+        value: t('home.market.binolla'),
+        sheetTarget: 'marketType',
+      },
+      {
+        id: 'trading-pair',
+        iconSrc: uiAssets.tradingPair,
+        label: t('home.row.tradingPair'),
+        value: '—',
+        sheetTarget: 'tradingPair',
+      },
+      {
+        id: 'indicator',
+        iconSrc: uiAssets.chart,
+        label: t('home.row.indicator'),
+        value: t('common.rsi'),
+        sheetTarget: 'technicalIndicator',
+      },
+      {
+        id: 'strategy',
+        iconSrc: uiAssets.botAvatar,
+        label: t('home.row.strategy'),
+        value: '—',
+        sheetTarget: 'strategy',
+      },
+    ],
+    tradeAmount: {
+      label: t('home.tradeAmountSoon'),
+      selectedId: '',
+      displayValue: '—',
+      options: [],
+    },
+    duration: {
+      label: t('home.durationSoon'),
+      selectedId: '',
+      displayValue: '—',
+      options: [],
+    },
+    riskLimits: [
+      {
+        id: 'profit-target',
+        iconSrc: notificationAssets.profitTarget,
+        label: t('home.risk.profitTarget'),
+        value: '—',
+        hint: t('home.risk.hintSoon'),
+        valueTone: 'profit',
+      },
+      {
+        id: 'loss-limit',
+        iconSrc: notificationAssets.lossLimit,
+        label: t('home.risk.lossLimit'),
+        value: '—',
+        hint: t('home.risk.hintSoon'),
+        valueTone: 'loss',
+      },
+    ],
+    actions: [
+      { id: 'show-chart', label: t('home.action.showChart'), sheetTarget: 'chart' },
+      { id: 'bot-settings', label: t('home.action.botSettings'), sheetTarget: 'settings' },
+    ],
+    disclaimer: t('home.disclaimer.default'),
+    sheets: {
+      chart: {
+        titleTemplate: t('home.sheet.chartTitle'),
+        candleData: [],
+        stats: [
+          { id: 'indicator', label: t('trading.indicator'), value: t('common.rsi') },
+          { id: 'strategy', label: t('trading.strategy'), value: '—' },
+          { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
+        ],
+      },
+      settings: {
+        title: t('home.sheet.settings'),
+        toggles: [
+          {
+            id: 'auto-profit',
+            label: t('home.settings.autoProfit'),
+            enabled: false,
+          },
+          {
+            id: 'auto-loss',
+            label: t('home.settings.autoLoss'),
+            enabled: false,
+          },
+          {
+            id: 'signal-confirm',
+            label: t('home.settings.signalConfirm'),
+            enabled: false,
+          },
+          {
+            id: 'notifications',
+            label: t('home.settings.notifications'),
+            enabled: true,
+          },
+        ],
+        riskLabel: t('home.settings.riskLabel'),
+        riskOptions: [
+          { id: 'risk-low', label: t('common.low') },
+          { id: RISK_MEDIUM_ID, label: t('common.medium') },
+          { id: 'risk-high', label: t('common.high') },
+        ],
+        selectedRiskId: RISK_MEDIUM_ID,
+        saveLabel: t('home.settings.save'),
+      },
+      marketType: {
+        title: t('home.sheet.marketType'),
+        selectedId: MARKET_BINOLLA_ID,
+        options: [
+          {
+            id: MARKET_BINOLLA_ID,
+            title: t('home.market.binolla'),
+            description: t('home.market.binollaDesc'),
+          },
+        ],
+      },
+      tradingPair: {
+        title: t('home.sheet.tradingPair'),
+        searchPlaceholder: t('home.sheet.searchPairs'),
+        emptySearchMessage: t('home.sheet.noPairs'),
+        selectedId: '',
+        options: [],
+      },
+      technicalIndicator: {
+        title: t('home.sheet.indicator'),
+        selectedId: INDICATOR_RSI_ID,
+        options: [
+          {
+            id: INDICATOR_RSI_ID,
+            title: t('home.indicator.rsi'),
+            description: t('home.indicator.rsiDesc'),
+            bestFor: t('home.indicator.rsiBest'),
+            complexity: 'low',
+            previewSrc: imageAssets.indicators.rsi,
+          },
+        ],
+      },
+      strategy: {
+        title: t('home.sheet.strategy'),
+        selectedId: '',
+        options: [],
+      },
+    },
+  };
+}
+
+function buildHomeInitialRuntime(): HomeRuntimeState {
+  const settings = getHomeMockContent().sheets.settings;
+  return {
+    botStatus: 'stopped',
+    marketTypeId: MARKET_BINOLLA_ID,
+    tradingPairId: '',
+    technicalIndicatorId: INDICATOR_RSI_ID,
+    strategyId: 'rsi',
+    tradeAmountId: '',
+    durationId: '',
     settings: {
-      title: 'Bot Settings',
-      toggles: [
-        {
-          id: 'auto-profit',
-          label: 'Auto Stop Profit Target (Coming Soon)',
-          enabled: false,
-        },
-        {
-          id: 'auto-loss',
-          label: 'Auto Stop Loss Limit (Coming Soon)',
-          enabled: false,
-        },
-        {
-          id: 'signal-confirm',
-          label: 'Signal Confirmation Mode (Coming Soon)',
-          enabled: false,
-        },
-        {
-          id: 'notifications',
-          label: 'Local Notifications',
-          enabled: true,
-        },
-      ],
-      riskLabel: 'Risk Level (Coming Soon)',
-      riskOptions: [
-        { id: 'risk-low', label: 'Low' },
-        { id: RISK_MEDIUM_ID, label: 'Medium' },
-        { id: 'risk-high', label: 'High' },
-      ],
-      selectedRiskId: RISK_MEDIUM_ID,
-      saveLabel: 'Close',
+      ...settings,
+      toggles: settings.toggles.map((toggle) => ({ ...toggle })),
+      riskOptions: [...settings.riskOptions],
     },
-    marketType: {
-      title: 'Market Type',
-      selectedId: MARKET_GLOBAL_ID,
-      options: [
-        {
-          id: MARKET_GLOBAL_ID,
-          title: 'Global Indicators',
-          description: 'Trade using global market indicator signals.',
-        },
-        {
-          id: MARKET_BINOLLA_ID,
-          title: 'Binolla Market',
-          description: 'Trade directly on Binolla market pairs.',
-        },
-      ],
-    },
-    tradingPair: {
-      title: 'Trading Pair',
-      searchPlaceholder: 'Search pairs',
-      emptySearchMessage: 'No pairs found',
-      selectedId: PAIR_EUR_USD_ID,
-      options: [
-        { id: PAIR_EUR_USD_ID, title: 'EUR/USD', description: 'Euro / US Dollar' },
-        { id: PAIR_GBP_USD_ID, title: 'GBP/USD', description: 'British Pound / US Dollar' },
-        { id: PAIR_USD_JPY_ID, title: 'USD/JPY', description: 'US Dollar / Japanese Yen' },
-      ],
-    },
-    technicalIndicator: {
-      title: 'Select Indicator',
-      selectedId: INDICATOR_BOLLINGER_ID,
-      options: [
-        {
-          id: INDICATOR_BOLLINGER_ID,
-          title: 'Bollinger Bands',
-          description: 'Volatility bands around a moving average.',
-          bestFor: 'Best for: Trending & ranging',
-          complexity: 'medium',
-          previewSrc: imageAssets.indicators.bollingerBands,
-        },
-        {
-          id: INDICATOR_RSI_ID,
-          title: 'RSI',
-          description: 'Relative Strength Index momentum oscillator.',
-          bestFor: 'Best for: Reversal signals',
-          complexity: 'low',
-          previewSrc: imageAssets.indicators.rsi,
-        },
-        {
-          id: 'macd',
-          title: 'MACD',
-          description: 'Trend-following momentum indicator.',
-          bestFor: 'Best for: Trending markets',
-          complexity: 'medium',
-          previewSrc: imageAssets.indicators.macd,
-        },
-        {
-          id: 'moving-average',
-          title: 'Moving Average',
-          description: 'Smooths price action to identify trend.',
-          bestFor: 'Best for: Trend confirmation',
-          complexity: 'low',
-          previewSrc: imageAssets.indicators.movingAverage,
-        },
-        {
-          id: 'stochastic',
-          title: 'Stochastic',
-          description: 'Momentum oscillator comparing closes.',
-          bestFor: 'Best for: Overbought / oversold',
-          complexity: 'medium',
-          previewSrc: imageAssets.indicators.stochastic,
-        },
-        {
-          id: 'support-resistance',
-          title: 'Support & Resistance',
-          description: 'Key price levels for entries.',
-          bestFor: 'Best for: Range trading',
-          complexity: 'low',
-          previewSrc: imageAssets.indicators.supportResistance,
-        },
-        {
-          id: 'trend-indicator',
-          title: 'Trend Indicator',
-          description: 'Detects prevailing market trend.',
-          bestFor: 'Best for: Momentum plays',
-          complexity: 'medium',
-          previewSrc: imageAssets.indicators.trendIndicator,
-        },
-      ],
-    },
-    strategy: {
-      title: 'Select Strategy',
-      selectedId: STRATEGY_ALPHA_MOMENTUM_ID,
-      options: [
-        {
-          id: STRATEGY_ALPHA_MOMENTUM_ID,
-          title: 'Alpha Momentum',
-          stats: [
-            { label: 'Risk', value: 'Medium' },
-            { label: 'Markets', value: 'Global' },
-            { label: 'Duration', value: '1–5m' },
-            { label: 'Indicators', value: 'MACD + RSI' },
-          ],
-          successRate: 'Success ~78%',
-          previewSrc: imageAssets.strategies.alphaMomentum,
-        },
-        {
-          id: 'scar-precision',
-          title: 'Scar Precision',
-          stats: [
-            { label: 'Risk', value: 'Low' },
-            { label: 'Markets', value: 'Global · Binolla' },
-            { label: 'Duration', value: '3–15m' },
-            { label: 'Indicators', value: 'Bollinger + MA' },
-          ],
-          successRate: 'Success ~82%',
-          previewSrc: imageAssets.strategies.scarPrecision,
-        },
-        {
-          id: 'red-signal-pro',
-          title: 'Red Signal Pro',
-          stats: [
-            { label: 'Risk', value: 'High' },
-            { label: 'Markets', value: 'Binolla' },
-            { label: 'Duration', value: '30s–1m' },
-            { label: 'Indicators', value: 'Stochastic + Trend' },
-          ],
-          successRate: 'Success ~74%',
-          previewSrc: imageAssets.strategies.redSignalPro,
-        },
-        {
-          id: 'trend-breaker',
-          title: 'Trend Breaker',
-          stats: [
-            { label: 'Risk', value: 'Medium' },
-            { label: 'Markets', value: 'Global' },
-            { label: 'Duration', value: '5–15m' },
-            { label: 'Indicators', value: 'MA + S/R' },
-          ],
-          successRate: 'Success ~71%',
-          previewSrc: imageAssets.strategies.trendBreaker,
-        },
-        {
-          id: 'otc-hunter',
-          title: 'OTC Hunter',
-          stats: [
-            { label: 'Risk', value: 'High' },
-            { label: 'Markets', value: 'Binolla OTC' },
-            { label: 'Duration', value: '30s–3m' },
-            { label: 'Indicators', value: 'RSI + Trend' },
-          ],
-          successRate: 'Success ~80%',
-          previewSrc: imageAssets.strategies.otcHunter,
-        },
-      ],
-    },
-  },
-};
+  };
+}
 
-export const HOME_INITIAL_RUNTIME: HomeRuntimeState = {
-  botStatus: 'stopped',
-  marketTypeId: MARKET_BINOLLA_ID,
-  tradingPairId: 'EURUSD_otc',
-  technicalIndicatorId: INDICATOR_RSI_ID,
-  strategyId: 'rsi',
-  tradeAmountId: AMOUNT_25_ID,
-  durationId: DURATION_1M_ID,
-  settings: HOME_MOCK_CONTENT.sheets.settings,
-};
+export const HOME_INITIAL_RUNTIME: HomeRuntimeState = buildHomeInitialRuntime();
 
-export const HOME_SHEET_TITLES = {
-  settings: HOME_MOCK_CONTENT.sheets.settings.title,
-  marketType: HOME_MOCK_CONTENT.sheets.marketType.title,
-  tradingPair: HOME_MOCK_CONTENT.sheets.tradingPair.title,
-  technicalIndicator: HOME_MOCK_CONTENT.sheets.technicalIndicator.title,
-  strategy: HOME_MOCK_CONTENT.sheets.strategy.title,
-} as const;
+export function getHomeSheetTitles() {
+  return {
+    settings: t('home.sheet.settings'),
+    marketType: t('home.sheet.marketType'),
+    tradingPair: t('home.sheet.tradingPair'),
+    technicalIndicator: t('home.sheet.indicator'),
+    strategy: t('home.sheet.strategy'),
+  } as const;
+}
 
-export const BOT_STATUS_DISPLAY: Record<
+export function getBotStatusDisplay(): Record<
   HomeRuntimeState['botStatus'],
   { label: string; tone: ChipTone }
-> = {
-  // Start only enables RSI monitoring — it never places Binolla orders automatically.
-  running: { label: 'RSI Monitor', tone: 'active' },
-  paused: { label: 'Paused', tone: 'warning' },
-  stopped: { label: 'Manual Trade', tone: 'neutral' },
-};
+> {
+  return {
+    // Start only enables RSI monitoring — it never places Binolla orders automatically.
+    running: { label: t('home.bot.statusRsi'), tone: 'active' },
+    paused: { label: t('home.bot.statusPaused'), tone: 'warning' },
+    stopped: { label: t('home.bot.statusManual'), tone: 'neutral' },
+  };
+}
 
-export { COMPLEXITY_DISPLAY };
+export function getComplexityDisplay(): Record<'low' | 'medium', { label: string; tone: ChipTone }> {
+  return {
+    low: { label: t('common.low'), tone: 'success' },
+    medium: { label: t('common.medium'), tone: 'warning' },
+  };
+}

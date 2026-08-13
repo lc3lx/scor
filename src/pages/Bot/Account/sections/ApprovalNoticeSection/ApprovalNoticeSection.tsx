@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Text } from '@components/atoms/Text';
-import { BINOLLA_REFERRAL_LABEL } from '@constants/binolla';
+import { getBinollaLoginLabel, getBinollaReferralLabel } from '@constants/binolla';
 import { ROUTES } from '@constants/routes';
+import { useT } from '@shared/i18n';
 import type { AccountStatus } from '../../types';
 import styles from './ApprovalNoticeSection.module.css';
 
@@ -16,19 +17,20 @@ export function ApprovalNoticeSection({
   binollaConnected,
   botAccess,
 }: ApprovalNoticeSectionProps) {
+  const t = useT();
+
   if (botAccess === 'SessionExpired') {
     return (
-      <section className={styles.section} aria-label="Session expired">
+      <section className={styles.section} aria-label={t('account.notice.sessionExpired.aria')}>
         <div className={styles.card} data-tone="warning">
           <Text variant="body" tone="body" className={styles.title}>
-            Binolla session expired
+            {t('account.notice.sessionExpired.title')}
           </Text>
           <Text variant="caption" tone="caption" className={styles.body}>
-            Your Binolla WebSocket session dropped (token expired or server restart). Approval
-            status stays Pending — just log in again with the same Binolla email and password.
+            {t('account.notice.sessionExpired.body')}
           </Text>
           <Link className={styles.link} to={ROUTES.login}>
-            Reconnect Binolla login
+            {t('account.notice.sessionExpired.cta')}
           </Link>
         </div>
       </section>
@@ -37,20 +39,19 @@ export function ApprovalNoticeSection({
 
   if (!binollaConnected && accountStatus !== 'rejected') {
     return (
-      <section className={styles.section} aria-label="Access notice">
+      <section className={styles.section} aria-label={t('account.notice.connect.aria')}>
         <div className={styles.card} data-tone="info">
           <Text variant="body" tone="body" className={styles.title}>
-            Connect Binolla
+            {t('account.notice.connect.title')}
           </Text>
           <Text variant="caption" tone="caption" className={styles.body}>
-            Log in or sign up with your Binolla email and password. We connect the session
-            automatically. An administrator will review your account after you connect.
+            {t('account.notice.connect.body')}
           </Text>
           <Link className={styles.link} to={ROUTES.signup}>
-            {BINOLLA_REFERRAL_LABEL}
+            {getBinollaReferralLabel()}
           </Link>
           <Link className={styles.link} to={ROUTES.login}>
-            Log in to Binolla
+            {getBinollaLoginLabel()}
           </Link>
         </div>
       </section>
@@ -59,14 +60,13 @@ export function ApprovalNoticeSection({
 
   if (accountStatus === 'pending') {
     return (
-      <section className={styles.section} aria-label="Approval pending">
+      <section className={styles.section} aria-label={t('account.notice.pending.aria')}>
         <div className={styles.card} data-tone="warning">
           <Text variant="body" tone="body" className={styles.title}>
-            Binolla Connected
+            {t('account.notice.pending.title')}
           </Text>
           <Text variant="caption" tone="caption" className={styles.body}>
-            Administrator has not approved your account yet. You can use markets, charts, and RSI
-            signals. Trading stays locked until an administrator approves you.
+            {t('account.notice.pending.body')}
           </Text>
         </div>
       </section>
@@ -75,14 +75,13 @@ export function ApprovalNoticeSection({
 
   if (accountStatus === 'rejected') {
     return (
-      <section className={styles.section} aria-label="Approval rejected">
+      <section className={styles.section} aria-label={t('account.notice.rejected.aria')}>
         <div className={styles.card} data-tone="danger">
           <Text variant="body" tone="body" className={styles.title}>
-            Access not granted
+            {t('account.notice.rejected.title')}
           </Text>
           <Text variant="caption" tone="caption" className={styles.body}>
-            This Binolla account was rejected by an administrator. Contact support if you believe
-            this is a mistake.
+            {t('account.notice.rejected.body')}
           </Text>
         </div>
       </section>
