@@ -21,7 +21,7 @@ import {
   canTrade,
 } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
-import { pickPreferredMarketAsset } from '@shared/market/preferAsset';
+import { pickPreferredMarketAsset, isPreferredMarketSymbol } from '@shared/market/preferAsset';
 import { t } from '@shared/i18n';
 
 const SELECTED_ASSET_KEY = 'scar-alpha-selected-asset';
@@ -29,6 +29,8 @@ const SELECTED_ASSET_KEY = 'scar-alpha-selected-asset';
 let runtimeState: TradingRuntimeState = { ...TRADING_INITIAL_RUNTIME };
 /** Last asset symbol confirmed from Binolla assets API — never invent a pair. */
 let selectedAsset: string | null = readStoredAsset();
+/** True after the user picks a pair in the UI this session — honor any available sticky. */
+let userChosePair = false;
 /** Prevent overlapping full refreshes from aborting each other. */
 let fetchInFlight: Promise<TradingData> | null = null;
 let livePriceInFlight = false;
@@ -388,7 +390,7 @@ export const tradingService = {
             : undefined;
 
       let assetsErrorCode: string | null = null;
-      const assets = browse
+      let assets = browse
         ? await marketApi.assets(timedSignal(MARKET_FETCH_MS)).catch((err: unknown) => {
             assetsErrorCode =
               err instanceof ApiClientError ? err.code : err instanceof Error ? err.name : 'unknown';
@@ -416,6 +418,17 @@ export const tradingService = {
             return null;
           })
         : null;
+
+      // Backend may return count=0 while s_assets/list is still in flight (was 8s timeout).
+      // One immediate retry recovers the pair switcher without waiting for the 10s poll.
+      if (browse && (assets?.assets?.length ?? 0) === 0 && !assetsErrorCode) {
+        assets = await marketApi.assets(timedSignal(MARKET_FETCH_MS)).catch((err: unknown) => {
+          assetsErrorCode =
+            err instanceof ApiClientError ? err.code : err instanceof Error ? err.name : 'unknown';
+          return null;
+        });
+      }
+
       const liveAssets = assets?.assets ?? [];
       const pairOptions: TradingPairOption[] = liveAssets.map((a) => ({
         symbol: a.symbol,
@@ -426,14 +439,30 @@ export const tradingService = {
 
       const sticky =
         selectedAsset != null
-          ? liveAssets.find((a) => a.symbol === selectedAsset)
+          ? liveAssets.find(
+              (a) =>
+                a.symbol === selectedAsset && (a.available === undefined || a.available),
+            )
           : undefined;
+      // Honor sticky for FX majors, or any pair the user explicitly picked this session.
+      // Ignore stale localStorage equity OTC (e.g. MS_otc) that never streams candles.
+      const stickyUsable =
+        sticky &&
+        (userChosePair ||
+          isPreferredMarketSymbol(sticky.symbol) ||
+          /^(EUR|GBP|USD|AUD|CAD|CHF|JPY|NZD){2}(_otc)?$/i.test(
+            sticky.symbol.replace('/', ''),
+          ));
       const preferred =
-        sticky ??
+        (stickyUsable ? sticky : undefined) ??
         pickPreferredMarketAsset(liveAssets) ??
         liveAssets.find((a) => a.available) ??
         liveAssets[0];
       const firstAsset = preferred?.symbol ?? null;
+      if (selectedAsset && selectedAsset !== firstAsset) {
+        liveCandleSeries = [];
+        lastLivePrice = null;
+      }
       selectedAsset = firstAsset;
       persistSelectedAsset(firstAsset);
 
@@ -453,7 +482,8 @@ export const tradingService = {
             availableCount: liveAssets.filter((a) => a.available).length,
             sample: liveAssets.slice(0, 10).map((a) => a.symbol),
             selected: firstAsset,
-            stickyHit: Boolean(sticky),
+            stickyHit: Boolean(stickyUsable),
+            stickyRejected: Boolean(sticky && !stickyUsable) ? selectedAsset : null,
             hasPairSwitcherInPayload: pairOptions.length > 0,
             assetsErrorCode,
             marketFetchMs: MARKET_FETCH_MS,
@@ -494,10 +524,13 @@ export const tradingService = {
         content.binollaCard.pairSymbol = firstAsset;
 
         const periodSeconds = candlePeriodSecondsFromId(runtimeState.candlePeriodId);
-        // Separate abort signals so one slow call does not cancel the others mid-wait.
-        const [price, candlesResponse, rsi] = await Promise.all([
+        // Candles first — parallel price/candles/RSI contended on the subscribe gate and
+        // all timed out together at MarketDataTimeout.
+        const candlesResponse = await marketApi
+          .candles(firstAsset, periodSeconds, timedSignal(MARKET_FETCH_MS))
+          .catch(() => null);
+        const [price, rsi] = await Promise.all([
           marketApi.price(firstAsset, timedSignal(MARKET_FETCH_MS)).catch(() => null),
-          marketApi.candles(firstAsset, periodSeconds, timedSignal(MARKET_FETCH_MS)).catch(() => null),
           strategiesApi.rsiSignal(firstAsset, periodSeconds, timedSignal(MARKET_FETCH_MS)).catch(() => null),
         ]);
 
@@ -715,6 +748,7 @@ export const tradingService = {
     if (!cleaned) return;
     if (selectedAsset === cleaned) return;
     selectedAsset = cleaned;
+    userChosePair = true;
     persistSelectedAsset(cleaned);
     liveCandleSeries = [];
     lastLivePrice = null;
@@ -738,6 +772,7 @@ export const tradingService = {
   resetRuntime(): void {
     runtimeState = { ...TRADING_INITIAL_RUNTIME };
     selectedAsset = null;
+    userChosePair = false;
     persistSelectedAsset(null);
   },
 };

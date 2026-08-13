@@ -4,6 +4,7 @@ import { Input } from '@components/atoms/Input';
 import { Text } from '@components/atoms/Text';
 import { CandlestickChart } from '@components/organisms/CandlestickChart';
 import { useT } from '@shared/i18n';
+import { useEffect } from 'react';
 import type { BinollaCardContent, TradingTimeframeOption } from '../../types';
 import styles from './BinollaTradingCardSection.module.css';
 
@@ -40,6 +41,29 @@ export function BinollaTradingCardSection({
   const last = content.candleData[content.candleData.length - 1];
   const priceTone =
     last == null ? undefined : last.close >= last.open ? ('up' as const) : ('down' as const);
+
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+      body: JSON.stringify({
+        sessionId: '660ec2',
+        runId: 'candle-ui',
+        hypothesisId: 'H-ui',
+        location: 'BinollaTradingCardSection.tsx:render',
+        message: 'candle_timeframe_ui',
+        data: {
+          tfCount: timeframeOptions.length,
+          selectedTimeframeId,
+          labels: timeframeOptions.map((tf) => tf.label),
+          hasPairOptions: Boolean(content.pairOptions?.length),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }, [timeframeOptions, selectedTimeframeId, content.pairOptions?.length]);
+  // #endregion
 
   return (
     <section className={styles.section} aria-label={t('nav.trading')}>
@@ -92,6 +116,21 @@ export function BinollaTradingCardSection({
                   </Text>
                 </>
               )}
+              <label className={styles.candleSelectWrap}>
+                <span className={styles.srOnly}>{t('trading.selectCandle')}</span>
+                <select
+                  className={styles.candleSelect}
+                  value={selectedTimeframeId}
+                  aria-label={t('trading.selectCandle')}
+                  onChange={(event) => onSelectTimeframe(event.target.value)}
+                >
+                  {timeframeOptions.map((tf) => (
+                    <option key={tf.id} value={tf.id}>
+                      {tf.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
             <p className={styles.price} data-tone={priceTone}>
               {content.priceDisplay}

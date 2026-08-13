@@ -522,6 +522,7 @@ export const ar: EnDictionary = {
   'trading.chart.live': 'شموع بينولا حية',
   'trading.noPairs': 'لا أزواج',
   'trading.selectPair': 'اختر الزوج',
+  'trading.selectCandle': 'إطار الشمعة',
   'trading.noAssetsSession': 'لا أصول من جلسة بينولا',
   'trading.noAssets': 'لا أصول',
   'trading.tradingUnavailable': 'التداول غير متاح لهذا الحساب.',
