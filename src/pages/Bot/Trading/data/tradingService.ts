@@ -26,7 +26,10 @@ import { t } from '@shared/i18n';
 
 const SELECTED_ASSET_KEY = 'scar-alpha-selected-asset';
 
-let runtimeState: TradingRuntimeState = { ...TRADING_INITIAL_RUNTIME };
+let runtimeState: TradingRuntimeState = {
+  ...TRADING_INITIAL_RUNTIME,
+  candlePeriodId: sanitizeCandlePeriodId(TRADING_INITIAL_RUNTIME.candlePeriodId),
+};
 /** Last asset symbol confirmed from Binolla assets API — never invent a pair. */
 let selectedAsset: string | null = readStoredAsset();
 /** True after the user picks a pair in the UI this session — honor any available sticky. */
@@ -88,7 +91,16 @@ function durationSecondsFromId(id: string): number {
 
 function candlePeriodSecondsFromId(id: string): number {
   const opt = getTradingMockContent().timeframeOptions.find((o) => o.id === id);
-  return opt?.periodSeconds ?? 60;
+  const seconds = opt?.periodSeconds ?? 60;
+  // Binolla OTC never pushes 4h (14400) history — keep chart on supported periods.
+  if (seconds > 3600) return 60;
+  return seconds;
+}
+
+function sanitizeCandlePeriodId(id: string): string {
+  const options = getTradingMockContent().timeframeOptions;
+  if (options.some((o) => o.id === id)) return id;
+  return 'tf-1m';
 }
 
 function mapCandles(
@@ -575,11 +587,13 @@ export const tradingService = {
           price = await marketApi.price(firstAsset, timedSignal(MARKET_FETCH_MS)).catch(() => null);
         }
 
-        content.binollaCard.priceDisplay = price
-          ? price.price.toFixed(5)
-          : t('common.unavailable');
+        content.binollaCard.priceDisplay =
+          price?.price != null && Number.isFinite(price.price)
+            ? price.price.toFixed(5)
+            : t('common.unavailable');
         let candles = candlesResponse ? mapCandles(candlesResponse.candles) : [];
-        const livePx = price?.price ?? lastLivePrice;
+        const livePx =
+          price?.price != null && Number.isFinite(price.price) ? price.price : lastLivePrice;
         candles = mergeServerWithLiveSeries(candles, liveCandleSeries, periodSeconds, livePx);
         if (livePx != null && candles.length > 0) {
           candles = applyQuoteToCandles(candles, livePx, periodSeconds);
@@ -729,7 +743,8 @@ export const tradingService = {
   },
 
   async setCandlePeriod(candlePeriodId: string): Promise<TradingRuntimeState> {
-    const opt = getTradingMockContent().timeframeOptions.find((o) => o.id === candlePeriodId);
+    const safeId = sanitizeCandlePeriodId(candlePeriodId);
+    const opt = getTradingMockContent().timeframeOptions.find((o) => o.id === safeId);
     if (!opt) return cloneRuntime();
     liveCandleSeries = [];
     lastLivePrice = null;

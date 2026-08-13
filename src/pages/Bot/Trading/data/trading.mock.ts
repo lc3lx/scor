@@ -55,7 +55,6 @@ export function getTradingMockContent(): TradingPageContent {
       { id: 'tf-5m', label: '5m', periodSeconds: 300 },
       { id: 'tf-15m', label: '15m', periodSeconds: 900 },
       { id: 'tf-1h', label: '1h', periodSeconds: 3600 },
-      { id: 'tf-4h', label: '4h', periodSeconds: 14400 },
     ],
   };
 }

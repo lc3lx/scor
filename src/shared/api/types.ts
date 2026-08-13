@@ -113,7 +113,7 @@ export type MarketAssetsResponse = {
 
 export type MarketPriceResponse = {
   asset: string;
-  price: number;
+  price: number | null;
   timestamp: string;
 };
 
