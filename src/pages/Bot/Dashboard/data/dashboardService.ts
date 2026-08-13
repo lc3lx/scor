@@ -9,6 +9,7 @@ import type { DashboardContent, DashboardTimeframe } from '../types';
 import { accountApi, binollaApi, meApi, tradesApi } from '@shared/api';
 import type { TradeDto } from '@shared/api';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
+import { getAccountStatusCached } from '@shared/api/botSessionCache';
 import { t } from '@shared/i18n';
 import { getDashboardContent, DASHBOARD_INITIAL_TIMEFRAME } from './dashboard.mock';
 
@@ -123,7 +124,7 @@ export const dashboardService = {
     try {
       const [me, status, balance, tradeBundle] = await Promise.all([
         meApi.get().catch(() => null),
-        accountApi.status().catch(() => null),
+        getAccountStatusCached().catch(() => null),
         binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
         fetchAllTradesForStats(),
       ]);

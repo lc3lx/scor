@@ -21,6 +21,7 @@ import {
   canTrade,
 } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
+import { getAccountStatusCached } from '@shared/api/botSessionCache';
 import { pickPreferredMarketAsset, isPreferredMarketSymbol } from '@shared/market/preferAsset';
 import { t } from '@shared/i18n';
 
@@ -363,7 +364,7 @@ export const tradingService = {
 
     try {
       const [status, balance] = await Promise.all([
-        accountApi.status().catch(() => null),
+        getAccountStatusCached().catch(() => null),
         binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
       ]);
 
@@ -741,7 +742,7 @@ export const tradingService = {
   },
 
   async placeTrade(direction: TradeDirection): Promise<string> {
-    const status = await accountApi.status().catch(() => null);
+    const status = await getAccountStatusCached().catch(() => null);
     if (!canTrade(status?.botAccess)) {
       throw new ApiClientError(
         status?.botAccess === 'AdminApprovalRequired'

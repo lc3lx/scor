@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@constants/routes';
 import { authService } from '@features/Auth';
 import { accountApi, ApiClientError, binollaApi } from '@shared/api';
+import { invalidateBotSessionCache } from '@shared/api/botSessionCache';
 import { routeForBotAccess } from '@shared/access/botAccess';
 import { tokenStore } from '@shared/auth/tokenStore';
 import { t } from '@shared/i18n';
@@ -43,6 +44,7 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
 
       // Navigate from the connect response — waiting on /api/account/status races a cookie-less
       // restore and can hang ~20s then send the user back to login.
+      invalidateBotSessionCache();
       setStatus('success');
       setPassword('');
       navigate(routeForBotAccess(result.access), { replace: true });

@@ -12,6 +12,7 @@ import {
 import type { TradeDto } from '@shared/api';
 import { canBrowseMarket } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
+import { getAccountStatusCached } from '@shared/api/botSessionCache';
 import {
   isPreferredMarketSymbol,
   pickPreferredMarketAsset,
@@ -141,7 +142,7 @@ export const homeService = {
 
     try {
       const [status, balance, strategies, tradeBundle] = await Promise.all([
-        accountApi.status().catch(() => null),
+        getAccountStatusCached().catch(() => null),
         binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
         strategiesApi.list().catch(() => null),
         fetchTradesForHomeStats(),
