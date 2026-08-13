@@ -333,13 +333,16 @@ function applyQuoteToCandles(
 function chartStatusFor(status: AccountStatusResponse | null, hasCandles: boolean): string {
   if (!status) return t('trading.chart.connect');
   if (status.botAccess === 'BinollaNotConnected') return t('trading.chart.connectBinolla');
-  if (status.botAccess === 'AdminApprovalRequired') {
-    return hasCandles ? t('trading.chart.lockedLive') : t('trading.chart.lockedEmpty');
-  }
   if (status.botAccess === 'NotEligible') return t('trading.chart.rejected');
   if (status.botAccess === 'SessionExpired') return t('trading.chart.sessionExpired');
   if (!canBrowseMarket(status.botAccess)) return t('trading.chart.accessRequired');
-  if (!hasCandles) return t('trading.chart.noCandles');
+  // Pending approval must not hide a market-data failure — chart can still load.
+  if (!hasCandles) {
+    return status.botAccess === 'AdminApprovalRequired'
+      ? t('trading.waitingCandles')
+      : t('trading.chart.noCandles');
+  }
+  if (status.botAccess === 'AdminApprovalRequired') return t('trading.chart.lockedLive');
   return t('trading.chart.live');
 }
 
@@ -437,13 +440,23 @@ export const tradingService = {
       }));
       content.binollaCard.pairOptions = pairOptions;
 
-      const sticky =
+      const stickyRaw =
         selectedAsset != null
           ? liveAssets.find(
               (a) =>
                 a.symbol === selectedAsset && (a.available === undefined || a.available),
             )
           : undefined;
+      // Prefer OTC twin when sticky is a non-OTC FX symbol (EURGBP often has no candle push).
+      const stickyOtcTwin =
+        stickyRaw && !/_otc$/i.test(stickyRaw.symbol)
+          ? liveAssets.find(
+              (a) =>
+                a.symbol.toLowerCase() === `${stickyRaw.symbol}_otc`.toLowerCase() &&
+                (a.available === undefined || a.available),
+            )
+          : undefined;
+      const sticky = stickyOtcTwin ?? stickyRaw;
       // Honor sticky for FX majors, or any pair the user explicitly picked this session.
       // Ignore stale localStorage equity OTC (e.g. MS_otc) that never streams candles.
       const stickyUsable =
@@ -529,10 +542,38 @@ export const tradingService = {
         const candlesResponse = await marketApi
           .candles(firstAsset, periodSeconds, timedSignal(MARKET_FETCH_MS))
           .catch(() => null);
-        const [price, rsi] = await Promise.all([
-          marketApi.price(firstAsset, timedSignal(MARKET_FETCH_MS)).catch(() => null),
-          strategiesApi.rsiSignal(firstAsset, periodSeconds, timedSignal(MARKET_FETCH_MS)).catch(() => null),
-        ]);
+        // #region agent log
+        fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+          body: JSON.stringify({
+            sessionId: '660ec2',
+            runId: 'chart-fix',
+            hypothesisId: 'H115',
+            location: 'tradingService.ts:fetchTradingDataInner',
+            message: candlesResponse ? 'candles_ok' : 'candles_miss',
+            data: {
+              asset: firstAsset,
+              periodSeconds,
+              candleCount: candlesResponse?.candles?.length ?? 0,
+              botAccess: status?.botAccess ?? null,
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+
+        // Price/RSI only after candles — parallel subscribe contended on one WS gate.
+        let price = null as Awaited<ReturnType<typeof marketApi.price>> | null;
+        let rsi = null as Awaited<ReturnType<typeof strategiesApi.rsiSignal>> | null;
+        if (candlesResponse) {
+          [price, rsi] = await Promise.all([
+            marketApi.price(firstAsset, timedSignal(MARKET_FETCH_MS)).catch(() => null),
+            strategiesApi.rsiSignal(firstAsset, periodSeconds, timedSignal(MARKET_FETCH_MS)).catch(() => null),
+          ]);
+        } else {
+          price = await marketApi.price(firstAsset, timedSignal(MARKET_FETCH_MS)).catch(() => null);
+        }
 
         content.binollaCard.priceDisplay = price
           ? price.price.toFixed(5)
@@ -612,12 +653,30 @@ export const tradingService = {
 
   /** Lightweight tick: update last candle + price from live quote only. */
   async fetchLivePrice(): Promise<number | null> {
-    if (!selectedAsset || fetchInFlight || livePriceInFlight) return null;
+    // Skip until chart has candles — short aborts (~4s) were cancelling quote waits
+    // and thrashing asset/change while history was still loading.
+    if (!selectedAsset || fetchInFlight || livePriceInFlight || liveCandleSeries.length === 0)
+      return null;
     livePriceInFlight = true;
     try {
       const quote = await marketApi
-        .price(selectedAsset, timedSignal(4_000))
+        .price(selectedAsset, timedSignal(MARKET_FETCH_MS))
         .catch(() => null);
+      // #region agent log
+      fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+        body: JSON.stringify({
+          sessionId: '660ec2',
+          runId: 'chart-fix',
+          hypothesisId: 'H114',
+          location: 'tradingService.ts:fetchLivePrice',
+          message: quote ? 'live_price_ok' : 'live_price_miss',
+          data: { asset: selectedAsset, hasQuote: !!quote },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       return quote?.price ?? null;
     } finally {
       livePriceInFlight = false;

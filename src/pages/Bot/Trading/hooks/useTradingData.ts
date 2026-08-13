@@ -5,8 +5,8 @@ import type { TradingData, TradingRuntimeState } from '../types';
 
 /** Full candles/RSI refresh — recover empty chart after post-login asset warmup */
 const LIVE_REFRESH_MS = 10_000;
-/** Price tick — moves the active candle in near real time */
-const LIVE_TICK_MS = 1_000;
+/** Price tick — keep below subscribe thrash; quote needs MarketDataTimeout headroom */
+const LIVE_TICK_MS = 3_000;
 
 export function useTradingData() {
   const [data, setData] = useState<TradingData | null>(null);
