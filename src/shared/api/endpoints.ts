@@ -1,4 +1,5 @@
 import { apiRequest } from './apiClient';
+import { BINOLLA_LOGIN_MS, timedSignal } from './timedSignal';
 import type {
   AccountStatusResponse,
   AuthTelegramResponse,
@@ -57,6 +58,7 @@ export const binollaApi = {
         password: body.password,
         accountType: body.accountType ?? 'Demo',
       },
+      signal: timedSignal(BINOLLA_LOGIN_MS),
     });
   },
   signup(body: BinollaCredentialRequest): Promise<BinollaConnectResponse> {
@@ -67,6 +69,7 @@ export const binollaApi = {
         password: body.password,
         accountType: body.accountType ?? 'Demo',
       },
+      signal: timedSignal(BINOLLA_LOGIN_MS),
     });
   },
   status(): Promise<BinollaStatusDto> {

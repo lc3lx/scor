@@ -9,3 +9,5 @@ export function timedSignal(ms: number): AbortSignal {
 }
 
 export const MARKET_FETCH_MS = 35_000;
+/** Playwright capture + WS auth regularly needs 30–60s — do not abort early. */
+export const BINOLLA_LOGIN_MS = 90_000;
