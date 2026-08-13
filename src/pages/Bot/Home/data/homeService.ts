@@ -1,5 +1,5 @@
 import { imageAssets } from '@assets/index';
-import { HOME_INITIAL_RUNTIME, HOME_MOCK_CONTENT } from './home.mock';
+import { HOME_INITIAL_RUNTIME, getHomeMockContent } from './home.mock';
 import type { HomeData, HomeRuntimeState, StrategyOptionItem } from '../types';
 import {
   accountApi,
@@ -7,24 +7,38 @@ import {
   binollaApi,
   marketApi,
   strategiesApi,
+  tradesApi,
 } from '@shared/api';
+import type { TradeDto } from '@shared/api';
 import { canBrowseMarket } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
 import {
   isPreferredMarketSymbol,
   pickPreferredMarketAsset,
 } from '@shared/market/preferAsset';
+import {
+  formatMoneyPlain,
+  formatSignedMoney,
+  formatWinRate,
+  weekAndMonthSummaries,
+} from '@shared/trades/tradeAggregates';
+import { t } from '@shared/i18n';
 
-let runtimeState: HomeRuntimeState = {
-  ...HOME_INITIAL_RUNTIME,
-  strategyId: 'rsi',
-  technicalIndicatorId: 'rsi',
-  settings: {
-    ...HOME_INITIAL_RUNTIME.settings,
-    toggles: [...HOME_INITIAL_RUNTIME.settings.toggles],
-    riskOptions: [...HOME_INITIAL_RUNTIME.settings.riskOptions],
-  },
-};
+function seedRuntimeFromMock(): HomeRuntimeState {
+  const settings = getHomeMockContent().sheets.settings;
+  return {
+    ...HOME_INITIAL_RUNTIME,
+    strategyId: 'rsi',
+    technicalIndicatorId: 'rsi',
+    settings: {
+      ...settings,
+      toggles: settings.toggles.map((toggle) => ({ ...toggle })),
+      riskOptions: [...settings.riskOptions],
+    },
+  };
+}
+
+let runtimeState: HomeRuntimeState = seedRuntimeFromMock();
 
 function cloneRuntime(): HomeRuntimeState {
   return {
@@ -37,15 +51,25 @@ function cloneRuntime(): HomeRuntimeState {
   };
 }
 
-function formatMoney(value: number): string {
-  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
-
 function formatSignal(signal: string): string {
   const s = signal.toLowerCase();
-  if (s === 'call') return 'CALL ↑';
-  if (s === 'put') return 'PUT ↓';
-  return 'NONE';
+  if (s === 'call') return t('common.callUp');
+  if (s === 'put') return t('common.putDown');
+  return t('common.none');
+}
+
+function refreshSettingsLabels(): void {
+  const fresh = getHomeMockContent().sheets.settings;
+  const prevById = new Map(runtimeState.settings.toggles.map((toggle) => [toggle.id, toggle]));
+  runtimeState.settings = {
+    ...fresh,
+    selectedRiskId: runtimeState.settings.selectedRiskId,
+    toggles: fresh.toggles.map((toggle) => ({
+      ...toggle,
+      enabled: prevById.get(toggle.id)?.enabled ?? toggle.enabled,
+    })),
+    riskOptions: [...fresh.riskOptions],
+  };
 }
 
 function strategyPreview(id: string): string {
@@ -55,16 +79,72 @@ function strategyPreview(id: string): string {
   return imageAssets.strategies.redSignalPro;
 }
 
+async function fetchTradesForHomeStats(): Promise<{ items: TradeDto[]; total: number } | null> {
+  try {
+    const first = await tradesApi.list({ page: 1, pageSize: 100 });
+    return { items: first.items, total: first.total };
+  } catch {
+    return null;
+  }
+}
+
+function applyHomeTradeStats(
+  base: ReturnType<typeof getHomeMockContent>,
+  trades: TradeDto[],
+): void {
+  const buckets = weekAndMonthSummaries(trades);
+  base.stats = base.stats.map((stat) => {
+    if (stat.id === 'today-gain') {
+      return {
+        ...stat,
+        value: buckets.today.profit > 0 ? formatSignedMoney(buckets.today.profit) : '$0.00',
+        valueTone: 'success',
+      };
+    }
+    if (stat.id === 'today-loss') {
+      return {
+        ...stat,
+        value:
+          buckets.today.lossAbs > 0 ? formatSignedMoney(-buckets.today.lossAbs) : '$0.00',
+        valueTone: 'danger',
+      };
+    }
+    if (stat.id === 'net') {
+      return {
+        ...stat,
+        value: formatSignedMoney(buckets.today.net),
+        valueTone: buckets.today.net > 0 ? 'success' : buckets.today.net < 0 ? 'danger' : undefined,
+      };
+    }
+    if (stat.id === 'active') {
+      return {
+        ...stat,
+        value: String(buckets.all.active),
+        valueTone: buckets.all.active > 0 ? 'warning' : undefined,
+      };
+    }
+    if (stat.id === 'win-rate') {
+      return {
+        ...stat,
+        value: formatWinRate(buckets.all.wins, buckets.all.settled),
+      };
+    }
+    return stat;
+  });
+}
+
 export const homeService = {
   async fetchHomeData(): Promise<HomeData> {
-    const base = structuredClone(HOME_MOCK_CONTENT);
-    let asset = 'EURUSD_otc';
+    refreshSettingsLabels();
+    const base = structuredClone(getHomeMockContent());
+    let asset = runtimeState.tradingPairId || '';
 
     try {
-      const [status, balance, strategies] = await Promise.all([
+      const [status, balance, strategies, tradeBundle] = await Promise.all([
         accountApi.status().catch(() => null),
         binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
         strategiesApi.list().catch(() => null),
+        fetchTradesForHomeStats(),
       ]);
 
       const assets =
@@ -76,7 +156,7 @@ export const homeService = {
         const options = assets.assets.map((a) => ({
           id: a.symbol,
           title: a.name || a.symbol,
-          description: a.available ? 'Available' : 'Unavailable',
+          description: a.available ? t('common.available') : t('home.asset.unavailable'),
         }));
         base.sheets.tradingPair.options = options;
         const preferred = pickPreferredMarketAsset(
@@ -88,9 +168,40 @@ export const homeService = {
           preferred?.symbol ??
           kept ??
           options[0]?.id ??
-          asset;
+          '';
         runtimeState.tradingPairId = asset;
         base.sheets.tradingPair.selectedId = asset;
+        // #region agent log
+        fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+          body: JSON.stringify({
+            sessionId: '660ec2',
+            runId: 'pairs-debug',
+            hypothesisId: 'H3',
+            location: 'homeService.ts:fetchHomeData',
+            message: 'home_pair_options',
+            data: {
+              optionCount: options.length,
+              selected: asset,
+              preferred: preferred?.symbol ?? null,
+              kept,
+              sample: options.slice(0, 12).map((o) => o.id),
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+      } else {
+        base.sheets.tradingPair.options = [];
+        base.sheets.tradingPair.selectedId = '';
+        if (!assets) {
+          // Keep prior pair id only if we already had a real symbol selected.
+          asset = runtimeState.tradingPairId;
+        } else {
+          runtimeState.tradingPairId = '';
+          asset = '';
+        }
       }
 
       if (strategies?.strategies?.length) {
@@ -98,60 +209,58 @@ export const homeService = {
           id: s.id,
           title: s.name,
           stats: [
-            { label: 'Status', value: s.status },
-            { label: 'Enabled', value: s.enabled ? 'Yes' : 'No' },
-            { label: 'Access', value: s.enabled ? 'Selectable' : 'Coming Soon' },
-            { label: 'Source', value: 'Server' },
+            { label: t('home.strategy.stat.status'), value: s.status },
+            {
+              label: t('home.strategy.stat.enabled'),
+              value: s.enabled ? t('common.yes') : t('common.no'),
+            },
+            {
+              label: t('home.strategy.stat.access'),
+              value: s.enabled ? t('home.strategy.selectable') : t('common.comingSoon'),
+            },
+            { label: t('home.strategy.stat.source'), value: t('common.server') },
           ],
-          successRate: s.enabled ? 'Active' : 'Coming Soon',
+          successRate: s.enabled ? t('home.strategy.active') : t('common.comingSoon'),
           previewSrc: strategyPreview(s.id),
           enabled: s.enabled,
         }));
 
         base.sheets.strategy.options = strategyOptions;
-        const enabled = strategies.strategies.find((s) => s.enabled)?.id ?? 'rsi';
+        const enabled = strategies.strategies.find((s) => s.enabled)?.id ?? strategies.strategies[0]?.id ?? '';
         if (!strategies.strategies.some((s) => s.id === runtimeState.strategyId && s.enabled)) {
           runtimeState.strategyId = enabled;
         }
         base.sheets.strategy.selectedId = runtimeState.strategyId;
+      } else {
+        base.sheets.strategy.options = [];
+        base.sheets.strategy.selectedId = '';
       }
 
-      // Indicators: keep RSI as the only meaningful selection tied to active strategy.
+      // Only RSI is backed by a live signal endpoint.
       base.sheets.technicalIndicator.selectedId = 'rsi';
       runtimeState.technicalIndicatorId = 'rsi';
-      base.sheets.technicalIndicator.options = base.sheets.technicalIndicator.options.map((opt) =>
-        opt.id === 'rsi'
-          ? opt
-          : {
-              ...opt,
-              description: `${opt.description} (Coming Soon)`,
-              bestFor: 'Disabled — server strategy registry',
-            },
-      );
+      base.sheets.technicalIndicator.options = getHomeMockContent().sheets.technicalIndicator.options;
 
       if (balance) {
         base.stats = base.stats.map((stat) =>
-          stat.id === 'balance' ? { ...stat, value: formatMoney(balance.currentBalance) } : stat,
+          stat.id === 'balance' ? { ...stat, value: formatMoneyPlain(balance.currentBalance) } : stat,
         );
       } else {
         base.stats = base.stats.map((stat) =>
-          stat.id === 'balance' ? { ...stat, value: '—' } : { ...stat, value: '—' },
+          stat.id === 'balance' ? { ...stat, value: '—' } : stat,
         );
       }
 
-      // Do not invent P/L aggregates — clear fake totals until backend provides them.
-      base.stats = base.stats.map((stat) => {
-        if (stat.id === 'balance') return stat;
-        if (stat.id === 'active') return { ...stat, value: '—' };
-        if (stat.id === 'win-rate') return { ...stat, value: '—' };
-        if (stat.id === 'today-gain') return { ...stat, value: '—' };
-        if (stat.id === 'today-loss') return { ...stat, value: '—' };
-        if (stat.id === 'net') return { ...stat, value: '—' };
-        return stat;
-      });
+      if (tradeBundle) {
+        applyHomeTradeStats(base, tradeBundle.items);
+      } else {
+        base.stats = base.stats.map((stat) =>
+          stat.id === 'balance' ? stat : { ...stat, value: '—' },
+        );
+      }
 
       const signal =
-        canBrowseMarket(status?.botAccess)
+        asset && canBrowseMarket(status?.botAccess)
           ? await strategiesApi
               .rsiSignal(asset, 60, timedSignal(MARKET_FETCH_MS))
               .catch(() => null)
@@ -160,28 +269,28 @@ export const homeService = {
         base.botEngine.stats = [
           {
             id: 'signal',
-            label: 'Signal',
+            label: t('home.stat.signal'),
             value: formatSignal(signal.signal),
             valueTone: signal.signal.toLowerCase() === 'call' ? 'success' : 'primary',
           },
-          { id: 'strength', label: 'RSI', value: signal.rsi.toFixed(2) },
+          { id: 'strength', label: t('common.rsi'), value: signal.rsi.toFixed(2) },
           {
             id: 'updated',
-            label: 'Candle',
+            label: t('home.stat.candle'),
             value: new Date(signal.candleTime).toLocaleTimeString('en-GB', { hour12: false }),
           },
         ];
       } else {
         base.botEngine.stats = [
-          { id: 'signal', label: 'Signal', value: 'NONE' },
-          { id: 'strength', label: 'RSI', value: '—' },
-          { id: 'updated', label: 'Candle', value: '—' },
+          { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
+          { id: 'strength', label: t('common.rsi'), value: '—' },
+          { id: 'updated', label: t('home.stat.candle'), value: '—' },
         ];
       }
 
       try {
         const candles =
-          canBrowseMarket(status?.botAccess)
+          asset && canBrowseMarket(status?.botAccess)
             ? await marketApi.candles(asset, 60, timedSignal(MARKET_FETCH_MS)).catch(() => null)
             : null;
         const mapped = candles
@@ -195,16 +304,17 @@ export const homeService = {
         base.sheets.chart.candleData =
           mapped.length > 48 ? mapped.slice(mapped.length - 48) : mapped;
         base.sheets.chart.stats = [
-          { id: 'indicator', label: 'Indicator', value: 'RSI' },
+          { id: 'indicator', label: t('trading.indicator'), value: t('common.rsi') },
           {
             id: 'strategy',
-            label: 'Strategy',
-            value: strategies?.strategies.find((s) => s.id === runtimeState.strategyId)?.name ?? 'RSI',
+            label: t('trading.strategy'),
+            value:
+              strategies?.strategies.find((s) => s.id === runtimeState.strategyId)?.name ?? '—',
           },
           {
             id: 'signal',
-            label: 'Signal',
-            value: signal ? formatSignal(signal.signal) : 'NONE',
+            label: t('home.stat.signal'),
+            value: signal ? formatSignal(signal.signal) : t('common.none'),
             valueTone: signal?.signal.toLowerCase() === 'call' ? 'success' : undefined,
           },
         ];
@@ -213,48 +323,50 @@ export const homeService = {
       }
 
       const strategyName =
-        strategies?.strategies.find((s) => s.id === runtimeState.strategyId)?.name ?? 'RSI';
+        strategies?.strategies.find((s) => s.id === runtimeState.strategyId)?.name ?? '—';
       const pairName =
         base.sheets.tradingPair.options.find((o) => o.id === runtimeState.tradingPairId)?.title ??
-        asset;
+        (asset || '—');
 
       base.configRows = base.configRows.map((row) => {
         if (row.id === 'trading-pair') return { ...row, value: pairName };
-        if (row.id === 'indicator') return { ...row, value: 'RSI' };
+        if (row.id === 'indicator') return { ...row, value: t('common.rsi') };
         if (row.id === 'strategy') return { ...row, value: strategyName };
-        if (row.id === 'market-type') return { ...row, value: 'Binolla Market' };
+        if (row.id === 'market-type') return { ...row, value: t('home.market.binolla') };
         return row;
       });
 
       if (status?.botAccess === 'AdminApprovalRequired') {
-        base.disclaimer =
-          'Administrator has not approved your account yet. Markets and RSI work; trading unlocks after approval.';
+        base.disclaimer = t('home.disclaimer.pending');
       } else if (status?.botAccess === 'BinollaNotConnected') {
-        base.disclaimer = 'Connect your Binolla account in Account settings to use market data and trading.';
+        base.disclaimer = t('home.disclaimer.notConnected');
       } else if (status?.botAccess === 'NotEligible') {
-        base.disclaimer = 'This account was rejected by an administrator.';
+        base.disclaimer = t('home.disclaimer.rejected');
       } else if (status?.botAccess === 'SessionExpired') {
-        base.disclaimer = 'Your Binolla session expired. Reconnect your SSID in Account settings.';
+        base.disclaimer = t('home.disclaimer.sessionExpired');
       } else {
-        base.disclaimer =
-          'All market data and orders come from Binolla (Demo). RSI is computed from live Binolla candles. Auto Start/Pause/Stop is Coming Soon — place Demo trades manually on Trading.';
+        base.disclaimer = t('home.disclaimer.ok');
       }
 
-      // Keep risk cards empty — no local fake profit/loss targets.
       base.riskLimits = base.riskLimits.map((limit) => ({
         ...limit,
         value: '—',
-        hint: 'Coming Soon — not enforced by this bot',
+        hint: t('home.risk.hintSoon'),
       }));
 
-      // Home amount/duration are not wired to Binolla place-order (Trading page is).
       base.tradeAmount = {
         ...base.tradeAmount,
-        label: 'Trade Amount (Coming Soon — set on Trading)',
+        label: t('home.tradeAmountSoon'),
+        options: [],
+        displayValue: '—',
+        selectedId: '',
       };
       base.duration = {
         ...base.duration,
-        label: 'Duration (Coming Soon — set on Trading)',
+        label: t('home.durationSoon'),
+        options: [],
+        displayValue: '—',
+        selectedId: '',
       };
 
       runtimeState.marketTypeId = 'binolla-market';
@@ -262,8 +374,8 @@ export const homeService = {
       if (runtimeState.settings) {
         runtimeState.settings = {
           ...runtimeState.settings,
-          toggles: runtimeState.settings.toggles.map((t) =>
-            t.id === 'notifications' ? t : { ...t, enabled: false },
+          toggles: runtimeState.settings.toggles.map((toggle) =>
+            toggle.id === 'notifications' ? toggle : { ...toggle, enabled: false },
           ),
         };
       }
@@ -272,11 +384,14 @@ export const homeService = {
         base.disclaimer = error.message;
       }
       base.sheets.chart.candleData = [];
+      base.sheets.tradingPair.options = [];
+      base.sheets.strategy.options = [];
       base.botEngine.stats = [
-        { id: 'signal', label: 'Signal', value: 'NONE' },
-        { id: 'strength', label: 'RSI', value: '—' },
-        { id: 'updated', label: 'Candle', value: '—' },
+        { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
+        { id: 'strength', label: t('common.rsi'), value: '—' },
+        { id: 'updated', label: t('home.stat.candle'), value: '—' },
       ];
+      base.stats = base.stats.map((stat) => ({ ...stat, value: '—' }));
     }
 
     return {
@@ -296,7 +411,6 @@ export const homeService = {
         const strategies = await strategiesApi.list();
         const selected = strategies.strategies.find((s) => s.id === partial.strategyId);
         if (!selected?.enabled) {
-          // Backend is authoritative — ignore disabled strategy selection.
           partial = { ...partial, strategyId: runtimeState.strategyId };
         }
       } catch {
@@ -308,15 +422,19 @@ export const homeService = {
       partial = { ...partial, technicalIndicatorId: 'rsi' };
     }
 
+    if (partial.marketTypeId && partial.marketTypeId !== 'binolla-market') {
+      partial = { ...partial, marketTypeId: 'binolla-market' };
+    }
+
     if (partial.settings?.toggles) {
       partial = {
         ...partial,
         settings: {
           ...partial.settings,
-          toggles: partial.settings.toggles.map((t) =>
-            t.id.startsWith('auto-') || t.id === 'signal-confirm'
-              ? { ...t, enabled: false }
-              : t,
+          toggles: partial.settings.toggles.map((toggle) =>
+            toggle.id.startsWith('auto-') || toggle.id === 'signal-confirm'
+              ? { ...toggle, enabled: false }
+              : toggle,
           ),
         },
       };
@@ -340,15 +458,6 @@ export const homeService = {
   },
 
   resetRuntime(): void {
-    runtimeState = {
-      ...HOME_INITIAL_RUNTIME,
-      strategyId: 'rsi',
-      technicalIndicatorId: 'rsi',
-      settings: {
-        ...HOME_INITIAL_RUNTIME.settings,
-        toggles: HOME_INITIAL_RUNTIME.settings.toggles.map((toggle) => ({ ...toggle })),
-        riskOptions: [...HOME_INITIAL_RUNTIME.settings.riskOptions],
-      },
-    };
+    runtimeState = seedRuntimeFromMock();
   },
 };
