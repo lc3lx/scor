@@ -13,7 +13,7 @@ import styles from './TradingPage.module.css';
 export default function TradingPage() {
   const t = useT();
   const navigate = useNavigate();
-  const { data, duration, expiryDisplay, updateRuntime, cycleTradeDuration, selectCandlePeriod, placeTrade, reload } =
+  const { data, duration, expiryDisplay, updateRuntime, cycleTradeDuration, selectCandlePeriod, selectPair, placeTrade, reload } =
     useTradingData();
 
   const handleTrade = useCallback(
@@ -61,6 +61,7 @@ export default function TradingPage() {
             onAmountChange={(value) => updateRuntime({ amount: value })}
             onCycleDuration={() => void cycleTradeDuration()}
             onSelectTimeframe={(id) => void selectCandlePeriod(id)}
+            onSelectPair={(symbol) => void selectPair(symbol)}
             onTradeUp={() => handleTrade('up')}
             onTradeDown={() => handleTrade('down')}
           />

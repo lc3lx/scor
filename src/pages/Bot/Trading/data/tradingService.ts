@@ -4,7 +4,7 @@ import {
 } from './trading.mock';
 import { activityService } from '../../Activity/data/activityService';
 import { tradeService } from '@services/trades';
-import type { TradingData, TradingRuntimeState } from '../types';
+import type { TradingData, TradingPairOption, TradingRuntimeState } from '../types';
 import type { TradeDirection } from '@components/types';
 import type { CandlestickPoint } from '@components/organisms/CandlestickChart';
 import {
@@ -21,15 +21,14 @@ import {
   canTrade,
 } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
-import {
-  isPreferredMarketSymbol,
-  pickPreferredMarketAsset,
-} from '@shared/market/preferAsset';
+import { pickPreferredMarketAsset } from '@shared/market/preferAsset';
 import { t } from '@shared/i18n';
+
+const SELECTED_ASSET_KEY = 'scar-alpha-selected-asset';
 
 let runtimeState: TradingRuntimeState = { ...TRADING_INITIAL_RUNTIME };
 /** Last asset symbol confirmed from Binolla assets API — never invent a pair. */
-let selectedAsset: string | null = null;
+let selectedAsset: string | null = readStoredAsset();
 /** Prevent overlapping full refreshes from aborting each other. */
 let fetchInFlight: Promise<TradingData> | null = null;
 let livePriceInFlight = false;
@@ -39,6 +38,31 @@ const MAX_CANDLES_STORED = 200;
 let lastLivePrice: number | null = null;
 /** In-memory candle series from ticks — survives server refreshes that lag a period behind. */
 let liveCandleSeries: CandlestickPoint[] = [];
+
+function readStoredAsset(): string | null {
+  try {
+    const v = localStorage.getItem(SELECTED_ASSET_KEY);
+    return v && v.trim() ? v.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistSelectedAsset(symbol: string | null): void {
+  try {
+    if (!symbol) localStorage.removeItem(SELECTED_ASSET_KEY);
+    else localStorage.setItem(SELECTED_ASSET_KEY, symbol);
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+function formatPairLabel(symbol: string, name?: string): string {
+  if (name && name.includes('/')) return name.split(' ')[0] ?? name;
+  const base = symbol.replace(/_otc$/i, '');
+  if (base.length === 6) return `${base.slice(0, 3)}/${base.slice(3)}`;
+  return base;
+}
 
 function cloneRuntime(): TradingRuntimeState {
   return { ...runtimeState };
@@ -363,13 +387,46 @@ export const tradingService = {
             ? t('trading.tradingUnavailable')
             : undefined;
 
+      let assetsErrorCode: string | null = null;
       const assets = browse
-        ? await marketApi.assets(timedSignal(MARKET_FETCH_MS)).catch(() => null)
+        ? await marketApi.assets(timedSignal(MARKET_FETCH_MS)).catch((err: unknown) => {
+            assetsErrorCode =
+              err instanceof ApiClientError ? err.code : err instanceof Error ? err.name : 'unknown';
+            // #region agent log
+            fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+              body: JSON.stringify({
+                sessionId: '660ec2',
+                runId: 'pairs-debug',
+                hypothesisId: 'H1',
+                location: 'tradingService.ts:assets.catch',
+                message: 'market_assets_failed',
+                data: {
+                  browse,
+                  botAccess: status?.botAccess ?? null,
+                  binollaConnected: status?.binollaConnected ?? null,
+                  errorCode: assetsErrorCode,
+                  marketFetchMs: MARKET_FETCH_MS,
+                },
+                timestamp: Date.now(),
+              }),
+            }).catch(() => {});
+            // #endregion
+            return null;
+          })
         : null;
       const liveAssets = assets?.assets ?? [];
+      const pairOptions: TradingPairOption[] = liveAssets.map((a) => ({
+        symbol: a.symbol,
+        label: formatPairLabel(a.symbol, a.name),
+        available: a.available,
+      }));
+      content.binollaCard.pairOptions = pairOptions;
+
       const sticky =
-        selectedAsset && isPreferredMarketSymbol(selectedAsset)
-          ? liveAssets.find((a) => a.symbol === selectedAsset && a.available)
+        selectedAsset != null
+          ? liveAssets.find((a) => a.symbol === selectedAsset)
           : undefined;
       const preferred =
         sticky ??
@@ -378,6 +435,7 @@ export const tradingService = {
         liveAssets[0];
       const firstAsset = preferred?.symbol ?? null;
       selectedAsset = firstAsset;
+      persistSelectedAsset(firstAsset);
 
       // #region agent log
       fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
@@ -395,8 +453,10 @@ export const tradingService = {
             availableCount: liveAssets.filter((a) => a.available).length,
             sample: liveAssets.slice(0, 10).map((a) => a.symbol),
             selected: firstAsset,
-            preferredOnlySticky: Boolean(sticky),
-            hasPairSwitcherInPayload: false,
+            stickyHit: Boolean(sticky),
+            hasPairSwitcherInPayload: pairOptions.length > 0,
+            assetsErrorCode,
+            marketFetchMs: MARKET_FETCH_MS,
           },
           timestamp: Date.now(),
         }),
@@ -406,11 +466,18 @@ export const tradingService = {
       if (!firstAsset) {
         content.binollaCard.pairName = browse ? t('trading.noPairs') : '—';
         content.binollaCard.pairSuffix = '';
+        content.binollaCard.pairSymbol = undefined;
         content.binollaCard.priceDisplay = browse ? t('common.unavailable') : '—';
         content.binollaCard.candleData = [];
-        content.binollaCard.chartStatusLabel = browse
-          ? t('trading.noAssetsSession')
-          : chartStatusFor(status, false);
+        content.binollaCard.chartStatusLabel = assetsErrorCode
+          ? assetsErrorCode === 'BINOLLA_SESSION_EXPIRED'
+            ? t('trading.chart.sessionExpired')
+            : assetsErrorCode === 'BINOLLA_NOT_CONNECTED'
+              ? t('trading.chart.connectBinolla')
+              : t('trading.loadChartFailed')
+          : browse
+            ? t('trading.noAssetsSession')
+            : chartStatusFor(status, false);
         content.signalCard.freshLabel = browse ? t('trading.noAssets') : t('trading.awaitingAccess');
         content.signalCard.freshTone = 'neutral';
         content.signalCard.stats = [
@@ -422,10 +489,9 @@ export const tradingService = {
         ];
       } else {
         const displayName = preferred?.name ?? firstAsset;
-        content.binollaCard.pairName = displayName.includes('/')
-          ? displayName.split(' ')[0] ?? displayName
-          : firstAsset.replace('_otc', '');
+        content.binollaCard.pairName = formatPairLabel(firstAsset, displayName);
         content.binollaCard.pairSuffix = firstAsset.toLowerCase().includes('otc') ? 'OTC' : '';
+        content.binollaCard.pairSymbol = firstAsset;
 
         const periodSeconds = candlePeriodSecondsFromId(runtimeState.candlePeriodId);
         // Separate abort signals so one slow call does not cancel the others mid-wait.
@@ -646,11 +712,32 @@ export const tradingService = {
   /** Switch pair only to a symbol previously returned by GET /api/market/assets. */
   setSelectedAsset(symbol: string): void {
     const cleaned = symbol.trim();
-    if (cleaned) selectedAsset = cleaned;
+    if (!cleaned) return;
+    if (selectedAsset === cleaned) return;
+    selectedAsset = cleaned;
+    persistSelectedAsset(cleaned);
+    liveCandleSeries = [];
+    lastLivePrice = null;
+    // #region agent log
+    fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+      body: JSON.stringify({
+        sessionId: '660ec2',
+        runId: 'pairs-debug',
+        hypothesisId: 'H3',
+        location: 'tradingService.ts:setSelectedAsset',
+        message: 'pair_switched',
+        data: { symbol: cleaned },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
   },
 
   resetRuntime(): void {
     runtimeState = { ...TRADING_INITIAL_RUNTIME };
     selectedAsset = null;
+    persistSelectedAsset(null);
   },
 };

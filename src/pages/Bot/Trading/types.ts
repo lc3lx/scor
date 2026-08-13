@@ -37,6 +37,12 @@ export type TradingTopBarContent = {
   exportIconSrc: string;
 };
 
+export type TradingPairOption = {
+  symbol: string;
+  label: string;
+  available: boolean;
+};
+
 export type BinollaCardContent = {
   platformLabel: string;
   platformIconSrc: string;
@@ -44,6 +50,10 @@ export type BinollaCardContent = {
   balanceValue: string;
   pairName: string;
   pairSuffix: string;
+  /** Selected Binolla symbol (e.g. EURUSD_otc). */
+  pairSymbol?: string;
+  /** Live pairs for the chart switcher. */
+  pairOptions?: TradingPairOption[];
   priceDisplay: string;
   expiryLabel: string;
   candleData: CandlestickPoint[];

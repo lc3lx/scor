@@ -85,6 +85,37 @@
   line-height: 15px;
 }
 
+.pairSelectWrap {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pairSelect {
+  max-width: min(100%, 220px);
+  padding: 2px 6px;
+  border: 1px solid var(--trading-card-border-color);
+  border-radius: 6px;
+  background: var(--trading-binolla-header-bg);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: -0.2px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .price {
   margin: 0;
   color: var(--trading-price-color);

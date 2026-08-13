@@ -8,4 +8,4 @@ export function timedSignal(ms: number): AbortSignal {
   return controller.signal;
 }
 
-export const MARKET_FETCH_MS = 8_000;
+export const MARKET_FETCH_MS = 25_000;

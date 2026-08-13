@@ -17,6 +17,7 @@ export type BinollaTradingCardSectionProps = {
   onAmountChange: (value: string) => void;
   onCycleDuration: () => void;
   onSelectTimeframe: (id: string) => void;
+  onSelectPair?: (symbol: string) => void;
   onTradeUp: () => void;
   onTradeDown: () => void;
 };
@@ -31,6 +32,7 @@ export function BinollaTradingCardSection({
   onAmountChange,
   onCycleDuration,
   onSelectTimeframe,
+  onSelectPair,
   onTradeUp,
   onTradeDown,
 }: BinollaTradingCardSectionProps) {
@@ -62,12 +64,34 @@ export function BinollaTradingCardSection({
         <div className={styles.marketRow}>
           <div className={styles.pairBlock}>
             <div className={styles.pairLine}>
-              <Text variant="body-sm" tone="primary" className={styles.pairName}>
-                {content.pairName}
-              </Text>
-              <Text variant="caption-xs" tone="caption" className={styles.pairSuffix}>
-                {content.pairSuffix}
-              </Text>
+              {content.pairOptions && content.pairOptions.length > 0 ? (
+                <label className={styles.pairSelectWrap}>
+                  <span className={styles.srOnly}>{t('trading.selectPair')}</span>
+                  <select
+                    className={styles.pairSelect}
+                    value={content.pairSymbol ?? ''}
+                    aria-label={t('trading.selectPair')}
+                    onChange={(event) => onSelectPair?.(event.target.value)}
+                  >
+                    {content.pairOptions.map((pair) => (
+                      <option key={pair.symbol} value={pair.symbol} disabled={!pair.available}>
+                        {pair.label}
+                        {pair.symbol.toLowerCase().includes('otc') ? ' OTC' : ''}
+                        {!pair.available ? ` (${t('home.asset.unavailable')})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <>
+                  <Text variant="body-sm" tone="primary" className={styles.pairName}>
+                    {content.pairName}
+                  </Text>
+                  <Text variant="caption-xs" tone="caption" className={styles.pairSuffix}>
+                    {content.pairSuffix}
+                  </Text>
+                </>
+              )}
             </div>
             <p className={styles.price} data-tone={priceTone}>
               {content.priceDisplay}

@@ -530,6 +530,7 @@ export const en = {
   'trading.chart.noCandles': 'No candles from Binolla yet',
   'trading.chart.live': 'Live Binolla candles',
   'trading.noPairs': 'No pairs',
+  'trading.selectPair': 'Select pair',
   'trading.noAssetsSession': 'No assets from Binolla session',
   'trading.noAssets': 'No assets',
   'trading.tradingUnavailable': 'Trading is not available for this account.',

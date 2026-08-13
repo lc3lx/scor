@@ -97,6 +97,13 @@ export function useTradingData() {
     return next;
   }, []);
 
+  const selectPair = useCallback(async (symbol: string) => {
+    tradingService.setSelectedAsset(symbol);
+    const next = await tradingService.fetchTradingData();
+    setData(next);
+    return next;
+  }, []);
+
   const placeTrade = useCallback(async (direction: 'up' | 'down') => {
     return tradingService.placeTrade(direction);
   }, []);
@@ -108,6 +115,7 @@ export function useTradingData() {
     updateRuntime,
     cycleTradeDuration,
     selectCandlePeriod,
+    selectPair,
     placeTrade,
     reload,
   };
