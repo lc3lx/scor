@@ -41,13 +41,11 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
           ? await binollaApi.login({ email: trimmedEmail, password })
           : await binollaApi.signup({ email: trimmedEmail, password });
 
-      const accountStatus = await accountApi.status().catch(() => null);
-      const botAccess = accountStatus?.botAccess ?? result.access;
-
+      // Navigate from the connect response — waiting on /api/account/status races a cookie-less
+      // restore and can hang ~20s then send the user back to login.
       setStatus('success');
-      // Clear password from memory after successful connect.
       setPassword('');
-      navigate(routeForBotAccess(botAccess), { replace: true });
+      navigate(routeForBotAccess(result.access), { replace: true });
     } catch (err) {
       setStatus('error');
       if (err instanceof ApiClientError) {
