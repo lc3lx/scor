@@ -6,6 +6,7 @@ import { FormField } from '@components/molecules/FormField';
 import { AuthenticationForm } from '@components/organisms/AuthenticationForm';
 import { AuthServerError, AuthSubmitButton, type FormStatus, type SignupFormValues } from '@features/Auth';
 import { ROUTES } from '@constants/routes';
+import { t } from '@shared/i18n';
 import type { SignupCopy } from '../../types';
 import styles from './SignupFormSection.module.css';
 
@@ -115,9 +116,9 @@ export function SignupFormSection({
           />
         </FormField>
         <p id="signup-binolla-help" className={styles.help}>
-          No account yet?{' '}
+          {t('signup.noAccount')}{' '}
           <Link to={ROUTES.linkBinolla} className={styles.registerLink}>
-            Create Binolla account
+            {t('signup.createBinolla')}
           </Link>
         </p>
       </AuthenticationForm>

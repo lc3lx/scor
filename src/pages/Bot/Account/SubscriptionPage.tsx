@@ -19,7 +19,7 @@ export default function SubscriptionPage() {
   }, [navigate]);
 
   const handleViewHistory = useCallback(() => {
-    navigate(ROUTES.settings);
+    navigate(ROUTES.activationHistory);
   }, [navigate]);
 
   if (isLoading || !subscription) return null;

@@ -15,9 +15,10 @@ import type {
   ChangePasswordFormValues,
   EditProfileFormValues,
 } from '../types';
-import { accountApi, ApiClientError, binollaApi, meApi } from '@shared/api';
+import { accountApi, ApiClientError, authApi, binollaApi, meApi } from '@shared/api';
 import { tokenStore } from '@shared/auth/tokenStore';
 import { t } from '@shared/i18n';
+import { isTelegramWebApp } from '@shared/telegram/telegramWebApp';
 
 type AccountListener = () => void;
 
@@ -63,8 +64,13 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
   return (async () => {
     const [me, status] = await Promise.all([meApi.get(), accountApi.status()]);
 
-    const fullName = me.fullName?.trim() || me.username?.trim() || t('common.trader');
-    const telegram = me.username ? `@${me.username.replace(/^@/, '')}` : String(me.telegramUserId);
+    const fullName = me.fullName?.trim() || me.username?.trim() || me.email?.trim() || t('common.trader');
+    const telegram = me.username
+      ? `@${me.username.replace(/^@/, '')}`
+      : me.telegramUserId
+        ? String(me.telegramUserId)
+        : t('common.none');
+    const email = me.email?.trim() || t('common.none');
     const accessLabel = formatBotAccessLabel(status.botAccess);
     const approvalLabel = formatApprovalStatus(status.approvalStatus);
     const connectedLabel = t('account.value.connected');
@@ -95,15 +101,40 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
         iconSrc: accountAssets.editProfile,
         route: ROUTES.editProfile,
       },
+    ];
+
+    if (me.hasPassword) {
+      menuItems.push({
+        id: 'change-password',
+        label: t('account.menu.changePassword'),
+        iconSrc: accountAssets.changePassword,
+        route: ROUTES.changePassword,
+      });
+    }
+
+    menuItems.push(
+      {
+        id: 'subscription',
+        label: t('account.menu.subscription'),
+        iconSrc: accountAssets.expiration,
+        route: ROUTES.subscription,
+      },
+      {
+        id: 'activation-history',
+        label: t('account.menu.activationHistory'),
+        iconSrc: accountAssets.activationHistory,
+        route: ROUTES.activationHistory,
+      },
       {
         id: 'notifications',
         label: t('account.menu.notifications'),
         iconSrc: accountAssets.notifications,
         route: ROUTES.notifications,
       },
-    ];
+    );
 
-    if (me.isAdmin) {
+    // Admin console lives on the website dashboard only (not Mini App).
+    if (me.isAdmin && !isTelegramWebApp()) {
       menuItems.unshift({
         id: 'admin',
         label: t('account.menu.admin'),
@@ -115,7 +146,7 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
     const snapshot: AccountSnapshot = {
       profile: {
         fullName,
-        email: '',
+        email,
         country: me.country ?? '—',
         telegramId: telegram,
         binollaAccountId: status.binollaConnected ? connectedLabel : notConnectedLabel,
@@ -134,6 +165,12 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
       },
       badges,
       details: [
+        {
+          id: 'email',
+          label: t('account.detail.email'),
+          value: email,
+          iconSrc: accountAssets.country,
+        },
         {
           id: 'telegram',
           label: t('account.detail.telegram'),
@@ -218,6 +255,12 @@ export const accountService = {
   },
 
   async updateProfile(values: EditProfileFormValues): Promise<AccountSnapshot> {
+    await meApi.update({
+      fullName: values.fullName.trim(),
+      country: values.country.trim(),
+      username: values.telegramId.trim() || undefined,
+    });
+
     const ssid = values.binollaAccountId.trim();
     const connectedLabel = t('account.value.connected');
     const notConnectedLabel = t('account.value.notConnected');
@@ -231,8 +274,11 @@ export const accountService = {
     return snapshot;
   },
 
-  async changePassword(_values: ChangePasswordFormValues): Promise<void> {
-    throw { message: t('auth.passwordLoginUnusedLong') };
+  async changePassword(values: ChangePasswordFormValues): Promise<void> {
+    await authApi.changePassword({
+      currentPassword: values.currentPassword,
+      newPassword: values.newPassword,
+    });
   },
 
   async logout(): Promise<void> {
@@ -252,7 +298,7 @@ export const accountService = {
       binollaPlaceholder: t('account.edit.binollaFallbackPh'),
       binollaHelpText: t('account.edit.binollaHelp'),
       binollaRegisterLabel: getBinollaReferralLabel(),
-      binollaRegisterHref: '/signup',
+      binollaRegisterHref: ROUTES.linkBinolla,
       successMessage: t('account.edit.successLinked'),
     };
   },
@@ -284,23 +330,36 @@ export const accountService = {
   },
 
   async getSubscriptionDetails() {
-    const status = await accountApi.status();
-    const approvalLabel = formatApprovalStatus(status.approvalStatus);
+    const details = await accountApi.subscription();
     return {
-      planName: t('account.value.freePlan'),
-      status: status.botAccess === 'Allowed' ? ('active' as const) : ('pending' as const),
-      statusLabel: formatBotAccessLabel(status.botAccess),
-      statusTone: status.botAccess === 'Allowed' ? ('success' as const) : ('warning' as const),
-      startDate: '—',
-      endDate: t('account.value.none'),
+      planName: details.planName || t('account.value.freePlan'),
+      status: details.status === 'active' ? ('active' as const) : ('pending' as const),
+      statusLabel: details.statusLabel,
+      statusTone: details.status === 'active' ? ('success' as const) : ('warning' as const),
+      startDate: details.startedAt ? new Date(details.startedAt).toLocaleDateString() : '—',
+      endDate: details.approvedAt ? new Date(details.approvedAt).toLocaleDateString() : t('account.value.none'),
       daysLeft: 0,
-      keyUsedLabel: t('account.approvalBadge', { status: approvalLabel }),
+      keyUsedLabel: details.keyUsedLabel,
       iconSrc: accountAssets.subscriptionCrown,
     };
   },
 
   async getActivationHistory() {
-    return [];
+    const history = await accountApi.activationHistory();
+    return history.items.map((item) => ({
+      id: item.id,
+      keyLabel: item.keyLabel,
+      status: item.status === 'active' ? ('active' as const) : ('expired' as const),
+      statusLabel: item.statusLabel,
+      statusTone: item.status === 'active' ? ('success' as const) : ('neutral' as const),
+      planLabel: t('account.history.plan'),
+      planDuration: t('account.value.freePlan'),
+      usedLabel: t('account.history.used'),
+      usedDate: new Date(item.createdAt).toLocaleDateString(),
+      expirationLabel: t('account.history.expires'),
+      expirationDate: t('account.value.none'),
+      iconSrc: accountAssets.historyKey,
+    }));
   },
 
   setUnreadNotificationCount(count: number): void {

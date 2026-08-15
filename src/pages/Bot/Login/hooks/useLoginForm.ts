@@ -17,11 +17,11 @@ export function useLoginForm() {
   const [info, setInfo] = useState<string | null>(null);
 
   const handleSubmit = useCallback(
-    async (_values: LoginFormValues) => {
+    async (values: LoginFormValues) => {
       setInfo(null);
-      await authService.loginWithTelegram();
+      await authService.login(values);
       const status = await accountApi.status();
-      navigate(routeForBotAccess(status.botAccess));
+      navigate(routeForBotAccess(status.botAccess), { replace: true });
     },
     [navigate],
   );
@@ -40,10 +40,26 @@ export function useLoginForm() {
     setInfo(t('login.forgotInfo'));
   }, []);
 
+  const continueWithTelegram = useCallback(async () => {
+    setInfo(null);
+    try {
+      await authService.loginWithTelegram();
+      const status = await accountApi.status();
+      navigate(routeForBotAccess(status.botAccess), { replace: true });
+    } catch (err) {
+      const message =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : t('auth.authFailed');
+      setInfo(message);
+    }
+  }, [navigate]);
+
   return {
     ...form,
     goToSignup,
     onForgotPassword,
+    continueWithTelegram,
     info,
   };
 }

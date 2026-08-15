@@ -12,11 +12,12 @@ import styles from './LinkBinollaPage.module.css';
 
 export type BinollaPlatformAuthProps = {
   mode: BinollaAuthMode;
+  onToggleMode?: () => void;
 };
 
-export function BinollaPlatformAuth({ mode }: BinollaPlatformAuthProps) {
+export function BinollaPlatformAuth({ mode, onToggleMode }: BinollaPlatformAuthProps) {
   const t = useT();
-  const flow = useBinollaPlatformAuth(mode);
+  const flow = useBinollaPlatformAuth(mode, onToggleMode);
   const isLogin = mode === 'login';
 
   return (
@@ -90,14 +91,16 @@ export function BinollaPlatformAuth({ mode }: BinollaPlatformAuthProps) {
                   : t('binolla.auth.signupCta')}
           </button>
 
-          <button
-            type="button"
-            className={styles.secondaryBtn}
-            onClick={() => void flow.enterBotWithTelegram()}
-            disabled={flow.status === 'loading'}
-          >
-            {t('binolla.auth.enterViaTelegram')}
-          </button>
+          {flow.canEnterViaTelegram ? (
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              onClick={() => void flow.enterBotWithTelegram()}
+              disabled={flow.status === 'loading'}
+            >
+              {t('binolla.auth.enterViaTelegram')}
+            </button>
+          ) : null}
 
           <button type="button" className={styles.secondaryBtn} onClick={flow.goToOtherMode}>
             {isLogin ? t('binolla.auth.goSignup') : t('binolla.auth.goLogin')}

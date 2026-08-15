@@ -2,23 +2,41 @@ import { apiRequest } from './apiClient';
 import { BINOLLA_LOGIN_MS, timedSignal } from './timedSignal';
 import type {
   AccountStatusResponse,
+  AccountSubscriptionResponse,
+  ActivationHistoryResponse,
   AuthTelegramResponse,
   BinollaBalanceDto,
   BinollaConnectRequest,
   BinollaConnectResponse,
   BinollaCredentialRequest,
   BinollaStatusDto,
+  ChangePasswordRequest,
+  EmailAuthRequest,
   MarketAssetsResponse,
   MarketCandlesResponse,
   MarketPriceResponse,
   MeResponse,
+  NotificationDto,
+  NotificationListResponse,
   PlaceTradeRequest,
   StrategiesResponse,
   StrategySignalResponse,
   TradeDto,
   TradeListResponse,
+  AdminAuditListResponse,
   AdminBinollaAccountDto,
   AdminBinollaAccountListResponse,
+  AdminNotificationListResponse,
+  AdminSendNotificationRequest,
+  AdminSendNotificationResponse,
+  AdminUserDetailDto,
+  AdminUserListResponse,
+  CreateMarketingDemoUserRequest,
+  MarketingDemoConfigDto,
+  MarketingDemoUserDto,
+  MarketingDemoUserListResponse,
+  PatchAdminUserRequest,
+  UpdateProfileRequest,
 } from './types';
 
 export const authApi = {
@@ -29,17 +47,80 @@ export const authApi = {
       auth: false,
     });
   },
+  login(body: Pick<EmailAuthRequest, 'email' | 'password'>): Promise<AuthTelegramResponse> {
+    return apiRequest<AuthTelegramResponse>('/api/auth/login', {
+      method: 'POST',
+      body: { email: body.email, password: body.password },
+      auth: false,
+    });
+  },
+  register(body: EmailAuthRequest): Promise<AuthTelegramResponse> {
+    return apiRequest<AuthTelegramResponse>('/api/auth/register', {
+      method: 'POST',
+      body: {
+        email: body.email,
+        password: body.password,
+        fullName: body.fullName,
+        country: body.country,
+        username: body.username,
+      },
+      auth: false,
+    });
+  },
+  changePassword(body: ChangePasswordRequest): Promise<{ changed: boolean }> {
+    return apiRequest<{ changed: boolean }>('/api/auth/change-password', {
+      method: 'POST',
+      body,
+    });
+  },
+  linkTelegram(initData: string): Promise<AuthTelegramResponse> {
+    return apiRequest<AuthTelegramResponse>('/api/auth/link-telegram', {
+      method: 'POST',
+      body: { initData },
+    });
+  },
 };
 
 export const meApi = {
   get(): Promise<MeResponse> {
     return apiRequest<MeResponse>('/api/me');
   },
+  update(body: UpdateProfileRequest): Promise<MeResponse> {
+    return apiRequest<MeResponse>('/api/me', {
+      method: 'PUT',
+      body,
+    });
+  },
 };
 
 export const accountApi = {
   status(): Promise<AccountStatusResponse> {
     return apiRequest<AccountStatusResponse>('/api/account/status');
+  },
+  subscription(): Promise<AccountSubscriptionResponse> {
+    return apiRequest<AccountSubscriptionResponse>('/api/account/subscription');
+  },
+  activationHistory(): Promise<ActivationHistoryResponse> {
+    return apiRequest<ActivationHistoryResponse>('/api/account/activation-history');
+  },
+};
+
+export const notificationsApi = {
+  list(): Promise<NotificationListResponse> {
+    return apiRequest<NotificationListResponse>('/api/notifications');
+  },
+  get(id: string): Promise<NotificationDto> {
+    return apiRequest<NotificationDto>(`/api/notifications/${encodeURIComponent(id)}`);
+  },
+  markRead(id: string): Promise<NotificationDto> {
+    return apiRequest<NotificationDto>(`/api/notifications/${encodeURIComponent(id)}/read`, {
+      method: 'POST',
+    });
+  },
+  markAllRead(): Promise<NotificationListResponse> {
+    return apiRequest<NotificationListResponse>('/api/notifications/read-all', {
+      method: 'POST',
+    });
   },
 };
 
@@ -141,9 +222,27 @@ export const tradesApi = {
 };
 
 export const adminApi = {
-  listAccounts(status?: string): Promise<AdminBinollaAccountListResponse> {
-    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
-    return apiRequest<AdminBinollaAccountListResponse>(`/api/admin/binolla/accounts${qs}`);
+  listAccounts(
+    statusOrParams?:
+      | string
+      | {
+          status?: string;
+          q?: string;
+          page?: number;
+          pageSize?: number;
+        },
+  ): Promise<AdminBinollaAccountListResponse> {
+    const params =
+      typeof statusOrParams === 'string' || statusOrParams == null
+        ? { status: statusOrParams }
+        : statusOrParams;
+    const query = new URLSearchParams();
+    if (params.status) query.set('status', params.status);
+    if (params.q) query.set('q', params.q);
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+    const qs = query.toString();
+    return apiRequest<AdminBinollaAccountListResponse>(`/api/admin/binolla/accounts${qs ? `?${qs}` : ''}`);
   },
   getAccount(id: string): Promise<AdminBinollaAccountDto> {
     return apiRequest<AdminBinollaAccountDto>(`/api/admin/binolla/accounts/${encodeURIComponent(id)}`);
@@ -159,5 +258,108 @@ export const adminApi = {
       `/api/admin/binolla/accounts/${encodeURIComponent(id)}/reject`,
       { method: 'POST' },
     );
+  },
+  listDemoUsers(params: {
+    active?: 'true' | 'false' | 'all';
+    page?: number;
+    pageSize?: number;
+  } = {}): Promise<MarketingDemoUserListResponse> {
+    const query = new URLSearchParams();
+    query.set('active', params.active ?? 'true');
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+    return apiRequest<MarketingDemoUserListResponse>(`/api/admin/demo-users?${query}`);
+  },
+  createDemoUser(body: CreateMarketingDemoUserRequest): Promise<MarketingDemoUserDto> {
+    return apiRequest<MarketingDemoUserDto>('/api/admin/demo-users', {
+      method: 'POST',
+      body,
+    });
+  },
+  setDemoUser(
+    id: string,
+    isMarketingDemo: boolean,
+    telegramUserId?: number | null,
+  ): Promise<MarketingDemoUserDto> {
+    return apiRequest<MarketingDemoUserDto>(
+      `/api/admin/demo-users/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        body: {
+          isMarketingDemo,
+          ...(telegramUserId != null ? { telegramUserId } : {}),
+        },
+      },
+    );
+  },
+  updateDemoConfig(id: string, config: MarketingDemoConfigDto): Promise<MarketingDemoUserDto> {
+    return apiRequest<MarketingDemoUserDto>(
+      `/api/admin/demo-users/${encodeURIComponent(id)}/config`,
+      {
+        method: 'PUT',
+        body: { config },
+      },
+    );
+  },
+  listUsers(params: {
+    q?: string;
+    role?: string;
+    isMarketingDemo?: boolean;
+    page?: number;
+    pageSize?: number;
+  } = {}): Promise<AdminUserListResponse> {
+    const query = new URLSearchParams();
+    if (params.q) query.set('q', params.q);
+    if (params.role) query.set('role', params.role);
+    if (params.isMarketingDemo != null) query.set('isMarketingDemo', String(params.isMarketingDemo));
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+    const qs = query.toString();
+    return apiRequest<AdminUserListResponse>(`/api/admin/users${qs ? `?${qs}` : ''}`);
+  },
+  getUser(id: string): Promise<AdminUserDetailDto> {
+    return apiRequest<AdminUserDetailDto>(`/api/admin/users/${encodeURIComponent(id)}`);
+  },
+  patchUser(id: string, body: PatchAdminUserRequest): Promise<AdminUserDetailDto> {
+    return apiRequest<AdminUserDetailDto>(`/api/admin/users/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body,
+    });
+  },
+  listAudit(params: {
+    userId?: string;
+    action?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    pageSize?: number;
+  } = {}): Promise<AdminAuditListResponse> {
+    const query = new URLSearchParams();
+    if (params.userId) query.set('userId', params.userId);
+    if (params.action) query.set('action', params.action);
+    if (params.from) query.set('from', params.from);
+    if (params.to) query.set('to', params.to);
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+    const qs = query.toString();
+    return apiRequest<AdminAuditListResponse>(`/api/admin/audit${qs ? `?${qs}` : ''}`);
+  },
+  listAdminNotifications(params: {
+    userId?: string;
+    page?: number;
+    pageSize?: number;
+  } = {}): Promise<AdminNotificationListResponse> {
+    const query = new URLSearchParams();
+    if (params.userId) query.set('userId', params.userId);
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+    const qs = query.toString();
+    return apiRequest<AdminNotificationListResponse>(`/api/admin/notifications${qs ? `?${qs}` : ''}`);
+  },
+  sendNotification(body: AdminSendNotificationRequest): Promise<AdminSendNotificationResponse> {
+    return apiRequest<AdminSendNotificationResponse>('/api/admin/notifications', {
+      method: 'POST',
+      body,
+    });
   },
 };

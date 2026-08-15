@@ -57,6 +57,14 @@ export function telegramRule(value: string): string | undefined {
   return undefined;
 }
 
+export function optionalTelegramRule(value: string): string | undefined {
+  if (!value.trim()) {
+    return undefined;
+  }
+
+  return telegramRule(value);
+}
+
 export function validateLoginForm(values: LoginFormValues): FieldErrors<keyof LoginFormValues> {
   return {
     email: emailRule(values.email),
@@ -70,8 +78,7 @@ export function validateSignupForm(values: SignupFormValues): FieldErrors<keyof 
     email: emailRule(values.email),
     password: passwordRule(values.password),
     country: required(values.country, t('validation.label.country')),
-    telegramId: telegramRule(values.telegramId),
-    // Optional: user may register via partner link first, then paste SSID later.
+    telegramId: optionalTelegramRule(values.telegramId),
     binollaAccount: undefined,
   };
 }

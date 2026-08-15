@@ -16,4 +16,5 @@ export type LoginCopy = {
   footerLinkLabel: string;
   footerSuffix: string;
   footerHref: string;
+  telegramLabel: string;
 };

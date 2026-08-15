@@ -59,6 +59,7 @@ export function getSubscriptionPageContent(): SubscriptionPageContent {
 export function getActivationHistoryPageContent(): ActivationHistoryPageContent {
   return {
     pageTitle: t('account.history.title'),
+    emptyLabel: t('account.history.empty'),
   };
 }
 

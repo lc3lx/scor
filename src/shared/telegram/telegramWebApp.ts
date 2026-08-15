@@ -37,6 +37,19 @@ export function getTelegramInitData(): string {
   return fromEnv;
 }
 
+export function hasTelegramInitData(): boolean {
+  return getTelegramInitData().length > 0;
+}
+
+/** True when running inside Telegram Mini App (signed initData present). */
+export function isTelegramWebApp(): boolean {
+  try {
+    return Boolean(window.Telegram?.WebApp?.initData?.trim());
+  } catch {
+    return false;
+  }
+}
+
 /** Prefer Telegram client language when choosing the initial UI locale (not for auth). */
 export function getTelegramLanguageCode(): string | null {
   try {

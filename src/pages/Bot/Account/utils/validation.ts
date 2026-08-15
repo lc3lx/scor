@@ -1,4 +1,4 @@
-import { passwordRule, required, telegramRule } from '@features/Auth';
+import { optionalTelegramRule, passwordRule, required } from '@features/Auth';
 import type { FieldErrors } from '@features/Auth';
 import { t } from '@shared/i18n';
 import type { ChangePasswordFormValues, EditProfileFormValues } from '../types';
@@ -9,7 +9,7 @@ export function validateEditProfileForm(
   return {
     fullName: required(values.fullName, t('validation.label.fullName')),
     country: required(values.country, t('validation.label.country')),
-    telegramId: telegramRule(values.telegramId),
+    telegramId: optionalTelegramRule(values.telegramId),
   };
 }
 

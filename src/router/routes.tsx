@@ -25,6 +25,15 @@ const SettingsPage = lazy(() => import('@pages/Bot/Settings'));
 const EditProfilePage = lazy(() =>
   import('@pages/Bot/Settings').then((module) => ({ default: module.EditProfilePage })),
 );
+const ChangePasswordPage = lazy(() =>
+  import('@pages/Bot/Settings').then((module) => ({ default: module.ChangePasswordPage })),
+);
+const SubscriptionPage = lazy(() =>
+  import('@pages/Bot/Settings').then((module) => ({ default: module.SubscriptionPage })),
+);
+const ActivationHistoryPage = lazy(() =>
+  import('@pages/Bot/Settings').then((module) => ({ default: module.ActivationHistoryPage })),
+);
 const AdminPage = lazy(() => import('@pages/Bot/Admin'));
 
 export const appRoutes: RouteObject[] = [
@@ -159,15 +168,33 @@ export const appRoutes: RouteObject[] = [
           },
           {
             path: ROUTES.changePassword,
-            element: <Navigate to={ROUTES.settings} replace />,
+            element: <ChangePasswordPage />,
+            handle: {
+              title: 'Change Password',
+              figmaNodeId: FIGMA_NODES.changePassword,
+              requiresAuth: true,
+              showBottomNav: false,
+            },
           },
           {
             path: ROUTES.subscription,
-            element: <Navigate to={ROUTES.settings} replace />,
+            element: <SubscriptionPage />,
+            handle: {
+              title: 'Subscription',
+              figmaNodeId: FIGMA_NODES.subscription,
+              requiresAuth: true,
+              showBottomNav: false,
+            },
           },
           {
             path: ROUTES.activationHistory,
-            element: <Navigate to={ROUTES.settings} replace />,
+            element: <ActivationHistoryPage />,
+            handle: {
+              title: 'Activation History',
+              figmaNodeId: FIGMA_NODES.activationHistory,
+              requiresAuth: true,
+              showBottomNav: false,
+            },
           },
           {
             path: ROUTES.admin,

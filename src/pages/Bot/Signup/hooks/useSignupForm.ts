@@ -16,15 +16,14 @@ export function useSignupForm() {
 
   const handleSubmit = useCallback(
     async (values: SignupFormValues) => {
-      await authService.loginWithTelegram();
-      // Optional: if user provided Binolla SSID on signup form, link it.
+      await authService.signup(values);
       const ssid = values.binollaAccount?.trim();
       if (ssid) {
         const { binollaApi } = await import('@shared/api');
         await binollaApi.connect({ ssid, accountType: 'Demo' });
       }
       const status = await accountApi.status();
-      navigate(routeForBotAccess(status.botAccess));
+      navigate(routeForBotAccess(status.botAccess), { replace: true });
     },
     [navigate],
   );
@@ -39,8 +38,15 @@ export function useSignupForm() {
     navigate(ROUTES.login);
   }, [navigate]);
 
+  const continueWithTelegram = useCallback(async () => {
+    await authService.loginWithTelegram();
+    const status = await accountApi.status();
+    navigate(routeForBotAccess(status.botAccess), { replace: true });
+  }, [navigate]);
+
   return {
     ...form,
     goToLogin,
+    continueWithTelegram,
   };
 }

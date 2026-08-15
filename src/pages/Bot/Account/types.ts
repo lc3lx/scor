@@ -126,6 +126,7 @@ export type ActivationHistoryEntry = {
 
 export type ActivationHistoryPageContent = {
   pageTitle: string;
+  emptyLabel: string;
 };
 
 export type AccountSnapshot = {

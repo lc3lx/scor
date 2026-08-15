@@ -7,10 +7,14 @@ import { invalidateBotSessionCache } from '@shared/api/botSessionCache';
 import { routeForBotAccess } from '@shared/access/botAccess';
 import { tokenStore } from '@shared/auth/tokenStore';
 import { t } from '@shared/i18n';
+import { hasTelegramInitData } from '@shared/telegram/telegramWebApp';
 
 export type BinollaAuthMode = 'login' | 'register';
 
-export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
+export function useBinollaPlatformAuth(
+  mode: BinollaAuthMode,
+  onToggleMode?: () => void,
+) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,8 +22,22 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
   const [error, setError] = useState<string | null>(null);
 
   const goToOtherMode = useCallback(() => {
+    if (onToggleMode) {
+      onToggleMode();
+      return;
+    }
     navigate(mode === 'login' ? ROUTES.signup : ROUTES.login);
-  }, [mode, navigate]);
+  }, [mode, navigate, onToggleMode]);
+
+  const ensureScarAlphaSession = useCallback(async () => {
+    if (tokenStore.isAuthenticated()) return;
+    if (hasTelegramInitData()) {
+      await authService.loginWithTelegram();
+      return;
+    }
+    navigate(ROUTES.login, { replace: true });
+    throw { message: t('auth.signInFirst') };
+  }, [navigate]);
 
   const submitCredentials = useCallback(async () => {
     const trimmedEmail = email.trim();
@@ -33,17 +51,13 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
     setError(null);
 
     try {
-      if (!tokenStore.isAuthenticated()) {
-        await authService.loginWithTelegram();
-      }
+      await ensureScarAlphaSession();
 
       const result =
         mode === 'login'
           ? await binollaApi.login({ email: trimmedEmail, password })
           : await binollaApi.signup({ email: trimmedEmail, password });
 
-      // Navigate from the connect response — waiting on /api/account/status races a cookie-less
-      // restore and can hang ~20s then send the user back to login.
       invalidateBotSessionCache();
       setStatus('success');
       setPassword('');
@@ -60,7 +74,7 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
       }
       setError(mode === 'login' ? t('binolla.auth.loginFailed') : t('binolla.auth.signupFailed'));
     }
-  }, [email, mode, navigate, password]);
+  }, [email, ensureScarAlphaSession, mode, navigate, password]);
 
   const enterBotWithTelegram = useCallback(async () => {
     setStatus('loading');
@@ -99,5 +113,6 @@ export function useBinollaPlatformAuth(mode: BinollaAuthMode) {
     goToOtherMode,
     submitCredentials,
     enterBotWithTelegram,
+    canEnterViaTelegram: hasTelegramInitData(),
   };
 }

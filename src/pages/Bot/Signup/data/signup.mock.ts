@@ -1,3 +1,4 @@
+import { t } from '@shared/i18n';
 import type { SignupFormValues } from '@features/Auth';
 
 export type SignupCopy = {
@@ -19,31 +20,40 @@ export type SignupCopy = {
   dividerLabel: string;
   promptLabel: string;
   signInLabel: string;
+  telegramContinueLabel: string;
+  footerPrefix: string;
+  footerLinkLabel: string;
+  footerSuffix: string;
+  footerHref: string;
 };
 
-/**
- * Temporary signup copy — replace via CMS/API adapter when backend is ready.
- */
-export const SIGNUP_COPY: SignupCopy = {
-  title: 'Join Scar Alpha AI',
-  description: 'Register on Binolla with our partner link, then continue with Telegram.',
-  fullNameLabel: 'Full Name',
-  fullNamePlaceholder: 'John Trader',
-  emailLabel: 'Email',
-  emailPlaceholder: 'you@email.com',
-  passwordLabel: 'Password',
-  passwordPlaceholder: '••••••••',
-  countryLabel: 'Country',
-  countryPlaceholder: 'United States',
-  telegramLabel: 'Telegram ID',
-  telegramPlaceholder: '@yourhandle',
-  binollaLabel: 'Binolla SSID (after registering via partner link)',
-  binollaPlaceholder: 'Paste Binolla session SSID',
-  submitLabel: 'Continue with Telegram',
-  dividerLabel: 'or',
-  promptLabel: 'Already have an account?',
-  signInLabel: 'Sign in',
-};
+export function getSignupCopy(): SignupCopy {
+  return {
+    title: t('signup.title'),
+    description: t('signup.description'),
+    fullNameLabel: t('signup.fullName'),
+    fullNamePlaceholder: t('signup.fullNamePh'),
+    emailLabel: t('signup.email'),
+    emailPlaceholder: t('signup.emailPh'),
+    passwordLabel: t('signup.password'),
+    passwordPlaceholder: '••••••••',
+    countryLabel: t('signup.country'),
+    countryPlaceholder: t('signup.countryPh'),
+    telegramLabel: t('signup.telegram'),
+    telegramPlaceholder: t('signup.telegramPh'),
+    binollaLabel: t('signup.binolla'),
+    binollaPlaceholder: t('signup.binollaPh'),
+    submitLabel: t('signup.submit'),
+    dividerLabel: t('signup.or'),
+    promptLabel: t('signup.haveAccount'),
+    signInLabel: t('signup.signIn'),
+    telegramContinueLabel: t('login.continueTelegram'),
+    footerPrefix: t('login.footerPrefix'),
+    footerLinkLabel: t('login.footerLinkLabel'),
+    footerSuffix: t('login.footerSuffix'),
+    footerHref: 'https://hul.company',
+  };
+}
 
 export const SIGNUP_INITIAL_VALUES: SignupFormValues = {
   fullName: '',

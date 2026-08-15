@@ -17,7 +17,7 @@ export function routeForBotAccess(botAccess?: string | null): string {
     return ROUTES.trading;
   }
   if (botAccess === 'BinollaNotConnected' || botAccess === 'SessionExpired') {
-    return ROUTES.login;
+    return ROUTES.linkBinolla;
   }
   return ROUTES.settings;
 }

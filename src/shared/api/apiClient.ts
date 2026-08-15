@@ -73,6 +73,14 @@ function mapMessage(code: string, fallback: string): string {
       return t('api.telegramAuthInvalid');
     case 'UNAUTHORIZED':
       return t('api.unauthorized');
+    case 'EMAIL_TAKEN':
+      return t('api.emailTaken');
+    case 'TELEGRAM_TAKEN':
+      return t('api.telegramTaken');
+    case 'INVALID_CREDENTIALS':
+      return t('api.invalidCredentials');
+    case 'PASSWORD_NOT_SET':
+      return t('api.passwordNotSet');
     default:
       return fallback || t('common.errorGeneric');
   }

@@ -6,17 +6,15 @@ import { tokenStore } from '@shared/auth/tokenStore';
 import { authService } from '@features/Auth';
 import { t } from '@shared/i18n';
 import { isOnboardingDone } from '@shared/onboarding/onboardingStorage';
-import { bootstrapTelegramWebApp } from '@shared/telegram/telegramWebApp';
+import { routeForBotAccess } from '@shared/access/botAccess';
+import { bootstrapTelegramWebApp, hasTelegramInitData } from '@shared/telegram/telegramWebApp';
 
 const SPLASH_MIN_MS = 1200;
 
 /**
- * Bootstrap: Telegram initData → JWT → account status → route.
- *
- * First launch (onboarding not done) → Onboarding
- * Allowed / AdminApprovalRequired → Trading (place-order locked until admin approves)
- * BinollaNotConnected / SessionExpired → Binolla login (reconnect)
- * NotEligible / other → Account settings
+ * Bootstrap:
+ * Telegram Mini App → initData JWT → account status → route
+ * Website → existing JWT or onboarding/login (no Telegram required)
  */
 export function useSplashBootstrap() {
   const navigate = useNavigate();
@@ -37,33 +35,19 @@ export function useSplashBootstrap() {
     void (async () => {
       try {
         if (!tokenStore.isAuthenticated()) {
-          await authService.loginWithTelegram();
+          if (hasTelegramInitData()) {
+            await authService.loginWithTelegram();
+          } else if (!isOnboardingDone()) {
+            await finish(ROUTES.onboarding);
+            return;
+          } else {
+            await finish(ROUTES.login);
+            return;
+          }
         }
 
         const status = await accountApi.status();
-
-        if (
-          status.botAccess === 'Allowed' ||
-          status.botAccess === 'AdminApprovalRequired'
-        ) {
-          await finish(ROUTES.trading);
-          return;
-        }
-
-        if (!isOnboardingDone()) {
-          await finish(ROUTES.onboarding);
-          return;
-        }
-
-        if (
-          status.botAccess === 'BinollaNotConnected' ||
-          status.botAccess === 'SessionExpired'
-        ) {
-          await finish(ROUTES.login);
-          return;
-        }
-
-        await finish(ROUTES.settings);
+        await finish(routeForBotAccess(status.botAccess));
       } catch (err) {
         tokenStore.clear();
         const message =

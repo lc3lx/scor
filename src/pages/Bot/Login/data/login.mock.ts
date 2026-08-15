@@ -1,27 +1,28 @@
+import { t } from '@shared/i18n';
 import type { LoginCopy } from '../types';
 
-/**
- * Temporary login copy — replace via CMS/API adapter when backend is ready.
- */
-export const LOGIN_COPY: LoginCopy = {
-  title: 'Welcome back',
-  description: 'Continue with Telegram Mini App authentication',
-  emailLabel: 'Email (unused)',
-  emailPlaceholder: 'Open from Telegram',
-  passwordLabel: 'Password (unused)',
-  passwordPlaceholder: '••••••••',
-  forgotPasswordLabel: 'Telegram sign-in only',
-  submitLabel: 'Continue with Telegram',
-  createAccountLabel: 'Create Account',
-  securityTitle: 'Server-side Telegram verification',
-  securitySubtitle: 'JWT issued after backend validates initData',
-  footerPrefix: '© 2026 Scar Alpha AI. developed by ',
-  footerLinkLabel: 'Hul',
-  footerSuffix: ' Company',
-  footerHref: 'https://hul.company',
-};
+export function getLoginCopy(): LoginCopy {
+  return {
+    title: t('login.title'),
+    description: t('login.description'),
+    emailLabel: t('login.emailLabel'),
+    emailPlaceholder: t('login.emailPlaceholder'),
+    passwordLabel: t('login.passwordLabel'),
+    passwordPlaceholder: '••••••••',
+    forgotPasswordLabel: t('login.forgotPassword'),
+    submitLabel: t('login.submit'),
+    createAccountLabel: t('login.createAccount'),
+    securityTitle: t('login.securityTitle'),
+    securitySubtitle: t('login.securitySubtitle'),
+    footerPrefix: t('login.footerPrefix'),
+    footerLinkLabel: t('login.footerLinkLabel'),
+    footerSuffix: t('login.footerSuffix'),
+    footerHref: 'https://hul.company',
+    telegramLabel: t('login.continueTelegram'),
+  };
+}
 
 export const LOGIN_INITIAL_VALUES = {
-  email: 'telegram@scaralpha.local',
-  password: 'telegram-auth',
+  email: '',
+  password: '',
 } as const;

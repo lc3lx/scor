@@ -29,7 +29,7 @@ export function ApprovalNoticeSection({
           <Text variant="caption" tone="caption" className={styles.body}>
             {t('account.notice.sessionExpired.body')}
           </Text>
-          <Link className={styles.link} to={ROUTES.login}>
+          <Link className={styles.link} to={ROUTES.linkBinolla}>
             {t('account.notice.sessionExpired.cta')}
           </Link>
         </div>
@@ -47,10 +47,10 @@ export function ApprovalNoticeSection({
           <Text variant="caption" tone="caption" className={styles.body}>
             {t('account.notice.connect.body')}
           </Text>
-          <Link className={styles.link} to={ROUTES.signup}>
+          <Link className={styles.link} to={ROUTES.linkBinolla}>
             {getBinollaReferralLabel()}
           </Link>
-          <Link className={styles.link} to={ROUTES.login}>
+          <Link className={styles.link} to={ROUTES.linkBinolla}>
             {getBinollaLoginLabel()}
           </Link>
         </div>

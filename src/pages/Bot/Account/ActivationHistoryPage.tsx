@@ -18,7 +18,11 @@ export default function ActivationHistoryPage() {
       <div className={styles.scroll}>
         <PageContent className={styles.formContent}>
           <PageHeader title={content.pageTitle} onBack={() => navigate(-1)} />
-          <ActivationHistoryListSection entries={entries} />
+          {entries.length === 0 ? (
+            <p>{content.emptyLabel}</p>
+          ) : (
+            <ActivationHistoryListSection entries={entries} />
+          )}
         </PageContent>
       </div>
     </main>

@@ -1,30 +1,79 @@
 import {
-  getLiveTradeNotificationTitle,
   getNotificationsPageContent as getNotificationsPageContentMock,
 } from './activity.mock';
 import { accountService } from '../../Account/services/accountService';
+import { notificationsApi, type NotificationDto } from '@shared/api';
 import { t } from '@shared/i18n';
+import type { NotificationVariant } from '@components/types';
 import type { NotificationItem } from '../types';
 
 type NotificationListener = () => void;
 
-let notifications: NotificationItem[] = [];
 const listeners = new Set<NotificationListener>();
+let cached: NotificationItem[] = [];
 
-function cloneNotifications(): NotificationItem[] {
-  return notifications.map((item) => ({ ...item }));
+const VARIANTS: NotificationVariant[] = [
+  'account-not-approved',
+  'account-approved',
+  'activation-success',
+  'bot-started',
+  'new-signal',
+  'trade-profit',
+  'trade-loss',
+  'profit-target',
+  'loss-limit',
+  'live-trade',
+];
+
+function asVariant(value: string): NotificationVariant {
+  return VARIANTS.includes(value as NotificationVariant)
+    ? (value as NotificationVariant)
+    : 'live-trade';
 }
 
-function unreadCount(): number {
-  return notifications.filter((item) => !item.read).length;
+function formatRelative(iso: string): string {
+  const created = new Date(iso).getTime();
+  if (Number.isNaN(created)) return iso;
+  const delta = Math.max(0, Date.now() - created);
+  const minutes = Math.floor(delta / 60_000);
+  if (minutes < 1) return t('notifications.justNow');
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
 }
 
-function syncAccountBadge(): void {
-  accountService.setUnreadNotificationCount(unreadCount());
+function formatDetail(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+
+function mapDto(item: NotificationDto): NotificationItem {
+  return {
+    id: item.id,
+    variant: asVariant(item.variant),
+    title: item.title,
+    description: item.description,
+    timestamp: formatRelative(item.createdAt),
+    detailTimestamp: formatDetail(item.createdAt),
+    read: item.read,
+    tradeId: item.tradeId ?? undefined,
+    action: item.actionPath
+      ? { label: t('notifications.openRelated'), path: item.actionPath }
+      : undefined,
+  };
 }
 
 function notifyListeners(): void {
   listeners.forEach((listener) => listener());
+}
+
+function syncAccountBadge(unread: number): void {
+  accountService.setUnreadNotificationCount(unread);
 }
 
 export const activityService = {
@@ -34,54 +83,45 @@ export const activityService = {
   },
 
   async fetchNotifications(): Promise<NotificationItem[]> {
-    return cloneNotifications();
+    const response = await notificationsApi.list();
+    cached = response.items.map(mapDto);
+    syncAccountBadge(response.unreadCount);
+    return cached.map((item) => ({ ...item }));
   },
 
   async getNotificationById(id: string): Promise<NotificationItem | null> {
-    const match = notifications.find((item) => item.id === id);
-    return match ? { ...match } : null;
+    try {
+      return mapDto(await notificationsApi.get(id));
+    } catch {
+      const match = cached.find((item) => item.id === id);
+      return match ? { ...match } : null;
+    }
   },
 
   async markRead(id: string): Promise<NotificationItem | null> {
-    let updated: NotificationItem | null = null;
-    notifications = notifications.map((item) => {
-      if (item.id !== id) return item;
-      updated = { ...item, read: true };
-      return updated;
-    });
-    syncAccountBadge();
+    const updated = mapDto(await notificationsApi.markRead(id));
+    cached = cached.map((item) => (item.id === id ? updated : item));
     notifyListeners();
     return updated;
   },
 
   async markAllRead(): Promise<NotificationItem[]> {
-    notifications = notifications.map((item) => ({ ...item, read: true }));
-    syncAccountBadge();
+    const response = await notificationsApi.markAllRead();
+    cached = response.items.map(mapDto);
+    syncAccountBadge(response.unreadCount);
     notifyListeners();
-    return cloneNotifications();
+    return cached.map((item) => ({ ...item }));
   },
 
-  async addTradeNotification(input: {
+  async addTradeNotification(_input: {
     tradeId: string;
     description: string;
     variant?: NotificationItem['variant'];
     title?: string;
-  }): Promise<NotificationItem> {
-    const notification: NotificationItem = {
-      id: `notif-${input.tradeId}-${Date.now()}`,
-      variant: input.variant ?? 'live-trade',
-      title: input.title ?? getLiveTradeNotificationTitle(),
-      description: input.description,
-      timestamp: t('notifications.justNow'),
-      detailTimestamp: t('notifications.todayJustNow'),
-      read: false,
-      tradeId: input.tradeId,
-    };
-
-    notifications = [notification, ...notifications];
-    syncAccountBadge();
+  }): Promise<NotificationItem | null> {
+    const items = await activityService.fetchNotifications();
     notifyListeners();
-    return notification;
+    return items[0] ?? null;
   },
 
   getNotificationsPageContent() {
@@ -89,8 +129,8 @@ export const activityService = {
   },
 
   reset(): void {
-    notifications = [];
-    syncAccountBadge();
+    cached = [];
+    syncAccountBadge(0);
     notifyListeners();
   },
 };
