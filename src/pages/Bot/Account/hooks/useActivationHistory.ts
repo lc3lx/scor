@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { accountService } from '../services/accountService';
+import { loadPageData, PAGE_CACHE_TTL, pageCacheKey, readCachedPageData } from '@shared/cache/pageDataCache';
 import type { ActivationHistoryEntry } from '../types';
 
 export function useActivationHistory() {
-  const [entries, setEntries] = useState<ActivationHistoryEntry[] | null>(null);
+  const cacheKey = pageCacheKey('activation-history');
+  const [entries, setEntries] = useState<ActivationHistoryEntry[] | null>(() => readCachedPageData(cacheKey));
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
-      const next = await accountService.getActivationHistory();
+      const next = await loadPageData(cacheKey, () => accountService.getActivationHistory(), PAGE_CACHE_TTL.subscription);
       if (active) setEntries(next);
     };
 
@@ -23,7 +25,7 @@ export function useActivationHistory() {
       active = false;
       unsubscribe();
     };
-  }, []);
+  }, [cacheKey]);
 
   return {
     entries: entries ?? [],

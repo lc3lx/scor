@@ -1,17 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import { meApi } from '@shared/api';
+import {
+  loadPageData,
+  PAGE_CACHE_TTL,
+  pageCacheKey,
+  readCachedPageData,
+  storePageData,
+} from '@shared/cache/pageDataCache';
 import { dashboardService } from '../data/dashboardService';
 import type { DashboardContent, DashboardTimeframe } from '../types';
 
 const DEMO_POLL_MS = 12_000;
 
 export function useDashboardData() {
-  const [data, setData] = useState<DashboardContent | null>(null);
+  const cacheKey = pageCacheKey('dashboard');
+  const demoCacheKey = pageCacheKey('dashboard-demo');
+  const [data, setData] = useState<DashboardContent | null>(() => readCachedPageData(cacheKey));
   const [timeframe, setTimeframe] = useState<DashboardTimeframe>(
     dashboardService.getInitialTimeframe(),
   );
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => readCachedPageData<DashboardContent>(cacheKey) === null);
+  const [isDemo, setIsDemo] = useState(() => readCachedPageData<boolean>(demoCacheKey) ?? false);
 
   const refresh = useCallback(async (activeTimeframe: DashboardTimeframe) => {
     const content = await dashboardService.fetchContent(activeTimeframe);
@@ -22,16 +31,20 @@ export function useDashboardData() {
     let active = true;
 
     void (async () => {
-      const content = await refresh(timeframe);
+      const content = await loadPageData(cacheKey, () => refresh(timeframe), PAGE_CACHE_TTL.dashboard);
       if (!active) return;
       setData(content);
       setIsLoading(false);
 
-      try {
-        const me = await meApi.get();
-        if (active) setIsDemo(Boolean(me.isMarketingDemo));
-      } catch {
-        /* keep non-demo polling off */
+      if (readCachedPageData<boolean>(demoCacheKey) === null) {
+        try {
+          const me = await meApi.get();
+          const nextIsDemo = Boolean(me.isMarketingDemo);
+          storePageData(demoCacheKey, nextIsDemo, PAGE_CACHE_TTL.dashboard);
+          if (active) setIsDemo(nextIsDemo);
+        } catch {
+          /* keep non-demo polling off */
+        }
       }
     })();
 

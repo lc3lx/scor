@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { tradingService } from '../data/tradingService';
+import { invalidatePageData, loadPageData, PAGE_CACHE_TTL, pageCacheKey, readCachedPageData, storePageData } from '@shared/cache/pageDataCache';
 import { getTradingMockContent } from '../data/trading.mock';
 import type { TradingData, TradingRuntimeState } from '../types';
 
@@ -9,20 +10,22 @@ const LIVE_REFRESH_MS = 10_000;
 const LIVE_TICK_MS = 3_000;
 
 export function useTradingData() {
-  const [data, setData] = useState<TradingData | null>(null);
+  const cacheKey = pageCacheKey('trading');
+  const [data, setData] = useState<TradingData | null>(() => readCachedPageData(cacheKey));
 
   const reload = useCallback(async () => {
     const next = await tradingService.fetchTradingData();
+    storePageData(cacheKey, next, PAGE_CACHE_TTL.trading);
     setData(next);
     return next;
-  }, []);
+  }, [cacheKey]);
 
   useEffect(() => {
     let active = true;
 
     void (async () => {
       try {
-        const next = await tradingService.fetchTradingData();
+        const next = await loadPageData(cacheKey, () => tradingService.fetchTradingData(), PAGE_CACHE_TTL.trading);
         if (active) setData(next);
       } catch {
         /* keep loading UI */
@@ -33,6 +36,7 @@ export function useTradingData() {
       void (async () => {
         try {
           const next = await tradingService.fetchTradingData();
+          storePageData(cacheKey, next, PAGE_CACHE_TTL.trading);
           if (active) setData(next);
         } catch {
           /* ignore refresh errors */
@@ -59,7 +63,7 @@ export function useTradingData() {
       window.clearInterval(refreshTimer);
       window.clearInterval(tickTimer);
     };
-  }, []);
+  }, [cacheKey]);
 
   const duration = useMemo(() => {
     if (!data) return null;
@@ -80,29 +84,33 @@ export function useTradingData() {
 
   const updateRuntime = useCallback(async (partial: Partial<TradingRuntimeState>) => {
     const runtime = await tradingService.updateRuntime(partial);
+    invalidatePageData(cacheKey);
     setData((current) => (current ? { ...current, runtime } : current));
     return runtime;
-  }, []);
+  }, [cacheKey]);
 
   const cycleTradeDuration = useCallback(async () => {
     const runtime = await tradingService.cycleTradeDuration();
+    invalidatePageData(cacheKey);
     setData((current) => (current ? { ...current, runtime } : current));
     return runtime;
-  }, []);
+  }, [cacheKey]);
 
   const selectCandlePeriod = useCallback(async (candlePeriodId: string) => {
     await tradingService.setCandlePeriod(candlePeriodId);
+    invalidatePageData(cacheKey);
     const next = await tradingService.fetchTradingData();
     setData(next);
     return next;
-  }, []);
+  }, [cacheKey]);
 
   const selectPair = useCallback(async (symbol: string) => {
     tradingService.setSelectedAsset(symbol);
+    invalidatePageData(cacheKey);
     const next = await tradingService.fetchTradingData();
     setData(next);
     return next;
-  }, []);
+  }, [cacheKey]);
 
   const placeTrade = useCallback(async (direction: 'up' | 'down') => {
     return tradingService.placeTrade(direction);

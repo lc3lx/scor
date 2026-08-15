@@ -5,11 +5,13 @@ import { ApiClientError } from '@shared/api';
 import { tokenStore } from '@shared/auth/tokenStore';
 import { t } from '@shared/i18n';
 import { accountService } from '../services/accountService';
+import { loadPageData, PAGE_CACHE_TTL, pageCacheKey, readCachedPageData, storePageData } from '@shared/cache/pageDataCache';
 import type { AccountSnapshot } from '../types';
 
 export function useAccountData() {
   const navigate = useNavigate();
-  const [snapshot, setSnapshot] = useState<AccountSnapshot | null>(null);
+  const cacheKey = pageCacheKey('account');
+  const [snapshot, setSnapshot] = useState<AccountSnapshot | null>(() => readCachedPageData(cacheKey));
   const [error, setError] = useState<string | null>(null);
   const activeRef = useRef(true);
 
@@ -18,7 +20,7 @@ export function useAccountData() {
 
     const load = async () => {
       try {
-        const next = await accountService.fetchAccountSnapshot();
+        const next = await loadPageData(cacheKey, () => accountService.fetchAccountSnapshot(), PAGE_CACHE_TTL.account);
         if (activeRef.current) {
           setSnapshot(next);
           setError(null);
@@ -38,19 +40,23 @@ export function useAccountData() {
     void load();
 
     const unsubscribe = accountService.subscribe(() => {
-      void load();
+      void accountService.fetchAccountSnapshot().then((next) => {
+        storePageData(cacheKey, next, PAGE_CACHE_TTL.account);
+        if (activeRef.current) setSnapshot(next);
+      });
     });
 
     return () => {
       activeRef.current = false;
       unsubscribe();
     };
-  }, [navigate]);
+  }, [cacheKey, navigate]);
 
   const refresh = useCallback(async () => {
     const next = await accountService.fetchAccountSnapshot();
+    storePageData(cacheKey, next, PAGE_CACHE_TTL.account);
     if (activeRef.current) setSnapshot(next);
-  }, []);
+  }, [cacheKey]);
 
   const logout = useCallback(async () => {
     await accountService.logout();

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { homeService } from '../data/homeService';
+import { invalidatePageData, loadPageData, PAGE_CACHE_TTL, pageCacheKey, readCachedPageData } from '@shared/cache/pageDataCache';
 import type { HomeConfigRow, HomeData, HomeRuntimeState } from '../types';
 
 function resolveConfigValue(
@@ -41,14 +42,19 @@ function resolveConfigValue(
 }
 
 export function useHomeData() {
-  const [data, setData] = useState<HomeData | null>(null);
+  const cacheKey = pageCacheKey('home');
+  const [data, setData] = useState<HomeData | null>(() => readCachedPageData(cacheKey));
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     let active = true;
 
-    void homeService
-      .fetchHomeData()
+    void loadPageData(
+      cacheKey,
+      () => homeService.fetchHomeData(),
+      PAGE_CACHE_TTL.home,
+      reloadToken > 0,
+    )
       .then((next) => {
         if (active) setData(next);
       })
@@ -59,7 +65,7 @@ export function useHomeData() {
     return () => {
       active = false;
     };
-  }, [reloadToken]);
+  }, [cacheKey, reloadToken]);
 
   const configRows = useMemo(() => {
     if (!data) return [];
@@ -104,6 +110,7 @@ export function useHomeData() {
 
   const updateRuntime = useCallback(async (partial: Partial<HomeRuntimeState>) => {
     const runtime = await homeService.updateRuntime(partial);
+    invalidatePageData(cacheKey);
     setData((current) => (current ? { ...current, runtime } : current));
 
     // Pair / strategy changes need a live RSI + candles refresh.
@@ -112,7 +119,7 @@ export function useHomeData() {
     }
 
     return runtime;
-  }, []);
+  }, [cacheKey]);
 
   return {
     data,
