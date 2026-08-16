@@ -18,6 +18,10 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  /* The bot tab bar is rendered in the app shell, while this dialog is
+     viewport-fixed. Keep the sheet completely above that bar instead of
+     letting its last options disappear behind it. */
+  margin-bottom: calc(var(--nav-bottom-bar-height) + env(safe-area-inset-bottom, 0px));
   max-width: var(--layout-viewport-max-width);
   max-height: min(82dvh, 760px);
   padding: 12px var(--layout-page-padding-x) calc(var(--space-11) + env(safe-area-inset-bottom));
