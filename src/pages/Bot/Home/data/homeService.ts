@@ -54,6 +54,37 @@ function cloneRuntime(): HomeRuntimeState {
   };
 }
 
+function toBotPreferences(settings: HomeRuntimeState['settings']) {
+  const enabled = (id: string) => settings.toggles.find((toggle) => toggle.id === id)?.enabled ?? false;
+  return {
+    autoStopAtProfit: enabled('auto-profit'),
+    autoStopAtLoss: enabled('auto-loss'),
+    signalConfirmationEnabled: enabled('signal-confirm'),
+    riskLevel: settings.selectedRiskId,
+    notificationsEnabled: enabled('notifications'),
+  };
+}
+
+function applyBotPreferences(
+  settings: HomeRuntimeState['settings'],
+  bot: Awaited<ReturnType<typeof botApi.status>>,
+): HomeRuntimeState['settings'] {
+  const enabledById: Record<string, boolean> = {
+    'auto-profit': bot.autoStopAtProfit,
+    'auto-loss': bot.autoStopAtLoss,
+    'signal-confirm': bot.signalConfirmationEnabled,
+    notifications: bot.notificationsEnabled,
+  };
+  return {
+    ...settings,
+    selectedRiskId: bot.riskLevel,
+    toggles: settings.toggles.map((toggle) => ({
+      ...toggle,
+      enabled: enabledById[toggle.id] ?? toggle.enabled,
+    })),
+  };
+}
+
 function formatSignal(signal: string): string {
   const s = signal.toLowerCase();
   if (s === 'call') return t('common.callUp');
@@ -156,6 +187,7 @@ export const homeService = {
         if (botRuntime.asset) runtimeState.tradingPairId = botRuntime.asset;
         runtimeState.tradeAmountId = `amount-${botRuntime.amount}`;
         runtimeState.durationId = `duration-${botRuntime.durationSeconds}`;
+        runtimeState.settings = applyBotPreferences(runtimeState.settings, botRuntime);
       }
 
       const assets =
@@ -390,14 +422,6 @@ export const homeService = {
       const statusDisplay = getBotStatusDisplay()[runtimeState.botStatus];
       base.botEngine.statusLabel = statusDisplay.label;
       base.botEngine.statusTone = statusDisplay.tone;
-      if (runtimeState.settings) {
-        runtimeState.settings = {
-          ...runtimeState.settings,
-          toggles: runtimeState.settings.toggles.map((toggle) =>
-            toggle.id === 'notifications' ? toggle : { ...toggle, enabled: false },
-          ),
-        };
-      }
     } catch (error) {
       if (error instanceof ApiClientError) {
         base.disclaimer = error.message;
@@ -426,12 +450,21 @@ export const homeService = {
     const durationSeconds = Number(durationId.replace('duration-', '')) || 300;
     const asset = partial.tradingPairId ?? runtimeState.tradingPairId;
 
+    let persistedBot: Awaited<ReturnType<typeof botApi.status>> | null = null;
+
     if (partial.botStatus === 'running') {
-      await botApi.start(asset, amount, durationSeconds, 50, 30);
+      persistedBot = await botApi.start(
+        asset,
+        amount,
+        durationSeconds,
+        50,
+        30,
+        toBotPreferences(partial.settings ?? runtimeState.settings),
+      );
     } else if (partial.botStatus === 'paused') {
-      await botApi.pause();
+      persistedBot = await botApi.pause();
     } else if (partial.botStatus === 'stopped') {
-      await botApi.stop();
+      persistedBot = await botApi.stop();
     }
     if (
       partial.settings ||
@@ -439,13 +472,25 @@ export const homeService = {
       partial.durationId ||
       partial.tradingPairId
     ) {
-      await botApi.apply({
+      persistedBot = await botApi.apply({
         asset,
         amount,
         durationSeconds,
         dailyProfitTarget: 50,
         dailyLossLimit: 30,
+        ...toBotPreferences(partial.settings ?? runtimeState.settings),
       });
+    }
+
+    if (persistedBot) {
+      partial = {
+        ...partial,
+        botStatus: persistedBot.state.toLowerCase() as HomeRuntimeState['botStatus'],
+        tradingPairId: persistedBot.asset ?? asset,
+        tradeAmountId: `amount-${persistedBot.amount}`,
+        durationId: `duration-${persistedBot.durationSeconds}`,
+        settings: applyBotPreferences(partial.settings ?? runtimeState.settings, persistedBot),
+      };
     }
     if (partial.strategyId) {
       try {
@@ -465,20 +510,6 @@ export const homeService = {
 
     if (partial.marketTypeId && partial.marketTypeId !== 'binolla-market') {
       partial = { ...partial, marketTypeId: 'binolla-market' };
-    }
-
-    if (partial.settings?.toggles) {
-      partial = {
-        ...partial,
-        settings: {
-          ...partial.settings,
-          toggles: partial.settings.toggles.map((toggle) =>
-            toggle.id.startsWith('auto-') || toggle.id === 'signal-confirm'
-              ? { ...toggle, enabled: false }
-              : toggle,
-          ),
-        },
-      };
     }
 
     runtimeState = {

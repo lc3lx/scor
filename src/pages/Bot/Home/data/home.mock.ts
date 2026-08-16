@@ -118,17 +118,17 @@ export function getHomeMockContent(): HomePageContent {
           {
             id: 'auto-profit',
             label: t('home.settings.autoProfit'),
-            enabled: false,
+            enabled: true,
           },
           {
             id: 'auto-loss',
             label: t('home.settings.autoLoss'),
-            enabled: false,
+            enabled: true,
           },
           {
             id: 'signal-confirm',
             label: t('home.settings.signalConfirm'),
-            enabled: false,
+            enabled: true,
           },
           {
             id: 'notifications',

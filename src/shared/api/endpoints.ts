@@ -200,10 +200,10 @@ export const botApi = {
   status(): Promise<BotRuntimeResponse> {
     return apiRequest<BotRuntimeResponse>('/api/bot/status');
   },
-  start(asset: string, amount = 25, durationSeconds = 300, dailyProfitTarget = 50, dailyLossLimit = 30): Promise<BotRuntimeResponse> {
+  start(asset: string, amount = 25, durationSeconds = 300, dailyProfitTarget = 50, dailyLossLimit = 30, preferences: BotPreferences = {}): Promise<BotRuntimeResponse> {
     return apiRequest<BotRuntimeResponse>('/api/bot/start', {
       method: 'POST',
-      body: { asset, amount, durationSeconds, dailyProfitTarget, dailyLossLimit },
+      body: { asset, amount, durationSeconds, dailyProfitTarget, dailyLossLimit, ...preferences },
     });
   },
   pause(): Promise<BotRuntimeResponse> {
@@ -212,9 +212,17 @@ export const botApi = {
   stop(): Promise<BotRuntimeResponse> {
     return apiRequest<BotRuntimeResponse>('/api/bot/stop', { method: 'POST' });
   },
-  apply(body: { asset?: string; amount?: number; durationSeconds?: number; dailyProfitTarget?: number; dailyLossLimit?: number }): Promise<BotRuntimeResponse> {
+  apply(body: { asset?: string; amount?: number; durationSeconds?: number; dailyProfitTarget?: number; dailyLossLimit?: number } & BotPreferences): Promise<BotRuntimeResponse> {
     return apiRequest<BotRuntimeResponse>('/api/bot/apply', { method: 'POST', body });
   },
+};
+
+type BotPreferences = {
+  autoStopAtProfit?: boolean;
+  autoStopAtLoss?: boolean;
+  signalConfirmationEnabled?: boolean;
+  riskLevel?: string;
+  notificationsEnabled?: boolean;
 };
 
 export const marketApi = {

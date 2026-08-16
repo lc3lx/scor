@@ -121,6 +121,11 @@ export type BotRuntimeResponse = {
   dailyProfitTarget: number;
   dailyLossLimit: number;
   updatedAt: string;
+  autoStopAtProfit: boolean;
+  autoStopAtLoss: boolean;
+  signalConfirmationEnabled: boolean;
+  riskLevel: 'risk-low' | 'risk-medium' | 'risk-high' | string;
+  notificationsEnabled: boolean;
 };
 
 export type StrategySignalResponse = {

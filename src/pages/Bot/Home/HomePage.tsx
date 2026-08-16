@@ -166,9 +166,12 @@ export default function HomePage() {
     [settingsContent, updateRuntime],
   );
 
-  const handleSettingsSave = useCallback(() => {
+  const handleSettingsSave = useCallback(async () => {
+    if (settingsContent) {
+      await updateRuntime({ settings: settingsContent });
+    }
     sheets.closeSheet();
-  }, [sheets.closeSheet]);
+  }, [settingsContent, sheets.closeSheet, updateRuntime]);
 
   if (
     !data ||
@@ -210,6 +213,7 @@ export default function HomePage() {
               onStop={botControls.handleStop}
               onApply={botControls.handleApply}
               isUpdating={botControls.isUpdating}
+              feedback={botControls.feedback}
               comingSoon={false}
             />
             <HomeConfigSection rows={configRows} onRowClick={sheets.openSheet} />

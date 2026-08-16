@@ -13,14 +13,10 @@ export type BotSettingsSheetContentProps = {
   onSave: () => void;
 };
 
-function isComingSoonToggle(id: string): boolean {
-  return id.startsWith('auto-') || id === 'signal-confirm';
-}
-
 export function BotSettingsSheetContent({
   content,
   onToggleChange,
-  onRiskSelect: _onRiskSelect,
+  onRiskSelect,
   onSave,
 }: BotSettingsSheetContentProps) {
   const t = useT();
@@ -35,11 +31,8 @@ export function BotSettingsSheetContent({
           <ToggleRow
             key={toggle.id}
             label={toggle.label}
-            checked={isComingSoonToggle(toggle.id) ? false : toggle.enabled}
-            onChange={(enabled) => {
-              if (isComingSoonToggle(toggle.id)) return;
-              onToggleChange(toggle.id, enabled);
-            }}
+            checked={toggle.enabled}
+            onChange={(enabled) => onToggleChange(toggle.id, enabled)}
           />
         ))}
       </div>
@@ -54,9 +47,7 @@ export function BotSettingsSheetContent({
               key={option.id}
               label={option.label}
               selected={option.id === content.selectedRiskId}
-              onSelect={() => {
-                /* Coming Soon — local risk chips do not enforce anything */
-              }}
+              onSelect={() => onRiskSelect(option.id)}
               className={styles.riskChip}
             />
           ))}
