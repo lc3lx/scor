@@ -229,7 +229,7 @@ export function getBotStatusDisplay(): Record<
 > {
   return {
     // Start only enables RSI monitoring — it never places Binolla orders automatically.
-    running: { label: t('home.bot.statusRsi'), tone: 'active' },
+    running: { label: t('home.bot.statusRunning'), tone: 'active' },
     paused: { label: t('home.bot.statusPaused'), tone: 'warning' },
     stopped: { label: t('home.bot.statusManual'), tone: 'neutral' },
   };

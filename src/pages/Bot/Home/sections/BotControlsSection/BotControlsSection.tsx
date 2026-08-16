@@ -11,6 +11,7 @@ export type BotControlsSectionProps = {
   onPause: () => void;
   onStop: () => void;
   onApply: () => void;
+  isUpdating?: boolean;
   /** Phase 9: auto Start/Pause/Stop is out of scope — show Coming Soon. */
   comingSoon?: boolean;
 };
@@ -32,6 +33,7 @@ export function BotControlsSection({
   onPause,
   onStop,
   onApply,
+  isUpdating = false,
   comingSoon = true,
 }: BotControlsSectionProps) {
   const t = useT();
@@ -45,7 +47,7 @@ export function BotControlsSection({
             key={action}
             action={action}
             pressed={!comingSoon && action === 'start' && isStartPressed}
-            disabled={comingSoon}
+            disabled={comingSoon || isUpdating}
             onClick={handlerMap[handlers[action]]}
             className={styles.control}
           />
@@ -54,6 +56,10 @@ export function BotControlsSection({
       {comingSoon ? (
         <Text variant="caption-xs" tone="caption" align="center" className={styles.soonNote}>
           {t('home.controls.note')}
+        </Text>
+      ) : isStartPressed ? (
+        <Text variant="caption-xs" tone="success" align="center" className={styles.soonNote} aria-live="polite">
+          {t('home.controls.runningNote')}
         </Text>
       ) : null}
     </section>

@@ -4,6 +4,7 @@ import type { HomeData, HomeRuntimeState, StrategyOptionItem } from '../types';
 import {
   ApiClientError,
   binollaApi,
+  botApi,
   marketApi,
   strategiesApi,
   tradesApi,
@@ -30,6 +31,8 @@ function seedRuntimeFromMock(): HomeRuntimeState {
     ...HOME_INITIAL_RUNTIME,
     strategyId: 'rsi',
     technicalIndicatorId: 'rsi',
+    tradeAmountId: 'amount-25',
+    durationId: 'duration-300',
     settings: {
       ...settings,
       toggles: settings.toggles.map((toggle) => ({ ...toggle })),
@@ -140,12 +143,20 @@ export const homeService = {
     let asset = runtimeState.tradingPairId || '';
 
     try {
-      const [status, balance, strategies, tradeBundle] = await Promise.all([
+      const [status, balance, strategies, tradeBundle, botRuntime] = await Promise.all([
         getAccountStatusCached().catch(() => null),
         binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
         strategiesApi.list().catch(() => null),
         fetchTradesForHomeStats(),
+        botApi.status().catch(() => null),
       ]);
+
+      if (botRuntime) {
+        runtimeState.botStatus = botRuntime.state.toLowerCase() as HomeRuntimeState['botStatus'];
+        if (botRuntime.asset) runtimeState.tradingPairId = botRuntime.asset;
+        runtimeState.tradeAmountId = `amount-${botRuntime.amount}`;
+        runtimeState.durationId = `duration-${botRuntime.durationSeconds}`;
+      }
 
       const assets =
         canBrowseMarket(status?.botAccess)
@@ -354,23 +365,25 @@ export const homeService = {
 
       base.riskLimits = base.riskLimits.map((limit) => ({
         ...limit,
-        value: '—',
-        hint: t('home.risk.hintSoon'),
+        value: limit.id === 'profit-target'
+          ? `$${botRuntime?.dailyProfitTarget ?? 50}`
+          : `-$${botRuntime?.dailyLossLimit ?? 30}`,
+        hint: t('home.risk.activeHint'),
       }));
 
       base.tradeAmount = {
         ...base.tradeAmount,
-        label: t('home.tradeAmountSoon'),
-        options: [],
-        displayValue: '—',
-        selectedId: '',
+        label: t('home.tradeAmount'),
+        options: [10, 25, 50, 100].map((amount) => ({ id: `amount-${amount}`, label: `$${amount}` })),
+        displayValue: `$${botRuntime?.amount ?? 25}`,
+        selectedId: `amount-${botRuntime?.amount ?? 25}`,
       };
       base.duration = {
         ...base.duration,
-        label: t('home.durationSoon'),
-        options: [],
-        displayValue: '—',
-        selectedId: '',
+        label: t('home.duration'),
+        options: [180, 240, 300].map((seconds) => ({ id: `duration-${seconds}`, label: `${seconds / 60}m` })),
+        displayValue: `${(botRuntime?.durationSeconds ?? 300) / 60}m`,
+        selectedId: `duration-${botRuntime?.durationSeconds ?? 300}`,
       };
 
       runtimeState.marketTypeId = 'binolla-market';
@@ -407,6 +420,33 @@ export const homeService = {
   },
 
   async updateRuntime(partial: Partial<HomeRuntimeState>): Promise<HomeRuntimeState> {
+    const amountId = partial.tradeAmountId ?? runtimeState.tradeAmountId;
+    const durationId = partial.durationId ?? runtimeState.durationId;
+    const amount = Number(amountId.replace('amount-', '')) || 25;
+    const durationSeconds = Number(durationId.replace('duration-', '')) || 300;
+    const asset = partial.tradingPairId ?? runtimeState.tradingPairId;
+
+    if (partial.botStatus === 'running') {
+      await botApi.start(asset, amount, durationSeconds, 50, 30);
+    } else if (partial.botStatus === 'paused') {
+      await botApi.pause();
+    } else if (partial.botStatus === 'stopped') {
+      await botApi.stop();
+    }
+    if (
+      partial.settings ||
+      partial.tradeAmountId ||
+      partial.durationId ||
+      partial.tradingPairId
+    ) {
+      await botApi.apply({
+        asset,
+        amount,
+        durationSeconds,
+        dailyProfitTarget: 50,
+        dailyLossLimit: 30,
+      });
+    }
     if (partial.strategyId) {
       try {
         const strategies = await strategiesApi.list();

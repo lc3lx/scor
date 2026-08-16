@@ -10,6 +10,7 @@ import type {
   BinollaConnectResponse,
   BinollaCredentialRequest,
   BinollaStatusDto,
+  BotRuntimeResponse,
   ChangePasswordRequest,
   EmailAuthRequest,
   MarketAssetsResponse,
@@ -27,9 +28,13 @@ import type {
   AdminAuditListResponse,
   AdminBinollaAccountDto,
   AdminBinollaAccountListResponse,
+  AdminBotControlRequest,
+  AdminBotListResponse,
+  AdminBotRuntimeDto,
   AdminNotificationListResponse,
   AdminSendNotificationRequest,
   AdminSendNotificationResponse,
+  AdminTradeListResponse,
   AdminUserDetailDto,
   AdminUserListResponse,
   CreateMarketingDemoUserRequest,
@@ -188,6 +193,27 @@ export const strategiesApi = {
       `/api/strategies/rsi/signal/${encoded}?${query}`,
       { signal },
     );
+  },
+};
+
+export const botApi = {
+  status(): Promise<BotRuntimeResponse> {
+    return apiRequest<BotRuntimeResponse>('/api/bot/status');
+  },
+  start(asset: string, amount = 25, durationSeconds = 300, dailyProfitTarget = 50, dailyLossLimit = 30): Promise<BotRuntimeResponse> {
+    return apiRequest<BotRuntimeResponse>('/api/bot/start', {
+      method: 'POST',
+      body: { asset, amount, durationSeconds, dailyProfitTarget, dailyLossLimit },
+    });
+  },
+  pause(): Promise<BotRuntimeResponse> {
+    return apiRequest<BotRuntimeResponse>('/api/bot/pause', { method: 'POST' });
+  },
+  stop(): Promise<BotRuntimeResponse> {
+    return apiRequest<BotRuntimeResponse>('/api/bot/stop', { method: 'POST' });
+  },
+  apply(body: { asset?: string; amount?: number; durationSeconds?: number; dailyProfitTarget?: number; dailyLossLimit?: number }): Promise<BotRuntimeResponse> {
+    return apiRequest<BotRuntimeResponse>('/api/bot/apply', { method: 'POST', body });
   },
 };
 
@@ -375,5 +401,44 @@ export const adminApi = {
       method: 'POST',
       body,
     });
+  },
+  listBots(params: {
+    state?: string;
+    q?: string;
+    page?: number;
+    pageSize?: number;
+  } = {}): Promise<AdminBotListResponse> {
+    const query = new URLSearchParams();
+    if (params.state) query.set('state', params.state);
+    if (params.q) query.set('q', params.q);
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+    const qs = query.toString();
+    return apiRequest<AdminBotListResponse>(`/api/admin/bots${qs ? `?${qs}` : ''}`);
+  },
+  getBot(userId: string): Promise<AdminBotRuntimeDto> {
+    return apiRequest<AdminBotRuntimeDto>(`/api/admin/bots/${encodeURIComponent(userId)}`);
+  },
+  controlBot(userId: string, body: AdminBotControlRequest): Promise<AdminBotRuntimeDto> {
+    return apiRequest<AdminBotRuntimeDto>(
+      `/api/admin/bots/${encodeURIComponent(userId)}/control`,
+      { method: 'POST', body },
+    );
+  },
+  listAdminTrades(params: {
+    userId?: string;
+    status?: string;
+    asset?: string;
+    page?: number;
+    pageSize?: number;
+  } = {}): Promise<AdminTradeListResponse> {
+    const query = new URLSearchParams();
+    if (params.userId) query.set('userId', params.userId);
+    if (params.status) query.set('status', params.status);
+    if (params.asset) query.set('asset', params.asset);
+    if (params.page) query.set('page', String(params.page));
+    if (params.pageSize) query.set('pageSize', String(params.pageSize));
+    const qs = query.toString();
+    return apiRequest<AdminTradeListResponse>(`/api/admin/trades${qs ? `?${qs}` : ''}`);
   },
 };

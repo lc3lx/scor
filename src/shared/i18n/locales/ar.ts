@@ -471,6 +471,7 @@ export const ar: EnDictionary = {
   'home.risk.lossLimit': 'حد الخسارة اليومي',
   'home.risk.hint': 'يُدار على بينولا / غير مفروض تلقائياً هنا',
   'home.risk.hintSoon': 'قريباً — غير مفروض من هذا البوت',
+  'home.risk.activeHint': 'مفروض ومطبق من البوت',
   'home.action.showChart': 'عرض المخطط',
   'home.action.botSettings': 'إعدادات البوت',
   'home.disclaimer.default':
@@ -506,6 +507,7 @@ export const ar: EnDictionary = {
   'home.controls.pause': 'إيقاف مؤقت',
   'home.controls.stop': 'إيقاف',
   'home.controls.apply': 'تطبيق',
+  'home.controls.runningNote': 'البوت يعمل — يراقب شموع الدقيقة المغلقة وينتظر إشارة RSI صالحة.',
   'home.controls.comingSoonTitle':
     'قريباً — البدء/الإيقاف المؤقت/الإيقاف الآلي غير متاح بعد',
   'home.chart.empty': 'لا شموع بينولا حية بعد. اربط بينولا وانتظر بيانات السوق.',

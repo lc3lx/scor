@@ -113,6 +113,16 @@ export type StrategiesResponse = {
   strategies: StrategyDto[];
 };
 
+export type BotRuntimeResponse = {
+  state: 'Running' | 'Paused' | 'Stopped' | string;
+  asset: string | null;
+  amount: number;
+  durationSeconds: number;
+  dailyProfitTarget: number;
+  dailyLossLimit: number;
+  updatedAt: string;
+};
+
 export type StrategySignalResponse = {
   strategyId: string;
   asset: string;
@@ -368,6 +378,59 @@ export type AdminNotificationDto = {
 
 export type AdminNotificationListResponse = {
   items: AdminNotificationDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type AdminBotRuntimeDto = {
+  userId: string;
+  email: string | null;
+  fullName: string | null;
+  telegramUserId: number | null;
+  botAccess: string;
+  state: string;
+  asset: string | null;
+  amount: number;
+  durationSeconds: number;
+  dailyProfitTarget: number;
+  dailyLossLimit: number;
+  updatedAt: string;
+  isMarketingDemo: boolean;
+};
+
+export type AdminBotListResponse = {
+  items: AdminBotRuntimeDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type AdminBotControlRequest = {
+  action: 'start' | 'pause' | 'stop' | 'apply' | string;
+  asset?: string;
+  amount?: number;
+  durationSeconds?: number;
+  dailyProfitTarget?: number;
+  dailyLossLimit?: number;
+};
+
+export type AdminTradeDto = {
+  id: string;
+  userId: string;
+  email: string | null;
+  fullName: string | null;
+  asset: string;
+  direction: string;
+  amount: number;
+  status: string;
+  pnl: number | null;
+  createdAt: string;
+  closedAt: string | null;
+};
+
+export type AdminTradeListResponse = {
+  items: AdminTradeDto[];
   total: number;
   page: number;
   pageSize: number;

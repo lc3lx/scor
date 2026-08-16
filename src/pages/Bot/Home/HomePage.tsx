@@ -209,19 +209,20 @@ export default function HomePage() {
               onPause={botControls.handlePause}
               onStop={botControls.handleStop}
               onApply={botControls.handleApply}
+              isUpdating={botControls.isUpdating}
               comingSoon={false}
             />
             <HomeConfigSection rows={configRows} onRowClick={sheets.openSheet} />
             <TradeAmountSection
               content={tradeAmount}
-              onSelect={() => {
-                /* Coming Soon — amount is set on Trading before placeTrade */
+              onSelect={(optionId) => {
+                void updateRuntime({ tradeAmountId: optionId });
               }}
             />
             <DurationSection
               content={duration}
-              onSelect={() => {
-                /* Coming Soon — duration is set on Trading before placeTrade */
+              onSelect={(optionId) => {
+                void updateRuntime({ durationId: optionId });
               }}
             />
             <RiskLimitsSection limits={data.riskLimits} />

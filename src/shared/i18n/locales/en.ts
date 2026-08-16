@@ -479,6 +479,7 @@ export const en = {
   'home.risk.lossLimit': 'Daily Loss Limit',
   'home.risk.hint': 'Managed on Binolla / not auto-enforced here',
   'home.risk.hintSoon': 'Coming Soon — not enforced by this bot',
+  'home.risk.activeHint': 'Enforced by the bot runtime',
   'home.action.showChart': 'Show Chart',
   'home.action.botSettings': 'Bot Settings',
   'home.disclaimer.default':
@@ -514,6 +515,7 @@ export const en = {
   'home.controls.pause': 'Pause',
   'home.controls.stop': 'Stop',
   'home.controls.apply': 'Apply',
+  'home.controls.runningNote': 'Bot is running — monitoring closed 1m candles and waiting for a valid RSI setup.',
   'home.controls.comingSoonTitle':
     'Coming Soon — auto Start/Pause/Stop is not available yet',
   'home.chart.empty': 'No live Binolla candles yet. Connect Binolla and wait for market data.',
