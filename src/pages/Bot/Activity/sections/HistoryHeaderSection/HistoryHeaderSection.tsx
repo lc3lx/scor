@@ -1,15 +1,17 @@
-import { tradeAssets } from '@assets/index';
+import { uiAssets } from '@assets/index';
 import { Button } from '@components/atoms/Button';
 import { Icon } from '@components/atoms/Icon';
 import { Text } from '@components/atoms/Text';
 import { tradeService } from '@services/trades';
+import { useT } from '@shared/i18n';
 import styles from './HistoryHeaderSection.module.css';
 
 export type HistoryHeaderSectionProps = {
-  onFilterClick?: () => void;
+  onBack: () => void;
 };
 
-export function HistoryHeaderSection({ onFilterClick }: HistoryHeaderSectionProps) {
+export function HistoryHeaderSection({ onBack }: HistoryHeaderSectionProps) {
+  const t = useT();
   const content = tradeService.getHistoryPageContent();
 
   return (
@@ -20,10 +22,10 @@ export function HistoryHeaderSection({ onFilterClick }: HistoryHeaderSectionProp
       <Button
         variant="icon"
         className={styles.filterButton}
-        aria-label={content.filterAriaLabel}
-        onClick={onFilterClick}
+        aria-label={t('common.goBack')}
+        onClick={onBack}
       >
-        <Icon src={tradeAssets.filter} size="sm" decorative />
+        <Icon src={uiAssets.back} size="sm" decorative />
       </Button>
     </section>
   );

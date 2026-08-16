@@ -40,28 +40,28 @@ export function getHomeMockContent(): HomePageContent {
     configRows: [
       {
         id: 'market-type',
-        iconSrc: uiAssets.marketWave,
+        iconSrc: uiAssets.homeMarketType,
         label: t('home.row.marketType'),
         value: t('home.market.binolla'),
         sheetTarget: 'marketType',
       },
       {
         id: 'trading-pair',
-        iconSrc: uiAssets.tradingPair,
+        iconSrc: uiAssets.homeTradingPair,
         label: t('home.row.tradingPair'),
         value: '—',
         sheetTarget: 'tradingPair',
       },
       {
         id: 'indicator',
-        iconSrc: uiAssets.chart,
+        iconSrc: uiAssets.homeTechnicalIndicator,
         label: t('home.row.indicator'),
         value: t('common.rsi'),
         sheetTarget: 'technicalIndicator',
       },
       {
         id: 'strategy',
-        iconSrc: uiAssets.botAvatar,
+        iconSrc: uiAssets.homeStrategy,
         label: t('home.row.strategy'),
         value: '—',
         sheetTarget: 'strategy',

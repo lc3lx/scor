@@ -38,6 +38,9 @@
   position: sticky;
   top: 0;
   z-index: var(--z-content);
-  padding-bottom: var(--space-2);
+  box-sizing: border-box;
+  width: calc(100% + (var(--layout-page-padding-x) * 2));
+  margin-inline: calc(var(--layout-page-padding-x) * -1);
+  padding: 0 var(--layout-page-padding-x) var(--space-2);
   background: linear-gradient(180deg, var(--color-bg-primary) 80%, transparent 100%);
 }

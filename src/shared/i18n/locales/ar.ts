@@ -56,11 +56,13 @@ export const ar: EnDictionary = {
 
   'nav.main': 'التنقل الرئيسي',
   'nav.home': 'الرئيسية',
-  'nav.bot': 'ألفا بوت',
+  'nav.bot': 'Bot',
   'nav.trades': 'الصفقات',
   'nav.account': 'الحساب',
   'nav.fab': 'سكار ألفا',
   'nav.trading': 'التداول',
+  'trading.liveMarket': 'مباشر',
+  'trading.monitorOnly': 'التداول بإدارة البوت',
   'layout.botApp': 'تطبيق البوت',
   'layout.auth': 'المصادقة',
 

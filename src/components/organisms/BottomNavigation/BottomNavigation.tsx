@@ -18,6 +18,7 @@ export type BottomNavigationProps = {
 export function BottomNavigation({
   activeTab,
   fabActive = false,
+  fabLabel,
   onTabChange,
   onFabClick,
   className,
@@ -108,6 +109,12 @@ export function BottomNavigation({
       >
         <Icon src={navigationAssets.fabIcon} decorative className={styles.fabIcon} />
       </button>
+      <span
+        className={cn(styles.fabLabel, fabActive && styles.fabLabelActive)}
+        aria-hidden="true"
+      >
+        {fabLabel ?? t('nav.trading')}
+      </span>
     </nav>
   );
 }

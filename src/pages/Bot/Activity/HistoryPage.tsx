@@ -32,7 +32,7 @@ export default function HistoryPage() {
         <BackgroundGlow variant="top-right" />
         <PageContent className={styles.content}>
           <div className={styles.stickyHeader}>
-            <HistoryHeaderSection />
+            <HistoryHeaderSection onBack={() => navigate(-1)} />
             <HistoryFiltersSection activeFilter={activeFilter} onFilterChange={setActiveFilter} />
           </div>
           <HistoryListSection

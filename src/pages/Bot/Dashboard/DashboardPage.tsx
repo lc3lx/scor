@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { dashboardAssets } from '@assets/index';
 import { PageContent } from '@components/layouts/PageContent';
 import { ROUTES } from '@constants/routes';
 import { useT } from '@shared/i18n';
@@ -28,17 +27,8 @@ export default function DashboardPage() {
   return (
     <main className={styles.page} aria-label={t('dashboard.aria')}>
       <div className={styles.scroll}>
-        <img
-          src={dashboardAssets.headerGlow}
-          alt=""
-          className={styles.headerGlow}
-          aria-hidden="true"
-        />
         <PageContent className={styles.content}>
           <DashboardHeaderSection
-            greeting={data.greeting}
-            userName={data.userName}
-            waveEmoji={data.waveEmoji}
             notificationsAriaLabel={data.notificationsAriaLabel}
             hasUnread={notifications.some((item) => !item.read)}
             onNotificationsClick={handleNotifications}

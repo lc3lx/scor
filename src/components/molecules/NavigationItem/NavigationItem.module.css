@@ -3,7 +3,7 @@
   flex: 1 1 0;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: var(--nav-bottom-item-gap);
   width: auto;
   max-width: var(--nav-bottom-item-width);
@@ -15,11 +15,6 @@
   border: none;
   cursor: pointer;
   min-width: 0;
-}
-
-.active {
-  justify-content: flex-start;
-  padding-top: var(--nav-bottom-item-padding-y);
 }
 
 .item:focus-visible {

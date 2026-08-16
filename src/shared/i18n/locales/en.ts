@@ -56,11 +56,13 @@ export const en = {
   // Nav / layout
   'nav.main': 'Main navigation',
   'nav.home': 'Home',
-  'nav.bot': 'Alpha Bot',
+  'nav.bot': 'Bot',
   'nav.trades': 'Trades',
   'nav.account': 'Account',
   'nav.fab': 'Scar Alpha',
   'nav.trading': 'Trading',
+  'trading.liveMarket': 'LIVE',
+  'trading.monitorOnly': 'Bot-managed trading',
   'layout.botApp': 'Bot application',
   'layout.auth': 'Authentication',
 

@@ -34,8 +34,12 @@ export function NavigationItem({
         decorative
         className={cn(styles.icon, iconClassName)}
       />
-      {active && label && (
-        <Text variant="nav" tone="nav-active" className={styles.label}>
+      {label && (
+        <Text
+          variant="nav"
+          tone={active ? 'nav-active' : 'muted'}
+          className={styles.label}
+        >
           {label}
         </Text>
       )}

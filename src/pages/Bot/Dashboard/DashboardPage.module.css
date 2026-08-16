@@ -18,18 +18,6 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.headerGlow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
-  width: 100%;
-  height: var(--dashboard-header-glow-height);
-  pointer-events: none;
-  object-fit: cover;
-  object-position: top center;
-}
-
 .content {
   position: relative;
   z-index: 1;
