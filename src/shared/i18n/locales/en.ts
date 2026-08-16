@@ -575,6 +575,7 @@ export const en = {
   'home.strategy.rsi.success': 'Historical validation required',
   'home.strategy.empty': 'No strategies from server yet.',
   'home.pairs.empty': 'No market pairs yet. Connect Binolla and wait for assets.',
+  'home.pairs.multiHint': 'Select one or more pairs ({{count}}/{{max}}). Close the sheet when done.',
   'home.tradeAmount.empty': 'Set amount on the Trading page when placing a Demo order.',
   'home.duration.empty': 'Set duration on the Trading page when placing a Demo order.',
   'home.asset.unavailable': 'Unavailable',

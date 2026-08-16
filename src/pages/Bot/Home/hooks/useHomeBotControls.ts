@@ -15,7 +15,7 @@ export function useHomeBotControls(homeData: UseHomeDataReturn) {
   const [feedback, setFeedback] = useState<ControlFeedback | null>(null);
   const setStatus = async (botStatus: 'running' | 'paused' | 'stopped') => {
     if (isUpdating) return;
-    if (botStatus === 'running' && !homeData.data?.runtime.tradingPairId) {
+    if (botStatus === 'running' && !(homeData.data?.runtime.tradingPairIds?.length || homeData.data?.runtime.tradingPairId)) {
       setFeedback({ tone: 'warning', message: t('home.controls.selectPair') });
       return;
     }

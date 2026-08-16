@@ -567,6 +567,7 @@ export const ar: EnDictionary = {
   'home.strategy.rsi.success': 'التحقق التاريخي مطلوب',
   'home.strategy.empty': 'لا استراتيجيات من الخادم بعد.',
   'home.pairs.empty': 'لا أزواج سوق بعد. اربط بينولا وانتظر الأصول.',
+  'home.pairs.multiHint': 'اختر زوجاً أو أكثر ({{count}}/{{max}}). أغلق الورقة عند الانتهاء.',
   'home.tradeAmount.empty': 'حدد المبلغ من صفحة التداول عند تنفيذ صفقة تجريبية.',
   'home.duration.empty': 'حدد المدة من صفحة التداول عند تنفيذ صفقة تجريبية.',
   'home.asset.unavailable': 'غير متاح',

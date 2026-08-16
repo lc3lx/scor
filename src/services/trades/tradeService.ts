@@ -31,7 +31,9 @@ function mapStatus(status: string): TradeStatus {
   const s = status.toLowerCase();
   if (s === 'running' || s === 'pending') return 'running';
   if (s === 'profit' || s === 'tie') return 'profit';
-  if (s === 'loss' || s === 'failed' || s === 'cancelled' || s === 'unknown') return 'loss';
+  // Only real Loss counts as loss — Failed/Unknown were falsely shown as losses after outcome timeout.
+  if (s === 'loss') return 'loss';
+  if (s === 'failed' || s === 'cancelled' || s === 'unknown') return 'running';
   return 'running';
 }
 
@@ -248,6 +250,34 @@ export const tradeService = {
       });
 
       let items = response.items.map(mapTrade);
+      // #region agent log
+      fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': '1892a4',
+        },
+        body: JSON.stringify({
+          sessionId: '1892a4',
+          runId: 'trade-settle',
+          hypothesisId: 'H3',
+          location: 'tradeService.ts:listTrades',
+          message: 'history list',
+          data: {
+            filter,
+            total: response.total,
+            sample: response.items.slice(0, 5).map((t) => ({
+              id: t.id?.slice?.(0, 8),
+              status: t.status,
+              pnl: t.pnl,
+              mapped: mapStatus(t.status),
+              durationSeconds: t.durationSeconds,
+            })),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       if (filter === 'today') {
         items = items.filter((trade) => trade.isToday);
       } else if (filter === 'all' || filter === 'live' || filter === 'profit' || filter === 'loss') {

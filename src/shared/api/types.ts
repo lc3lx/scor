@@ -116,6 +116,7 @@ export type StrategiesResponse = {
 export type BotRuntimeResponse = {
   state: 'Running' | 'Paused' | 'Stopped' | string;
   asset: string | null;
+  assets?: string[];
   amount: number;
   durationSeconds: number;
   dailyProfitTarget: number;
@@ -396,6 +397,7 @@ export type AdminBotRuntimeDto = {
   botAccess: string;
   state: string;
   asset: string | null;
+  assets?: string[];
   amount: number;
   durationSeconds: number;
   dailyProfitTarget: number;

@@ -200,10 +200,26 @@ export const botApi = {
   status(): Promise<BotRuntimeResponse> {
     return apiRequest<BotRuntimeResponse>('/api/bot/status');
   },
-  start(asset: string, amount = 25, durationSeconds = 300, dailyProfitTarget = 50, dailyLossLimit = 30, preferences: BotPreferences = {}): Promise<BotRuntimeResponse> {
+  start(
+    assets: string[] | string,
+    amount = 25,
+    durationSeconds = 300,
+    dailyProfitTarget = 50,
+    dailyLossLimit = 30,
+    preferences: BotPreferences = {},
+  ): Promise<BotRuntimeResponse> {
+    const list = (Array.isArray(assets) ? assets : [assets]).map((a) => a.trim()).filter(Boolean);
     return apiRequest<BotRuntimeResponse>('/api/bot/start', {
       method: 'POST',
-      body: { asset, amount, durationSeconds, dailyProfitTarget, dailyLossLimit, ...preferences },
+      body: {
+        asset: list[0],
+        assets: list,
+        amount,
+        durationSeconds,
+        dailyProfitTarget,
+        dailyLossLimit,
+        ...preferences,
+      },
     });
   },
   pause(): Promise<BotRuntimeResponse> {
@@ -212,7 +228,16 @@ export const botApi = {
   stop(): Promise<BotRuntimeResponse> {
     return apiRequest<BotRuntimeResponse>('/api/bot/stop', { method: 'POST' });
   },
-  apply(body: { asset?: string; amount?: number; durationSeconds?: number; dailyProfitTarget?: number; dailyLossLimit?: number } & BotPreferences): Promise<BotRuntimeResponse> {
+  apply(
+    body: {
+      asset?: string;
+      assets?: string[];
+      amount?: number;
+      durationSeconds?: number;
+      dailyProfitTarget?: number;
+      dailyLossLimit?: number;
+    } & BotPreferences,
+  ): Promise<BotRuntimeResponse> {
     return apiRequest<BotRuntimeResponse>('/api/bot/apply', { method: 'POST', body });
   },
 };

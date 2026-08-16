@@ -30,9 +30,18 @@ export function useTradeHistory(filter: TradeListFilter) {
       });
     });
 
+    // Bot/auto trades never call notifyListeners — poll while any trade is still live.
+    const pollId = window.setInterval(() => {
+      void tradeService.listTrades({ filter, page: 1, pageSize: DEFAULT_PAGE_SIZE }).then((next) => {
+        storePageData(cacheKey, next, PAGE_CACHE_TTL.history);
+        if (active) setResult(next);
+      });
+    }, 8_000);
+
     return () => {
       active = false;
       unsubscribe();
+      window.clearInterval(pollId);
     };
   }, [cacheKey, filter]);
 

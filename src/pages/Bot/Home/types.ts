@@ -168,7 +168,9 @@ export type TradingPairSheetContent = {
   searchPlaceholder: string;
   emptySearchMessage: string;
   options: SelectionListItem[];
+  /** @deprecated prefer selectedIds — kept for one primary display */
   selectedId: string;
+  selectedIds: string[];
 };
 
 /** Figma 282:2750 — technical indicator selection sheet */
@@ -211,7 +213,10 @@ export type HomePageContent = {
 export type HomeRuntimeState = {
   botStatus: BotRunStatus;
   marketTypeId: string;
+  /** Primary pair (first selected) — chart / summary */
   tradingPairId: string;
+  /** All pairs the bot analyzes while running */
+  tradingPairIds: string[];
   technicalIndicatorId: string;
   strategyId: string;
   tradeAmountId: string;

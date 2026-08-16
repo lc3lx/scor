@@ -161,6 +161,7 @@ export function getHomeMockContent(): HomePageContent {
         searchPlaceholder: t('home.sheet.searchPairs'),
         emptySearchMessage: t('home.sheet.noPairs'),
         selectedId: '',
+        selectedIds: [],
         options: [],
       },
       technicalIndicator: {
@@ -199,6 +200,7 @@ function buildHomeInitialRuntime(): HomeRuntimeState {
     botStatus: 'stopped',
     marketTypeId: MARKET_BINOLLA_ID,
     tradingPairId: '',
+    tradingPairIds: [],
     technicalIndicatorId: INDICATOR_RSI_ID,
     strategyId: 'rsi',
     tradeAmountId: '',

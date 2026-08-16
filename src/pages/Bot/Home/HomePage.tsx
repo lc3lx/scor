@@ -52,9 +52,17 @@ export default function HomePage() {
   const tradingPairContent = useMemo(() => {
     if (!data) return null;
 
+    const selectedIds =
+      data.runtime.tradingPairIds?.length > 0
+        ? data.runtime.tradingPairIds
+        : data.runtime.tradingPairId
+          ? [data.runtime.tradingPairId]
+          : [];
+
     return {
       ...data.sheets.tradingPair,
-      selectedId: data.runtime.tradingPairId,
+      selectedId: selectedIds[0] ?? '',
+      selectedIds,
     };
   }, [data]);
 
@@ -92,9 +100,19 @@ export default function HomePage() {
   const chartTitle = useMemo(() => {
     if (!data || !duration || !tradingPairContent) return '';
 
+    const pairIds =
+      data.runtime.tradingPairIds?.length > 0
+        ? data.runtime.tradingPairIds
+        : tradingPairContent.selectedId
+          ? [tradingPairContent.selectedId]
+          : [];
     const pairLabel =
-      tradingPairContent.options.find((option) => option.id === tradingPairContent.selectedId)
-        ?.title ?? '';
+      pairIds.length === 0
+        ? '—'
+        : pairIds.length === 1
+          ? (tradingPairContent.options.find((option) => option.id === pairIds[0])?.title ??
+            pairIds[0])
+          : `${tradingPairContent.options.find((option) => option.id === pairIds[0])?.title ?? pairIds[0]} +${pairIds.length - 1}`;
 
     return resolveChartSheetTitle({
       template: data.sheets.chart.titleTemplate,
@@ -113,11 +131,23 @@ export default function HomePage() {
 
   const handleTradingPairSelect = useCallback(
     async (optionId: string) => {
-      await updateRuntime({ tradingPairId: optionId });
-      setPairSearchQuery('');
-      sheets.closeSheet();
+      const current =
+        data?.runtime.tradingPairIds?.length
+          ? [...data.runtime.tradingPairIds]
+          : data?.runtime.tradingPairId
+            ? [data.runtime.tradingPairId]
+            : [];
+      const next = current.includes(optionId)
+        ? current.filter((id) => id !== optionId)
+        : current.length >= 8
+          ? current
+          : [...current, optionId];
+      await updateRuntime({
+        tradingPairIds: next,
+        tradingPairId: next[0] ?? '',
+      });
     },
-    [sheets.closeSheet, updateRuntime],
+    [data?.runtime.tradingPairId, data?.runtime.tradingPairIds, updateRuntime],
   );
 
   const handleTechnicalIndicatorSelect = useCallback(

@@ -22,6 +22,11 @@ export function TradingPairSheetContent({
 }: TradingPairSheetContentProps) {
   const t = useT();
   const emptyCatalog = content.options.length === 0;
+  const selectedIds = content.selectedIds?.length
+    ? content.selectedIds
+    : content.selectedId
+      ? [content.selectedId]
+      : [];
 
   return (
     <div className={styles.root}>
@@ -32,6 +37,9 @@ export function TradingPairSheetContent({
         className={styles.search}
         disabled={emptyCatalog}
       />
+      <Text variant="caption" tone="muted" className={styles.hint}>
+        {t('home.pairs.multiHint', { count: selectedIds.length, max: 8 })}
+      </Text>
       <div className={styles.list}>
         {emptyCatalog ? (
           <Text variant="caption" tone="muted" className={styles.empty}>
@@ -47,7 +55,7 @@ export function TradingPairSheetContent({
               key={option.id}
               title={option.title}
               description={option.description}
-              selected={option.id === content.selectedId}
+              selected={selectedIds.includes(option.id)}
               onSelect={() => onSelect(option.id)}
             />
           ))

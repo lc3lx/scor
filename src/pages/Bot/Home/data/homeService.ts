@@ -14,7 +14,6 @@ import { canBrowseMarket } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
 import { getAccountStatusCached } from '@shared/api/botSessionCache';
 import {
-  isPreferredMarketSymbol,
   pickPreferredMarketAsset,
 } from '@shared/market/preferAsset';
 import {
@@ -24,6 +23,30 @@ import {
   weekAndMonthSummaries,
 } from '@shared/trades/tradeAggregates';
 import { t } from '@shared/i18n';
+
+const MAX_BOT_PAIRS = 8;
+
+function normalizePairIds(ids: string[], valid?: Set<string>, max = MAX_BOT_PAIRS): string[] {
+  const out: string[] = [];
+  for (const raw of ids) {
+    const id = raw?.trim();
+    if (!id || out.includes(id)) continue;
+    if (valid && !valid.has(id)) continue;
+    out.push(id);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+function formatSelectedPairsLabel(
+  pairIds: string[],
+  options: { id: string; title: string }[],
+): string {
+  if (pairIds.length === 0) return '—';
+  const titles = pairIds.map((id) => options.find((o) => o.id === id)?.title ?? id);
+  if (titles.length === 1) return titles[0] ?? '—';
+  return `${titles[0]} +${titles.length - 1}`;
+}
 
 function seedRuntimeFromMock(): HomeRuntimeState {
   const settings = getHomeMockContent().sheets.settings;
@@ -172,6 +195,7 @@ export const homeService = {
     refreshSettingsLabels();
     const base = structuredClone(getHomeMockContent());
     let asset = runtimeState.tradingPairId || '';
+    let pairIds = [...(runtimeState.tradingPairIds ?? [])];
 
     try {
       const [status, balance, strategies, tradeBundle, botRuntime] = await Promise.all([
@@ -184,7 +208,22 @@ export const homeService = {
 
       if (botRuntime) {
         runtimeState.botStatus = botRuntime.state.toLowerCase() as HomeRuntimeState['botStatus'];
-        if (botRuntime.asset) runtimeState.tradingPairId = botRuntime.asset;
+        const fromBot = normalizePairIds(
+          botRuntime.assets?.length
+            ? botRuntime.assets
+            : botRuntime.asset
+              ? [botRuntime.asset]
+              : [],
+        );
+        if (fromBot.length) {
+          pairIds = fromBot;
+          runtimeState.tradingPairIds = fromBot;
+          runtimeState.tradingPairId = fromBot[0] ?? '';
+          asset = fromBot[0] ?? '';
+        } else if (botRuntime.asset) {
+          runtimeState.tradingPairId = botRuntime.asset;
+          asset = botRuntime.asset;
+        }
         runtimeState.tradeAmountId = `amount-${botRuntime.amount}`;
         runtimeState.durationId = `duration-${botRuntime.durationSeconds}`;
         runtimeState.settings = applyBotPreferences(runtimeState.settings, botRuntime);
@@ -202,33 +241,45 @@ export const homeService = {
           description: a.available ? t('common.available') : t('home.asset.unavailable'),
         }));
         base.sheets.tradingPair.options = options;
+        const valid = new Set(options.map((o) => o.id));
         const preferred = pickPreferredMarketAsset(
           assets.assets.map((a) => ({ symbol: a.symbol, available: a.available })),
         );
-        const kept = options.find((o) => o.id === runtimeState.tradingPairId)?.id;
-        asset =
-          (kept && isPreferredMarketSymbol(kept) ? kept : undefined) ??
-          preferred?.symbol ??
-          kept ??
-          options[0]?.id ??
-          '';
+        const seed = normalizePairIds(
+          pairIds.length
+            ? pairIds
+            : runtimeState.tradingPairId
+              ? [runtimeState.tradingPairId]
+              : [],
+          valid,
+        );
+        pairIds =
+          seed.length > 0
+            ? seed
+            : preferred?.symbol && valid.has(preferred.symbol)
+              ? [preferred.symbol]
+              : options[0]?.id
+                ? [options[0].id]
+                : [];
+        asset = pairIds[0] ?? '';
+        runtimeState.tradingPairIds = pairIds;
         runtimeState.tradingPairId = asset;
+        base.sheets.tradingPair.selectedIds = pairIds;
         base.sheets.tradingPair.selectedId = asset;
         // #region agent log
         fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '660ec2' },
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1892a4' },
           body: JSON.stringify({
-            sessionId: '660ec2',
-            runId: 'pairs-debug',
-            hypothesisId: 'H3',
+            sessionId: '1892a4',
+            runId: 'multi-pair',
+            hypothesisId: 'MP1',
             location: 'homeService.ts:fetchHomeData',
             message: 'home_pair_options',
             data: {
               optionCount: options.length,
-              selected: asset,
+              selectedIds: pairIds,
               preferred: preferred?.symbol ?? null,
-              kept,
               sample: options.slice(0, 12).map((o) => o.id),
             },
             timestamp: Date.now(),
@@ -238,12 +289,15 @@ export const homeService = {
       } else {
         base.sheets.tradingPair.options = [];
         base.sheets.tradingPair.selectedId = '';
+        base.sheets.tradingPair.selectedIds = [];
         if (!assets) {
-          // Keep prior pair id only if we already had a real symbol selected.
           asset = runtimeState.tradingPairId;
+          pairIds = runtimeState.tradingPairIds ?? [];
         } else {
           runtimeState.tradingPairId = '';
+          runtimeState.tradingPairIds = [];
           asset = '';
+          pairIds = [];
         }
       }
 
@@ -304,20 +358,53 @@ export const homeService = {
         );
       }
 
+      const analyzeIds =
+        pairIds.length > 0 ? pairIds : asset ? [asset] : [];
+      const running = runtimeState.botStatus === 'running';
+      const signalResults =
+        analyzeIds.length && canBrowseMarket(status?.botAccess)
+          ? await Promise.all(
+              analyzeIds.map((symbol) =>
+                strategiesApi
+                  .rsiSignal(symbol, 60, timedSignal(MARKET_FETCH_MS), {
+                    autoExecute: running,
+                  })
+                  .catch(() => null),
+              ),
+            )
+          : [];
       const signal =
-        asset && canBrowseMarket(status?.botAccess)
-          ? await strategiesApi
-              .rsiSignal(asset, 60, timedSignal(MARKET_FETCH_MS), {
-                autoExecute: runtimeState.botStatus === 'running',
-              })
-              .catch(() => null)
-          : null;
+        signalResults.find((s) => s && (s.signal === 'Call' || s.signal === 'Put')) ??
+        signalResults.find((s) => s) ??
+        null;
+      // #region agent log
+      fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1892a4' },
+        body: JSON.stringify({
+          sessionId: '1892a4',
+          runId: 'multi-pair',
+          hypothesisId: 'MP1',
+          location: 'homeService.ts:rsiMulti',
+          message: 'analyzed_pairs',
+          data: {
+            running,
+            pairCount: analyzeIds.length,
+            pairs: analyzeIds,
+            signals: signalResults.map((s) =>
+              s ? { asset: s.asset, signal: s.signal, rsi: s.rsi } : null,
+            ),
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
       if (signal) {
         base.botEngine.stats = [
           {
             id: 'signal',
             label: t('home.stat.signal'),
-            value: formatSignal(signal.signal),
+            value: `${formatSignal(signal.signal)}${analyzeIds.length > 1 ? ` · ${signal.asset}` : ''}`,
             valueTone: signal.signal.toLowerCase() === 'call' ? 'success' : 'primary',
           },
           { id: 'strength', label: t('common.rsi'), value: signal.rsi.toFixed(2) },
@@ -371,9 +458,10 @@ export const homeService = {
 
       const strategyName =
         strategies?.strategies.find((s) => s.id === runtimeState.strategyId)?.name ?? '—';
-      const pairName =
-        base.sheets.tradingPair.options.find((o) => o.id === runtimeState.tradingPairId)?.title ??
-        (asset || '—');
+      const pairName = formatSelectedPairsLabel(
+        pairIds.length ? pairIds : asset ? [asset] : [],
+        base.sheets.tradingPair.options,
+      );
 
       base.configRows = base.configRows.map((row) => {
         if (row.id === 'trading-pair') return { ...row, value: pairName };
@@ -448,13 +536,21 @@ export const homeService = {
     const durationId = partial.durationId ?? runtimeState.durationId;
     const amount = Number(amountId.replace('amount-', '')) || 25;
     const durationSeconds = Number(durationId.replace('duration-', '')) || 300;
-    const asset = partial.tradingPairId ?? runtimeState.tradingPairId;
+    let pairIds = normalizePairIds(
+      partial.tradingPairIds ??
+        runtimeState.tradingPairIds ??
+        (runtimeState.tradingPairId ? [runtimeState.tradingPairId] : []),
+    );
+    if (partial.tradingPairId && partial.tradingPairIds === undefined) {
+      pairIds = normalizePairIds([partial.tradingPairId]);
+    }
+    const asset = pairIds[0] ?? '';
 
     let persistedBot: Awaited<ReturnType<typeof botApi.status>> | null = null;
 
     if (partial.botStatus === 'running') {
       persistedBot = await botApi.start(
-        asset,
+        pairIds,
         amount,
         durationSeconds,
         50,
@@ -470,10 +566,12 @@ export const homeService = {
       partial.settings ||
       partial.tradeAmountId ||
       partial.durationId ||
-      partial.tradingPairId
+      partial.tradingPairId ||
+      partial.tradingPairIds
     ) {
       persistedBot = await botApi.apply({
         asset,
+        assets: pairIds,
         amount,
         durationSeconds,
         dailyProfitTarget: 50,
@@ -483,10 +581,18 @@ export const homeService = {
     }
 
     if (persistedBot) {
+      const persistedPairs = normalizePairIds(
+        persistedBot.assets?.length
+          ? persistedBot.assets
+          : persistedBot.asset
+            ? [persistedBot.asset]
+            : pairIds,
+      );
       partial = {
         ...partial,
         botStatus: persistedBot.state.toLowerCase() as HomeRuntimeState['botStatus'],
-        tradingPairId: persistedBot.asset ?? asset,
+        tradingPairIds: persistedPairs,
+        tradingPairId: persistedPairs[0] ?? persistedBot.asset ?? asset,
         tradeAmountId: `amount-${persistedBot.amount}`,
         durationId: `duration-${persistedBot.durationSeconds}`,
         settings: applyBotPreferences(partial.settings ?? runtimeState.settings, persistedBot),
