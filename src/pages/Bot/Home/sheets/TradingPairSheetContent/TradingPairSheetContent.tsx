@@ -5,12 +5,16 @@ import { useT } from '@shared/i18n';
 import type { TradingPairSheetContent } from '../../types';
 import styles from './TradingPairSheetContent.module.css';
 
+const MAX_BOT_PAIRS = 50;
+
 export type TradingPairSheetContentProps = {
   content: TradingPairSheetContent;
   searchQuery: string;
   onSearchChange: (query: string) => void;
   filteredOptions: TradingPairSheetContent['options'];
   onSelect: (optionId: string) => void;
+  onSelectAll: () => void;
+  onClearAll: () => void;
 };
 
 export function TradingPairSheetContent({
@@ -19,6 +23,8 @@ export function TradingPairSheetContent({
   onSearchChange,
   filteredOptions,
   onSelect,
+  onSelectAll,
+  onClearAll,
 }: TradingPairSheetContentProps) {
   const t = useT();
   const emptyCatalog = content.options.length === 0;
@@ -27,6 +33,9 @@ export function TradingPairSheetContent({
     : content.selectedId
       ? [content.selectedId]
       : [];
+  const filteredSelectedCount = filteredOptions.filter((o) => selectedIds.includes(o.id)).length;
+  const allFilteredSelected =
+    filteredOptions.length > 0 && filteredSelectedCount === filteredOptions.length;
 
   return (
     <div className={styles.root}>
@@ -37,9 +46,21 @@ export function TradingPairSheetContent({
         className={styles.search}
         disabled={emptyCatalog}
       />
-      <Text variant="caption" tone="muted" className={styles.hint}>
-        {t('home.pairs.multiHint', { count: selectedIds.length, max: 8 })}
-      </Text>
+      <div className={styles.toolbar}>
+        <Text variant="caption" tone="muted" className={styles.hint}>
+          {t('home.pairs.multiHint', { count: selectedIds.length, max: MAX_BOT_PAIRS })}
+        </Text>
+        {!emptyCatalog ? (
+          <button
+            type="button"
+            className={styles.selectAllBtn}
+            onClick={allFilteredSelected ? onClearAll : onSelectAll}
+            disabled={filteredOptions.length === 0}
+          >
+            {allFilteredSelected ? t('home.pairs.clearAll') : t('home.pairs.selectAll')}
+          </button>
+        ) : null}
+      </div>
       <div className={styles.list}>
         {emptyCatalog ? (
           <Text variant="caption" tone="muted" className={styles.empty}>

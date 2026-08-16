@@ -139,7 +139,7 @@ export default function HomePage() {
             : [];
       const next = current.includes(optionId)
         ? current.filter((id) => id !== optionId)
-        : current.length >= 8
+        : current.length >= 50
           ? current
           : [...current, optionId];
       await updateRuntime({
@@ -149,6 +149,21 @@ export default function HomePage() {
     },
     [data?.runtime.tradingPairId, data?.runtime.tradingPairIds, updateRuntime],
   );
+
+  const handleTradingPairSelectAll = useCallback(async () => {
+    const ids = filteredPairOptions.map((option) => option.id).slice(0, 50);
+    await updateRuntime({
+      tradingPairIds: ids,
+      tradingPairId: ids[0] ?? '',
+    });
+  }, [filteredPairOptions, updateRuntime]);
+
+  const handleTradingPairClearAll = useCallback(async () => {
+    await updateRuntime({
+      tradingPairIds: [],
+      tradingPairId: '',
+    });
+  }, [updateRuntime]);
 
   const handleTechnicalIndicatorSelect = useCallback(
     async (optionId: string) => {
@@ -306,6 +321,8 @@ export default function HomePage() {
           onSearchChange={setPairSearchQuery}
           filteredOptions={filteredPairOptions}
           onSelect={handleTradingPairSelect}
+          onSelectAll={handleTradingPairSelectAll}
+          onClearAll={handleTradingPairClearAll}
         />
       </BottomSheet>
 

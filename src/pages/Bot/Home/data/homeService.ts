@@ -24,7 +24,7 @@ import {
 } from '@shared/trades/tradeAggregates';
 import { t } from '@shared/i18n';
 
-const MAX_BOT_PAIRS = 8;
+const MAX_BOT_PAIRS = 50;
 
 function normalizePairIds(ids: string[], valid?: Set<string>, max = MAX_BOT_PAIRS): string[] {
   const out: string[] = [];
