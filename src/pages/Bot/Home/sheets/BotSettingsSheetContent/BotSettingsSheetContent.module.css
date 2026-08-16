@@ -10,6 +10,18 @@
   gap: var(--space-5);
 }
 
+.limitsSection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.limitField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .riskSection {
   display: flex;
   flex-direction: column;

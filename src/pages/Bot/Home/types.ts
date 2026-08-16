@@ -155,6 +155,10 @@ export type BotSettingsSheetContent = {
   riskOptions: OptionChipItem[];
   selectedRiskId: string;
   saveLabel: string;
+  dailyProfitTarget: number;
+  dailyLossLimit: number;
+  dailyProfitLabel: string;
+  dailyLossLabel: string;
 };
 
 export type MarketTypeSheetContent = {

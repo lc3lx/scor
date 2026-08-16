@@ -101,6 +101,8 @@ function applyBotPreferences(
   return {
     ...settings,
     selectedRiskId: bot.riskLevel,
+    dailyProfitTarget: bot.dailyProfitTarget,
+    dailyLossLimit: bot.dailyLossLimit,
     toggles: settings.toggles.map((toggle) => ({
       ...toggle,
       enabled: enabledById[toggle.id] ?? toggle.enabled,
@@ -121,6 +123,8 @@ function refreshSettingsLabels(): void {
   runtimeState.settings = {
     ...fresh,
     selectedRiskId: runtimeState.settings.selectedRiskId,
+    dailyProfitTarget: runtimeState.settings.dailyProfitTarget,
+    dailyLossLimit: runtimeState.settings.dailyLossLimit,
     toggles: fresh.toggles.map((toggle) => ({
       ...toggle,
       enabled: prevById.get(toggle.id)?.enabled ?? toggle.enabled,
@@ -367,16 +371,33 @@ export const homeService = {
               analyzeIds.map((symbol) =>
                 strategiesApi
                   .rsiSignal(symbol, 60, timedSignal(MARKET_FETCH_MS), {
-                    autoExecute: running,
+                    autoExecute: false,
                   })
                   .catch(() => null),
               ),
             )
           : [];
-      const signal =
-        signalResults.find((s) => s && (s.signal === 'Call' || s.signal === 'Put')) ??
-        signalResults.find((s) => s) ??
-        null;
+      const actionable = signalResults.filter(
+        (s): s is NonNullable<typeof s> =>
+          Boolean(s && (s.signal === 'Call' || s.signal === 'Put')),
+      );
+      const scored = [...actionable].sort((a, b) => {
+        const rateA = a.backtest?.successRate ?? 0;
+        const rateB = b.backtest?.successRate ?? 0;
+        if (rateB !== rateA) return rateB - rateA;
+        const edge = (s: (typeof actionable)[number]) =>
+          s.signal === 'Call' ? 30 - s.rsi : s.signal === 'Put' ? s.rsi - 70 : 0;
+        return edge(b) - edge(a);
+      });
+      let signal = scored[0] ?? signalResults.find((s) => s) ?? null;
+      if (running && scored[0]) {
+        const executed = await strategiesApi
+          .rsiSignal(scored[0].asset, 60, timedSignal(MARKET_FETCH_MS), {
+            autoExecute: true,
+          })
+          .catch(() => scored[0]);
+        if (executed) signal = executed;
+      }
       // #region agent log
       fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
         method: 'POST',
@@ -391,9 +412,8 @@ export const homeService = {
             running,
             pairCount: analyzeIds.length,
             pairs: analyzeIds,
-            signals: signalResults.map((s) =>
-              s ? { asset: s.asset, signal: s.signal, rsi: s.rsi } : null,
-            ),
+            best: signal ? { asset: signal.asset, signal: signal.signal, rsi: signal.rsi } : null,
+            candidates: actionable.length,
           },
           timestamp: Date.now(),
         }),
@@ -546,6 +566,10 @@ export const homeService = {
     }
     const asset = pairIds[0] ?? '';
 
+    const settings = partial.settings ?? runtimeState.settings;
+    const dailyProfitTarget = Math.max(0, settings.dailyProfitTarget ?? 50);
+    const dailyLossLimit = Math.max(0, settings.dailyLossLimit ?? 30);
+
     let persistedBot: Awaited<ReturnType<typeof botApi.status>> | null = null;
 
     if (partial.botStatus === 'running') {
@@ -553,9 +577,9 @@ export const homeService = {
         pairIds,
         amount,
         durationSeconds,
-        50,
-        30,
-        toBotPreferences(partial.settings ?? runtimeState.settings),
+        dailyProfitTarget,
+        dailyLossLimit,
+        toBotPreferences(settings),
       );
     } else if (partial.botStatus === 'paused') {
       persistedBot = await botApi.pause();
@@ -574,9 +598,9 @@ export const homeService = {
         assets: pairIds,
         amount,
         durationSeconds,
-        dailyProfitTarget: 50,
-        dailyLossLimit: 30,
-        ...toBotPreferences(partial.settings ?? runtimeState.settings),
+        dailyProfitTarget,
+        dailyLossLimit,
+        ...toBotPreferences(settings),
       });
     }
 

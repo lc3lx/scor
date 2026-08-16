@@ -165,6 +165,13 @@ export const binollaApi = {
   balance(signal?: AbortSignal): Promise<BinollaBalanceDto> {
     return apiRequest<BinollaBalanceDto>('/api/binolla/balance', { signal });
   },
+  /** Silent re-login using credentials saved on the server after email/password login. */
+  reconnect(): Promise<BinollaConnectResponse> {
+    return apiRequest<BinollaConnectResponse>('/api/binolla/reconnect', {
+      method: 'POST',
+      signal: timedSignal(BINOLLA_LOGIN_MS),
+    });
+  },
   disconnect(): Promise<{ disconnected: boolean }> {
     return apiRequest<{ disconnected: boolean }>('/api/binolla/disconnect', { method: 'POST' });
   },

@@ -144,6 +144,10 @@ export function getHomeMockContent(): HomePageContent {
         ],
         selectedRiskId: RISK_MEDIUM_ID,
         saveLabel: t('home.settings.save'),
+        dailyProfitTarget: 50,
+        dailyLossLimit: 30,
+        dailyProfitLabel: t('home.settings.dailyProfit'),
+        dailyLossLabel: t('home.settings.dailyLoss'),
       },
       marketType: {
         title: t('home.sheet.marketType'),

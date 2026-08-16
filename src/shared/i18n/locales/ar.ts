@@ -255,6 +255,7 @@ export const ar: EnDictionary = {
   'account.detail.email': 'البريد',
   'account.detail.telegram': 'تيليجرام',
   'account.detail.binolla': 'بينولا',
+  'account.detail.lastConnected': 'آخر دخول بينولا',
   'account.detail.accountType': 'نوع الحساب',
   'account.detail.approval': 'حالة الموافقة',
   'account.detail.botAccess': 'وصول البوت',
@@ -277,6 +278,10 @@ export const ar: EnDictionary = {
   'account.notice.sessionExpired.body':
     'انقطعت جلسة WebSocket لبينولا (انتهت صلاحية الرمز أو أُعيد تشغيل الخادم). تبقى حالة الموافقة قيد الانتظار — سجّل الدخول مجدداً بنفس بريد وكلمة مرور بينولا.',
   'account.notice.sessionExpired.cta': 'إعادة ربط دخول بينولا',
+  'account.notice.sessionExpired.ctaAuto': 'إعادة الاتصال تلقائياً',
+  'account.notice.sessionExpired.reconnecting': 'جارٍ إعادة تسجيل الدخول تلقائياً…',
+  'account.notice.sessionExpired.reconnectFailed':
+    'تعذّرت الإعادة التلقائية — سجّل دخول بينولا مرة واحدة ليحفظ الحساب.',
   'account.notice.connect.aria': 'إشعار الوصول',
   'account.notice.connect.title': 'اربط بينولا',
   'account.notice.connect.body':
@@ -499,8 +504,10 @@ export const ar: EnDictionary = {
   'home.settings.notifications': 'إشعارات محلية',
   'home.settings.riskLabel': 'مستوى المخاطر',
   'home.settings.save': 'حفظ الإعدادات',
+  'home.settings.dailyProfit': 'حد الربح اليومي ($)',
+  'home.settings.dailyLoss': 'حد الخسارة اليومي ($)',
   'home.settings.note':
-    'اختر تفضيلات البوت التي تريد استخدامها مع استراتيجية RSI Smart Backtest.',
+    'حدّد هدف الربح وحد الخسارة كما تريد. البوت يتوقف عندها ويكمل التحليل حتى لو خرجت من الصفحة.',
   'home.controls.note':
     'قريباً — البدء/الإيقاف المؤقت/الإيقاف الآلي معطّل. نفّذ الصفقات التجريبية من التداول.',
   'home.controls.start': 'بدء',
@@ -584,6 +591,8 @@ export const ar: EnDictionary = {
   'trading.expiry': 'الانتهاء',
   'trading.amount': 'المبلغ',
   'trading.tradeTime': 'وقت الصفقة',
+  'trading.entryAt': 'دخول {time}',
+  'trading.remaining': 'متبقي {time}',
   'trading.awaitingAccess': 'بانتظار الوصول',
   'trading.openAiBot': 'فتح بوت الذكاء',
   'trading.lastSignal': 'آخر إشارة',

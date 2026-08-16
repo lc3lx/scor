@@ -260,6 +260,7 @@ export const en = {
   'account.detail.email': 'Email',
   'account.detail.telegram': 'Telegram',
   'account.detail.binolla': 'Binolla',
+  'account.detail.lastConnected': 'Last Binolla login',
   'account.detail.accountType': 'Account Type',
   'account.detail.approval': 'Approval Status',
   'account.detail.botAccess': 'Bot Access',
@@ -282,6 +283,10 @@ export const en = {
   'account.notice.sessionExpired.body':
     'Your Binolla WebSocket session dropped (token expired or server restart). Approval status stays Pending — just log in again with the same Binolla email and password.',
   'account.notice.sessionExpired.cta': 'Reconnect Binolla login',
+  'account.notice.sessionExpired.ctaAuto': 'Reconnect automatically',
+  'account.notice.sessionExpired.reconnecting': 'Reconnecting with saved Binolla login…',
+  'account.notice.sessionExpired.reconnectFailed':
+    'Auto reconnect failed — sign in with Binolla email/password once to save the account.',
   'account.notice.connect.aria': 'Access notice',
   'account.notice.connect.title': 'Connect Binolla',
   'account.notice.connect.body':
@@ -507,8 +512,10 @@ export const en = {
   'home.settings.notifications': 'Local Notifications',
   'home.settings.riskLabel': 'Risk Level',
   'home.settings.save': 'Save Settings',
+  'home.settings.dailyProfit': 'Daily profit target ($)',
+  'home.settings.dailyLoss': 'Daily loss limit ($)',
   'home.settings.note':
-    'Choose the bot preferences to use with the RSI Smart Backtest strategy.',
+    'Set your own daily profit and loss limits. The bot stops at those limits and keeps analyzing even if you leave this page.',
   'home.controls.note':
     'Coming Soon — auto Start/Pause/Stop is disabled. Place Demo trades on Trading.',
   'home.controls.start': 'Start',
@@ -593,6 +600,8 @@ export const en = {
   'trading.expiry': 'expiry',
   'trading.amount': 'Amount',
   'trading.tradeTime': 'Trade time',
+  'trading.entryAt': 'Entry {time}',
+  'trading.remaining': 'Left {time}',
   'trading.awaitingAccess': 'Awaiting access',
   'trading.openAiBot': 'Open AI Bot',
   'trading.lastSignal': 'Last Signal',

@@ -211,6 +211,19 @@ export default function HomePage() {
     [settingsContent, updateRuntime],
   );
 
+  const handleDailyLimitChange = useCallback(
+    async (field: 'dailyProfitTarget' | 'dailyLossLimit', value: number) => {
+      if (!settingsContent) return;
+      await updateRuntime({
+        settings: {
+          ...settingsContent,
+          [field]: value,
+        },
+      });
+    },
+    [settingsContent, updateRuntime],
+  );
+
   const handleSettingsSave = useCallback(async () => {
     if (settingsContent) {
       await updateRuntime({ settings: settingsContent });
@@ -298,6 +311,7 @@ export default function HomePage() {
           content={settingsContent}
           onToggleChange={handleSettingsToggle}
           onRiskSelect={handleRiskSelect}
+          onDailyLimitChange={handleDailyLimitChange}
           onSave={handleSettingsSave}
         />
       </BottomSheet>

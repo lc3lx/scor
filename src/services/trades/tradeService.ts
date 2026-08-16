@@ -27,12 +27,17 @@ function notifyListeners(): void {
   listeners.forEach((listener) => listener());
 }
 
-function mapStatus(status: string): TradeStatus {
+function mapStatus(status: string, pnl?: number | null): TradeStatus {
   const s = status.toLowerCase();
-  if (s === 'running' || s === 'pending') return 'running';
   if (s === 'profit' || s === 'tie') return 'profit';
-  // Only real Loss counts as loss — Failed/Unknown were falsely shown as losses after outcome timeout.
   if (s === 'loss') return 'loss';
+  if (s === 'running' || s === 'pending') return 'running';
+  // Unknown/Failed without PnL: do not fake "Running" — prefer PnL when present (late settle).
+  if (typeof pnl === 'number') {
+    if (pnl > 0) return 'profit';
+    if (pnl < 0) return 'loss';
+    return 'profit';
+  }
   if (s === 'failed' || s === 'cancelled' || s === 'unknown') return 'running';
   return 'running';
 }
@@ -74,7 +79,7 @@ function formatPnl(pnl: number | null, status: string): string | undefined {
 }
 
 function mapTrade(dto: TradeDto): TradeRecord {
-  const status = mapStatus(dto.status);
+  const status = mapStatus(dto.status, dto.pnl);
   const pnlLabel = formatPnl(dto.pnl, dto.status);
   return {
     id: dto.id,
@@ -270,7 +275,7 @@ export const tradeService = {
               id: t.id?.slice?.(0, 8),
               status: t.status,
               pnl: t.pnl,
-              mapped: mapStatus(t.status),
+              mapped: mapStatus(t.status, t.pnl),
               durationSeconds: t.durationSeconds,
             })),
           },
