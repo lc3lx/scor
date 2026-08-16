@@ -36,20 +36,7 @@ export default function HomePage() {
 
   const { data, configRows, tradeAmount, duration, updateRuntime } = homeData;
 
-  const botEngine = useMemo(() => {
-    if (!data) return null;
-
-    const status = {
-      label: t('home.manualDemo'),
-      tone: data.botEngine.statusTone,
-    };
-
-    return {
-      ...data.botEngine,
-      statusLabel: status.label,
-      statusTone: status.tone,
-    };
-  }, [data, t]);
+  const botEngine = data?.botEngine ?? null;
 
   const settingsContent = data?.runtime.settings ?? data?.sheets.settings;
 
@@ -222,6 +209,7 @@ export default function HomePage() {
               onPause={botControls.handlePause}
               onStop={botControls.handleStop}
               onApply={botControls.handleApply}
+              comingSoon={false}
             />
             <HomeConfigSection rows={configRows} onRowClick={sheets.openSheet} />
             <TradeAmountSection

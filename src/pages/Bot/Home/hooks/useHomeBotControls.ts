@@ -1,17 +1,17 @@
-/**
- * Home Start/Pause/Stop never place Binolla orders (Phase 9).
- * Controls are Coming Soon — handlers are no-ops.
- */
-export function useHomeBotControls(_homeData: unknown) {
-  const noop = async () => {
-    /* Coming Soon — no local fake bot run state */
+import type { UseHomeDataReturn } from './useHomeData';
+
+/** Bot execution starts only after the user presses Start. */
+export function useHomeBotControls(homeData: UseHomeDataReturn) {
+  const setStatus = async (botStatus: 'running' | 'paused' | 'stopped') => {
+    await homeData.updateRuntime({ botStatus });
+    homeData.refresh();
   };
 
   return {
-    handleStart: noop,
-    handlePause: noop,
-    handleStop: noop,
-    handleApply: noop,
-    isStartPressed: false,
+    handleStart: () => setStatus('running'),
+    handlePause: () => setStatus('paused'),
+    handleStop: () => setStatus('stopped'),
+    handleApply: () => homeData.refresh(),
+    isStartPressed: homeData.data?.runtime.botStatus === 'running',
   };
 }

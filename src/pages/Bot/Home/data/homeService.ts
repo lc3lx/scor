@@ -1,5 +1,5 @@
 import { imageAssets } from '@assets/index';
-import { HOME_INITIAL_RUNTIME, getHomeMockContent } from './home.mock';
+import { HOME_INITIAL_RUNTIME, getBotStatusDisplay, getHomeMockContent } from './home.mock';
 import type { HomeData, HomeRuntimeState, StrategyOptionItem } from '../types';
 import {
   ApiClientError,
@@ -205,25 +205,27 @@ export const homeService = {
       }
 
       if (strategies?.strategies?.length) {
-        const strategyOptions: StrategyOptionItem[] = strategies.strategies.map((s) => ({
-          id: s.id,
-          title: s.name,
-          stats: [
-            { label: t('home.strategy.stat.status'), value: s.status },
-            {
-              label: t('home.strategy.stat.enabled'),
-              value: s.enabled ? t('common.yes') : t('common.no'),
-            },
-            {
-              label: t('home.strategy.stat.access'),
-              value: s.enabled ? t('home.strategy.selectable') : t('common.comingSoon'),
-            },
-            { label: t('home.strategy.stat.source'), value: t('common.server') },
-          ],
-          successRate: s.enabled ? t('home.strategy.active') : t('common.comingSoon'),
-          previewSrc: strategyPreview(s.id),
-          enabled: s.enabled,
-        }));
+        const strategyOptions: StrategyOptionItem[] = strategies.strategies
+          .filter((s) => s.id === 'rsi')
+          .map((s) => ({
+            id: s.id,
+            title: s.name,
+            stats: [
+              {
+                label: t('home.strategy.stat.indicators'),
+                value: t('home.strategy.rsi.indicator'),
+              },
+              {
+                label: t('home.strategy.stat.duration'),
+                value: t('home.strategy.rsi.expiry'),
+              },
+              { label: t('home.strategy.rsi.filter'), value: t('home.strategy.rsi.filterValue') },
+              { label: t('home.strategy.stat.markets'), value: t('home.market.binolla') },
+            ],
+            successRate: t('home.strategy.rsi.success'),
+            previewSrc: strategyPreview(s.id),
+            enabled: s.enabled,
+          }));
 
         base.sheets.strategy.options = strategyOptions;
         const enabled = strategies.strategies.find((s) => s.enabled)?.id ?? strategies.strategies[0]?.id ?? '';
@@ -262,7 +264,9 @@ export const homeService = {
       const signal =
         asset && canBrowseMarket(status?.botAccess)
           ? await strategiesApi
-              .rsiSignal(asset, 60, timedSignal(MARKET_FETCH_MS))
+              .rsiSignal(asset, 60, timedSignal(MARKET_FETCH_MS), {
+                autoExecute: runtimeState.botStatus === 'running',
+              })
               .catch(() => null)
           : null;
       if (signal) {
@@ -370,7 +374,9 @@ export const homeService = {
       };
 
       runtimeState.marketTypeId = 'binolla-market';
-      runtimeState.botStatus = 'stopped';
+      const statusDisplay = getBotStatusDisplay()[runtimeState.botStatus];
+      base.botEngine.statusLabel = statusDisplay.label;
+      base.botEngine.statusTone = statusDisplay.tone;
       if (runtimeState.settings) {
         runtimeState.settings = {
           ...runtimeState.settings,
@@ -401,11 +407,6 @@ export const homeService = {
   },
 
   async updateRuntime(partial: Partial<HomeRuntimeState>): Promise<HomeRuntimeState> {
-    // Never simulate auto-trading run state locally.
-    if (partial.botStatus) {
-      partial = { ...partial, botStatus: 'stopped' };
-    }
-
     if (partial.strategyId) {
       try {
         const strategies = await strategiesApi.list();
@@ -443,7 +444,6 @@ export const homeService = {
     runtimeState = {
       ...runtimeState,
       ...partial,
-      botStatus: 'stopped',
       settings: partial.settings
         ? {
             ...runtimeState.settings,

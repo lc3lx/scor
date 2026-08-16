@@ -19,6 +19,7 @@ import type {
   NotificationDto,
   NotificationListResponse,
   PlaceTradeRequest,
+  RsiSmartBacktestOptions,
   StrategiesResponse,
   StrategySignalResponse,
   TradeDto,
@@ -168,10 +169,23 @@ export const strategiesApi = {
   list(): Promise<StrategiesResponse> {
     return apiRequest<StrategiesResponse>('/api/strategies');
   },
-  rsiSignal(asset: string, period = 60, signal?: AbortSignal): Promise<StrategySignalResponse> {
+  rsiSignal(
+    asset: string,
+    period = 60,
+    signal?: AbortSignal,
+    options: RsiSmartBacktestOptions = {},
+  ): Promise<StrategySignalResponse> {
     const encoded = encodeURIComponent(asset);
+    const query = new URLSearchParams({ period: String(period) });
+    if (options.rsiLength != null) query.set('rsiLength', String(options.rsiLength));
+    if (options.oversold != null) query.set('oversold', String(options.oversold));
+    if (options.overbought != null) query.set('overbought', String(options.overbought));
+    if (options.backtestCandles != null) query.set('backtestCandles', String(options.backtestCandles));
+    if (options.expiryCandles != null) query.set('expiryCandles', String(options.expiryCandles));
+    if (options.minimumSuccessRate != null) query.set('minimumSuccessRate', String(options.minimumSuccessRate));
+    if (options.autoExecute) query.set('autoExecute', 'true');
     return apiRequest<StrategySignalResponse>(
-      `/api/strategies/rsi/signal/${encoded}?period=${period}`,
+      `/api/strategies/rsi/signal/${encoded}?${query}`,
       { signal },
     );
   },

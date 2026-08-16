@@ -1,5 +1,6 @@
 import type { ChipTone } from '@components/types';
 import type { CandlestickPoint } from '@components/organisms/CandlestickChart';
+import type { TradeDto } from '@shared/api';
 
 export type {
   TradeDetailContent,
@@ -69,6 +70,7 @@ export type BinollaCardContent = {
   tradesDisabled?: boolean;
   /** Shown when trades are locked (e.g. admin not approved). */
   tradeLockMessage?: string;
+  activeTrade?: TradeDto;
 };
 
 export type ScarAlphaSignalCardContent = {

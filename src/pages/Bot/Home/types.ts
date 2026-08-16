@@ -73,6 +73,7 @@ export type IndicatorOptionItem = {
   bestFor: string;
   complexity: ComplexityLevel;
   previewSrc: string;
+  enabled?: boolean;
 };
 
 export type StrategyStatItem = {

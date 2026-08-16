@@ -18,6 +18,7 @@ export function TechnicalIndicatorSheetContent({
     <div className={styles.root}>
       {content.options.map((option) => {
         const complexity = complexityDisplay[option.complexity];
+        const disabled = option.enabled === false;
 
         return (
           <IndicatorOptionCard
@@ -29,7 +30,10 @@ export function TechnicalIndicatorSheetContent({
             complexityTone={complexity.tone}
             previewSrc={option.previewSrc}
             selected={option.id === content.selectedId}
-            onSelect={() => onSelect(option.id)}
+            disabled={disabled}
+            onSelect={() => {
+              if (!disabled) onSelect(option.id);
+            }}
           />
         );
       })}

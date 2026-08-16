@@ -12,6 +12,7 @@ import {
   binollaApi,
   marketApi,
   strategiesApi,
+  tradesApi,
   type AccountStatusResponse,
 } from '@shared/api';
 import {
@@ -374,10 +375,12 @@ export const tradingService = {
     content.binollaCard.priceDisplay = '—';
 
     try {
-      const [status, balance] = await Promise.all([
+      const [status, balance, runningTrades] = await Promise.all([
         getAccountStatusCached().catch(() => null),
         binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
+        tradesApi.list({ page: 1, pageSize: 5, status: 'Running' }).catch(() => null),
       ]);
+      content.binollaCard.activeTrade = runningTrades?.items[0];
 
       const connected = Boolean(status?.binollaConnected && balance?.connected);
       content.topBar.connectionLabel = connected

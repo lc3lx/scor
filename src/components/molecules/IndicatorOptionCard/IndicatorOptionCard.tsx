@@ -13,6 +13,7 @@ export type IndicatorOptionCardProps = {
   complexityTone: ChipTone;
   previewSrc: string;
   selected?: boolean;
+  disabled?: boolean;
   onSelect?: () => void;
   className?: string;
 };
@@ -25,6 +26,7 @@ export function IndicatorOptionCard({
   complexityTone,
   previewSrc,
   selected = false,
+  disabled = false,
   onSelect,
   className,
 }: IndicatorOptionCardProps) {
@@ -43,8 +45,8 @@ export function IndicatorOptionCard({
           {bestFor}
         </Text>
         <div className={styles.footer}>
-          <button type="button" className={styles.action} onClick={onSelect}>
-            {selected ? t('common.selected') : t('common.select')}
+          <button type="button" className={styles.action} onClick={onSelect} disabled={disabled}>
+            {disabled ? t('common.comingSoon') : selected ? t('common.selected') : t('common.select')}
           </button>
           <Chip label={complexityLabel} tone={complexityTone} style="outlined" className={styles.badge} />
         </div>

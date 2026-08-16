@@ -10,15 +10,16 @@
 }
 
 .overlayVisible {
-  background: rgba(2, 1, 1, 0.72);
+  background: rgba(2, 1, 1, 0.82);
 }
 
 .sheet {
   width: 100%;
   max-width: var(--layout-viewport-max-width);
-  max-height: 80%;
-  padding: var(--space-8) var(--layout-page-padding-x) var(--space-11);
-  background: var(--color-bg-surface-dark);
+  max-height: min(82dvh, 760px);
+  padding: 12px var(--layout-page-padding-x) calc(var(--space-11) + env(safe-area-inset-bottom));
+  background: #100e10;
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-top-left-radius: var(--radius-screen);
   border-top-right-radius: var(--radius-screen);
   outline: none;
@@ -32,10 +33,10 @@
 }
 
 .handle {
-  width: 40px;
+  width: 38px;
   height: 4px;
-  margin: 0 auto var(--space-8);
-  background: var(--color-border-default);
+  margin: 0 auto 14px;
+  background: rgba(255, 255, 255, 0.25);
   border-radius: var(--radius-chip);
 }
 
@@ -43,7 +44,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-8);
+  margin-bottom: 16px;
 }
 
 .content {

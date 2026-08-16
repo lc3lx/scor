@@ -57,6 +57,16 @@ export function BinollaTradingCardSection({ content }: BinollaTradingCardSection
           </span>
         </div>
 
+        {content.activeTrade ? (
+          <div className={styles.activeTrade} aria-live="polite">
+            <span className={styles.activeDot} />
+            <Text variant="caption-xs" tone="primary">
+              {t('trading.monitorOnly')} · {content.activeTrade.direction} {content.activeTrade.asset}
+              {' · '}${content.activeTrade.amount.toFixed(2)} · {Math.round(content.activeTrade.durationSeconds / 60)}m
+            </Text>
+          </div>
+        ) : null}
+
         <div className={styles.chartWrap}>
           {content.candleData.length > 0 ? (
             <CandlestickChart

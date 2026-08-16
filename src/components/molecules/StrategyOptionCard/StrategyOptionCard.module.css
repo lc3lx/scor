@@ -5,11 +5,11 @@
   justify-content: space-between;
   gap: var(--space-5);
   width: 100%;
-  min-height: 131.951px;
-  padding: 16px 15.82px;
-  border: var(--card-border-width) solid rgba(255, 255, 255, 0.1);
+  min-height: 132px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #171315;
 }
 
 .body {
@@ -17,7 +17,7 @@
   flex: 1;
   flex-direction: column;
   min-width: 0;
-  max-width: calc(100% - 91px);
+  max-width: 100%;
 }
 
 .title {
@@ -85,13 +85,7 @@
 }
 
 .previewWrap {
-  flex-shrink: 0;
-  width: 75px;
-  height: 75px;
-  overflow: hidden;
-  border: var(--card-border-width) solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
+  display: none;
 }
 
 .preview {

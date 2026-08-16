@@ -67,6 +67,12 @@ export function useHomeData() {
     };
   }, [cacheKey, reloadToken]);
 
+  useEffect(() => {
+    if (data?.runtime.botStatus !== 'running') return;
+    const timer = window.setInterval(() => setReloadToken((n) => n + 1), 10_000);
+    return () => window.clearInterval(timer);
+  }, [data?.runtime.botStatus]);
+
   const configRows = useMemo(() => {
     if (!data) return [];
 

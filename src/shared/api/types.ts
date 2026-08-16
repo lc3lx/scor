@@ -120,6 +120,28 @@ export type StrategySignalResponse = {
   rsi: number;
   candleTime: string;
   timeframe: string;
+  backtest?: {
+    totalSignals: number;
+    successfulSignals: number;
+    failedSignals: number;
+    successRate: number;
+    lookbackCandles: number;
+    expiryCandles: number;
+    minimumSuccessRate: number;
+    passed: boolean;
+  } | null;
+  automatedTradeId?: string | null;
+  automationError?: string | null;
+};
+
+export type RsiSmartBacktestOptions = {
+  rsiLength?: number;
+  oversold?: number;
+  overbought?: number;
+  backtestCandles?: number;
+  expiryCandles?: 3 | 4 | 5;
+  minimumSuccessRate?: number;
+  autoExecute?: boolean;
 };
 
 export type MarketAssetDto = {
