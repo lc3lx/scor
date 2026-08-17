@@ -663,7 +663,30 @@ export const tradingService = {
 
         if (rsi) {
           const mapped = formatSignal(rsi.signal);
-          content.signalCard.freshLabel = `RSI ${rsi.rsi.toFixed(2)}`;
+          const liveRsi = Number(rsi.liveRsi ?? rsi.rsi);
+          const liveRsiLabel = Number.isFinite(liveRsi) ? liveRsi.toFixed(2) : '—';
+          // #region agent log
+          fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1892a4' },
+            body: JSON.stringify({
+              sessionId: '1892a4',
+              runId: 'post-fix',
+              hypothesisId: 'H-E',
+              location: 'tradingService.ts:signalCard',
+              message: 'display_live_rsi',
+              data: {
+                asset: firstAsset,
+                displayed: liveRsiLabel,
+                liveRsi: rsi.liveRsi ?? null,
+                closedRsi: rsi.rsi,
+                signal: rsi.signal,
+              },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
+          content.signalCard.freshLabel = `RSI ${liveRsiLabel}`;
           content.signalCard.freshTone =
             rsi.signal.toLowerCase() === 'none' ? 'neutral' : 'success';
           content.signalCard.stats = [
@@ -673,7 +696,7 @@ export const tradingService = {
               value: mapped.value,
               valueTone: mapped.tone,
             },
-            { id: 'strength', label: t('common.rsi'), value: rsi.rsi.toFixed(2) },
+            { id: 'strength', label: t('common.liveRsi'), value: liveRsiLabel },
             { id: 'indicator', label: t('trading.indicator'), value: t('common.rsi') },
             { id: 'strategy', label: t('trading.strategy'), value: t('common.rsi') },
             { id: 'market', label: t('trading.market'), value: firstAsset },

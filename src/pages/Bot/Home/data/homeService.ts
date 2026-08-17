@@ -279,7 +279,7 @@ function engineStatsFromSignal(
     },
     {
       id: 'strength',
-      label: t('common.rsi'),
+      label: t('common.liveRsi'),
       value: Number.isFinite(rsiValue) ? rsiValue.toFixed(2) : '—',
     },
     {
@@ -696,7 +696,7 @@ export const homeService = {
         base.botEngine.stats = [
           { id: 'pair', label: t('home.stat.pair'), value: pairLabel },
           { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
-          { id: 'strength', label: t('common.rsi'), value: '—' },
+          { id: 'strength', label: t('common.liveRsi'), value: '—' },
           { id: 'backtest', label: t('home.stat.backtest'), value: '—' },
           { id: 'updated', label: t('home.stat.candle'), value: '—' },
         ];
@@ -814,7 +814,7 @@ export const homeService = {
       base.botEngine.stats = [
         { id: 'pair', label: t('home.stat.pair'), value: '—' },
         { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
-        { id: 'strength', label: t('common.rsi'), value: '—' },
+        { id: 'strength', label: t('common.liveRsi'), value: '—' },
         { id: 'backtest', label: t('home.stat.backtest'), value: '—' },
         { id: 'updated', label: t('home.stat.candle'), value: '—' },
       ];
