@@ -173,9 +173,45 @@ function pairDisplayName(
   return options.find((o) => o.id === id)?.title ?? id;
 }
 
-function isLiveExtreme(signal: StrategySignalResponse): boolean {
-  const rsi = Number(signal.liveRsi ?? signal.rsi);
-  return Number.isFinite(rsi) && (rsi <= 25 || rsi >= 75);
+function liveRsiValue(signal: StrategySignalResponse): number {
+  return Number(signal.liveRsi ?? signal.rsi);
+}
+
+function isLiveCallRsi(signal: StrategySignalResponse): boolean {
+  const rsi = liveRsiValue(signal);
+  return Number.isFinite(rsi) && rsi <= 25;
+}
+
+function isLivePutRsi(signal: StrategySignalResponse): boolean {
+  const rsi = liveRsiValue(signal);
+  return Number.isFinite(rsi) && rsi >= 75;
+}
+
+function backtestReady(signal: StrategySignalResponse): boolean {
+  const rate = Number(signal.backtest?.successRate ?? 0);
+  const total = Number(signal.backtest?.totalSignals ?? 0);
+  return signal.backtest?.passed === true && total > 0 && rate >= 75;
+}
+
+/** RSI first. Backtest only counts after live RSI is at 25/75. */
+function isCallSetup(signal: StrategySignalResponse): boolean {
+  return (
+    signal.signal === 'Call' &&
+    isLiveCallRsi(signal) &&
+    backtestReady(signal)
+  );
+}
+
+function isPutSetup(signal: StrategySignalResponse): boolean {
+  return (
+    signal.signal === 'Put' &&
+    isLivePutRsi(signal) &&
+    backtestReady(signal)
+  );
+}
+
+function isActionableSetup(signal: StrategySignalResponse): boolean {
+  return isCallSetup(signal) || isPutSetup(signal);
 }
 
 function pickLiveDisplaySignal(
@@ -183,24 +219,20 @@ function pickLiveDisplaySignal(
 ): { signal: StrategySignalResponse | null; pickMode: string } {
   const valid = results.filter(
     (s): s is StrategySignalResponse =>
-      s != null && Number.isFinite(Number(s.liveRsi ?? s.rsi)),
+      s != null && Number.isFinite(liveRsiValue(s)),
   );
   if (valid.length === 0) return { signal: null, pickMode: 'none' };
-  const actionable = valid.filter(
-    (s) =>
-      s.backtest?.passed === true &&
-      (s.signal === 'Call' || s.signal === 'Put' || isLiveExtreme(s)),
-  );
+  const actionable = valid.filter(isActionableSetup);
   if (actionable.length > 0) {
     const signal = [...actionable].sort((a, b) => {
-      const rateA = a.backtest?.successRate ?? 0;
-      const rateB = b.backtest?.successRate ?? 0;
-      if (rateB !== rateA) return rateB - rateA;
+      // Prefer deeper live RSI extreme first; backtest rate is secondary.
       const edge = (s: StrategySignalResponse) => {
-        const rsi = Number(s.liveRsi ?? s.rsi);
-        return s.signal === 'Call' ? 25 - rsi : s.signal === 'Put' ? rsi - 75 : 0;
+        const rsi = liveRsiValue(s);
+        return isCallSetup(s) ? 25 - rsi : rsi - 75;
       };
-      return edge(b) - edge(a);
+      const edgeDiff = edge(b) - edge(a);
+      if (edgeDiff !== 0) return edgeDiff;
+      return (b.backtest?.successRate ?? 0) - (a.backtest?.successRate ?? 0);
     })[0]!;
     return { signal, pickMode: 'actionable' };
   }
@@ -213,26 +245,29 @@ function engineStatsFromSignal(
   pairLabel: string,
 ): HomeData['botEngine']['stats'] {
   const rate = signal.backtest?.successRate;
-  const passed = signal.backtest?.passed === true;
+  const atExtreme = isLiveCallRsi(signal) || isLivePutRsi(signal);
+  // Backtest only has entry meaning when live RSI is already at 25/75.
+  const passed = atExtreme && backtestReady(signal);
   const rateLabel =
     rate == null
       ? '—'
-      : passed
-        ? t('home.strategy.successRate', { n: Math.round(rate) })
-        : t('home.strategy.filterFailed', { n: Math.round(rate) });
+      : !atExtreme
+        ? t('home.strategy.awaitRsi', { n: Math.round(rate) })
+        : passed
+          ? t('home.strategy.successRate', { n: Math.round(rate) })
+          : t('home.strategy.filterFailed', { n: Math.round(rate) });
   const live = Number(signal.liveRsi ?? signal.rsi);
   const closed = Number(signal.rsi);
   const rsiValue = Number.isFinite(live) ? live : closed;
-  const sig = signal.signal.toLowerCase();
   let signalLabel = formatSignal(signal.signal);
   let signalTone: HomeData['botEngine']['stats'][number]['valueTone'] =
-    sig === 'call' ? 'success' : 'primary';
-  if (sig !== 'call' && sig !== 'put') {
-    if (signal.automationError === 'SIGNAL_STALE') {
-      signalLabel = t('home.stat.signalLate');
-    } else if (rsiValue >= 75 || rsiValue <= 25) {
-      signalLabel = t('home.stat.signalWaitClose');
-    }
+    isCallSetup(signal) ? 'success' : 'primary';
+  if (isCallSetup(signal)) {
+    signalLabel = formatSignal('Call');
+  } else if (isPutSetup(signal)) {
+    signalLabel = formatSignal('Put');
+  } else if (atExtreme && !passed) {
+    signalLabel = t('home.strategy.filterFailed', { n: Math.round(rate ?? 0) });
   }
   return [
     { id: 'pair', label: t('home.stat.pair'), value: pairLabel },
@@ -571,12 +606,7 @@ export const homeService = {
           : [];
       const picked = pickLiveDisplaySignal(signalResults);
       let signal = picked.signal;
-      if (
-        running &&
-        signal &&
-        signal.backtest?.passed === true &&
-        (signal.signal === 'Call' || signal.signal === 'Put' || isLiveExtreme(signal))
-      ) {
+      if (running && signal && isActionableSetup(signal)) {
         try {
           const placed = await strategiesApi.rsiSignal(
             signal.asset,

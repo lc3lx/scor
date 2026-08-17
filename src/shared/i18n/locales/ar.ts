@@ -587,6 +587,7 @@ export const ar: EnDictionary = {
   'home.strategy.selectable': 'قابل للاختيار',
   'home.strategy.successRate': 'نجاح ~{n}%',
   'home.strategy.filterFailed': 'فلتر رافض ~{n}%',
+  'home.strategy.awaitRsi': 'انتظار RSI · ~{n}%',
   'home.strategy.active': 'نشط',
   'home.strategy.rsi.indicator': 'RSI 14 · 25 / 75 · دقيقة واحدة',
   'home.strategy.rsi.expiry': '3–5 شموع (الافتراضي 5)',

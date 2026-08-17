@@ -595,6 +595,7 @@ export const en = {
   'home.strategy.selectable': 'Selectable',
   'home.strategy.successRate': 'Success ~{n}%',
   'home.strategy.filterFailed': 'Filter fail ~{n}%',
+  'home.strategy.awaitRsi': 'Wait RSI · ~{n}%',
   'home.strategy.active': 'Active',
   'home.strategy.rsi.indicator': 'RSI 14 · 25 / 75 · 1m',
   'home.strategy.rsi.expiry': '3–5 candles (default 5)',
