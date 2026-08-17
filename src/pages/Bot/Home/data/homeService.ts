@@ -584,7 +584,6 @@ export const homeService = {
             liveRsi: signal?.liveRsi ?? null,
             closedRsi: signal?.rsi ?? null,
             automationError: signal?.automationError ?? null,
-            closedRsi: signal?.rsi ?? null,
             rsiEqual: signal ? Number(signal.liveRsi ?? signal.rsi) === Number(signal.rsi) : null,
             best: signal
               ? {
