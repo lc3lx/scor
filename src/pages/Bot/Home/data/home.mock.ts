@@ -23,8 +23,10 @@ export function getHomeMockContent(): HomePageContent {
       statusLabel: t('home.bot.statusManual'),
       statusTone: 'neutral',
       stats: [
+        { id: 'pair', label: t('home.stat.pair'), value: '—' },
         { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
         { id: 'strength', label: t('common.rsi'), value: '—' },
+        { id: 'backtest', label: t('home.stat.backtest'), value: '—' },
         { id: 'updated', label: t('home.stat.candle'), value: '—' },
       ],
     },

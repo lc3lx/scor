@@ -136,6 +136,7 @@ export type StrategySignalResponse = {
   asset: string;
   signal: 'Call' | 'Put' | 'None' | string;
   rsi: number;
+  liveRsi?: number | null;
   candleTime: string;
   timeframe: string;
   backtest?: {

@@ -56,12 +56,35 @@ export function useHomeData() {
 
   useEffect(() => {
     let active = true;
+    const force = reloadToken > 0;
+    // #region agent log
+    fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1892a4' },
+      body: JSON.stringify({
+        sessionId: '1892a4',
+        runId: 'live-rsi',
+        hypothesisId: 'H-POLL',
+        location: 'useHomeData.ts:load',
+        message: 'home_poll',
+        data: {
+          reloadToken,
+          force,
+          botStatus: data?.runtime.botStatus ?? null,
+          pairStat: data?.botEngine.stats.find((s) => s.id === 'pair')?.value ?? null,
+          rsiStat: data?.botEngine.stats.find((s) => s.id === 'strength')?.value ?? null,
+          backtestStat: data?.botEngine.stats.find((s) => s.id === 'backtest')?.value ?? null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
 
     void loadPageData(
       cacheKey,
       () => homeService.fetchHomeData(),
       PAGE_CACHE_TTL.home,
-      reloadToken > 0,
+      force,
     )
       .then((next) => {
         if (active) setData(next);
@@ -76,10 +99,9 @@ export function useHomeData() {
   }, [cacheKey, reloadToken]);
 
   useEffect(() => {
-    if (data?.runtime.botStatus !== 'running') return;
-    const timer = window.setInterval(() => setReloadToken((n) => n + 1), 10_000);
+    const timer = window.setInterval(() => setReloadToken((n) => n + 1), 2_000);
     return () => window.clearInterval(timer);
-  }, [data?.runtime.botStatus]);
+  }, []);
 
   const configRows = useMemo(() => {
     if (!data) return [];

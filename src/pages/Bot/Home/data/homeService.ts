@@ -9,7 +9,7 @@ import {
   strategiesApi,
   tradesApi,
 } from '@shared/api';
-import type { TradeDto } from '@shared/api';
+import type { StrategySignalResponse, TradeDto } from '@shared/api';
 import { canBrowseMarket } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
 import { getAccountStatusCached, invalidateBotSessionCache } from '@shared/api/botSessionCache';
@@ -155,6 +155,85 @@ function formatSignal(signal: string): string {
   if (s === 'call') return t('common.callUp');
   if (s === 'put') return t('common.putDown');
   return t('common.none');
+}
+
+function rotatingBatch(ids: string[], size: number): string[] {
+  if (ids.length <= size) return ids;
+  const offset = Math.floor(Date.now() / 2000) % ids.length;
+  const batch: string[] = [];
+  for (let i = 0; i < size; i += 1) batch.push(ids[(offset + i) % ids.length]!);
+  return batch;
+}
+
+function pairDisplayName(
+  id: string,
+  options: { id: string; title: string }[],
+): string {
+  if (!id) return '—';
+  return options.find((o) => o.id === id)?.title ?? id;
+}
+
+function pickLiveDisplaySignal(
+  results: Array<StrategySignalResponse | null>,
+): { signal: StrategySignalResponse | null; pickMode: string } {
+  const valid = results.filter((s): s is StrategySignalResponse => Boolean(s) && Number(s.rsi) > 0);
+  if (valid.length === 0) return { signal: null, pickMode: 'none' };
+  const actionable = valid.filter(
+    (s) => (s.signal === 'Call' || s.signal === 'Put') && s.backtest?.passed === true,
+  );
+  if (actionable.length > 0) {
+    const signal = [...actionable].sort((a, b) => {
+      const rateA = a.backtest?.successRate ?? 0;
+      const rateB = b.backtest?.successRate ?? 0;
+      if (rateB !== rateA) return rateB - rateA;
+      const edge = (s: StrategySignalResponse) =>
+        s.signal === 'Call' ? 25 - s.rsi : s.signal === 'Put' ? s.rsi - 75 : 0;
+      return edge(b) - edge(a);
+    })[0]!;
+    return { signal, pickMode: 'actionable' };
+  }
+  const tick = Math.floor(Date.now() / 2000);
+  return { signal: valid[tick % valid.length]!, pickMode: 'rotate' };
+}
+
+function engineStatsFromSignal(
+  signal: StrategySignalResponse,
+  pairLabel: string,
+): HomeData['botEngine']['stats'] {
+  const rate = signal.backtest?.successRate;
+  const passed = signal.backtest?.passed === true;
+  const rateLabel =
+    rate == null
+      ? '—'
+      : passed
+        ? t('home.strategy.successRate', { n: Math.round(rate) })
+        : t('home.strategy.filterFailed', { n: Math.round(rate) });
+  const rsiValue = Number(signal.liveRsi ?? signal.rsi);
+  return [
+    { id: 'pair', label: t('home.stat.pair'), value: pairLabel },
+    {
+      id: 'signal',
+      label: t('home.stat.signal'),
+      value: formatSignal(signal.signal),
+      valueTone: signal.signal.toLowerCase() === 'call' ? 'success' : 'primary',
+    },
+    {
+      id: 'strength',
+      label: t('common.rsi'),
+      value: Number.isFinite(rsiValue) ? rsiValue.toFixed(2) : '—',
+    },
+    {
+      id: 'backtest',
+      label: t('home.stat.backtest'),
+      value: rateLabel,
+      valueTone: passed ? 'success' : 'primary',
+    },
+    {
+      id: 'updated',
+      label: t('home.stat.candle'),
+      value: new Date(signal.candleTime).toLocaleTimeString('en-GB', { hour12: false }),
+    },
+  ];
 }
 
 function refreshSettingsLabels(): void {
@@ -452,96 +531,64 @@ export const homeService = {
         pairIds.length > 0 ? pairIds : asset ? [asset] : [];
       const running = runtimeState.botStatus === 'running';
       const expiryCandles = expiryCandlesFromDurationId(runtimeState.durationId);
-      // Placement is server-side (BotSignalWorker) for instant post-close entry — FE only displays.
-      const signalOpts = { expiryCandles, autoExecute: false as const };
+      // Placement is server-side (BotSignalWorker). Home shows a live rotating snapshot.
+      const signalOpts = { expiryCandles, backtestCandles: 60, autoExecute: false as const };
+      const scanIds = rotatingBatch(analyzeIds, 8);
       const signalResults =
-        analyzeIds.length && canBrowseMarket(status?.botAccess)
+        scanIds.length && canBrowseMarket(status?.botAccess)
           ? await Promise.all(
-              analyzeIds.map((symbol) =>
+              scanIds.map((symbol) =>
                 strategiesApi
                   .rsiSignal(symbol, 60, timedSignal(MARKET_FETCH_MS), signalOpts)
                   .catch(() => null),
               ),
             )
           : [];
-      const actionable = signalResults.filter(
-        (s): s is NonNullable<typeof s> =>
-          Boolean(
-            s &&
-              (s.signal === 'Call' || s.signal === 'Put') &&
-              s.backtest?.passed === true,
-          ),
+      const picked = pickLiveDisplaySignal(signalResults);
+      const signal = picked.signal;
+      const pairLabel = pairDisplayName(
+        signal?.asset ?? scanIds[0] ?? '',
+        base.sheets.tradingPair.options,
       );
-      const scored = [...actionable].sort((a, b) => {
-        const rateA = a.backtest?.successRate ?? 0;
-        const rateB = b.backtest?.successRate ?? 0;
-        if (rateB !== rateA) return rateB - rateA;
-        const edge = (s: (typeof actionable)[number]) =>
-          s.signal === 'Call' ? 25 - s.rsi : s.signal === 'Put' ? s.rsi - 75 : 0;
-        return edge(b) - edge(a);
-      });
-      const signal = scored[0] ?? signalResults.find((s) => s) ?? null;
       // #region agent log
       fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1892a4' },
         body: JSON.stringify({
           sessionId: '1892a4',
-          runId: 'multi-pair',
-          hypothesisId: 'MP1',
+          runId: 'live-rsi',
+          hypothesisId: 'H-UI1',
           location: 'homeService.ts:rsiMulti',
           message: 'analyzed_pairs',
           data: {
             running,
+            pickMode: picked.pickMode,
             pairCount: analyzeIds.length,
-            pairs: analyzeIds,
+            scanCount: scanIds.length,
+            pairs: scanIds,
             expiryCandles,
+            pairLabel,
+            liveRsi: signal?.liveRsi ?? null,
+            closedRsi: signal?.rsi ?? null,
+            rsiEqual: signal ? Number(signal.liveRsi ?? signal.rsi) === Number(signal.rsi) : null,
             best: signal
               ? {
                   asset: signal.asset,
                   signal: signal.signal,
-                  rsi: signal.rsi,
                   successRate: signal.backtest?.successRate ?? null,
                   passed: signal.backtest?.passed ?? null,
                 }
               : null,
-            candidates: actionable.length,
           },
           timestamp: Date.now(),
         }),
       }).catch(() => {});
       // #endregion
       if (signal) {
-        const rate = signal.backtest?.successRate;
-        const passed = signal.backtest?.passed === true;
-        const rateLabel =
-          rate == null
-            ? '—'
-            : passed
-              ? t('home.strategy.successRate', { n: Math.round(rate) })
-              : t('home.strategy.filterFailed', { n: Math.round(rate) });
-        base.botEngine.stats = [
-          {
-            id: 'signal',
-            label: t('home.stat.signal'),
-            value: `${formatSignal(signal.signal)}${analyzeIds.length > 1 ? ` · ${signal.asset}` : ''}`,
-            valueTone: signal.signal.toLowerCase() === 'call' ? 'success' : 'primary',
-          },
-          { id: 'strength', label: t('common.rsi'), value: signal.rsi.toFixed(2) },
-          {
-            id: 'backtest',
-            label: t('home.stat.backtest'),
-            value: rateLabel,
-            valueTone: passed ? 'success' : 'primary',
-          },
-          {
-            id: 'updated',
-            label: t('home.stat.candle'),
-            value: new Date(signal.candleTime).toLocaleTimeString('en-GB', { hour12: false }),
-          },
-        ];
+        base.botEngine.stats = engineStatsFromSignal(signal, pairLabel);
       } else {
         base.botEngine.stats = [
+          { id: 'pair', label: t('home.stat.pair'), value: pairLabel },
           { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
           { id: 'strength', label: t('common.rsi'), value: '—' },
           { id: 'backtest', label: t('home.stat.backtest'), value: '—' },
@@ -549,10 +596,11 @@ export const homeService = {
         ];
       }
 
+      const chartAsset = signal?.asset ?? asset;
       try {
         const candles =
-          asset && canBrowseMarket(status?.botAccess)
-            ? await marketApi.candles(asset, 60, timedSignal(MARKET_FETCH_MS)).catch(() => null)
+          chartAsset && canBrowseMarket(status?.botAccess)
+            ? await marketApi.candles(chartAsset, 60, timedSignal(MARKET_FETCH_MS)).catch(() => null)
             : null;
         const mapped = candles
           ? candles.candles.map((c) => ({
@@ -658,8 +706,10 @@ export const homeService = {
       base.sheets.tradingPair.options = [];
       base.sheets.strategy.options = [];
       base.botEngine.stats = [
+        { id: 'pair', label: t('home.stat.pair'), value: '—' },
         { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
         { id: 'strength', label: t('common.rsi'), value: '—' },
+        { id: 'backtest', label: t('home.stat.backtest'), value: '—' },
         { id: 'updated', label: t('home.stat.candle'), value: '—' },
       ];
       base.stats = base.stats.map((stat) => ({ ...stat, value: '—' }));

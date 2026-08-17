@@ -467,6 +467,7 @@ export const en = {
   'home.bot.statusDailyProfit': 'Daily profit hit',
   'home.bot.statusDailyLoss': 'Daily loss hit',
   'home.stat.signal': 'Signal',
+  'home.stat.pair': 'Pair',
   'home.stat.strength': 'Strength',
   'home.stat.updated': 'Updated',
   'home.stat.updatedAgo': '2s ago',
