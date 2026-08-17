@@ -593,7 +593,12 @@ export const homeService = {
       const expiryCandles = expiryCandlesFromDurationId(runtimeState.durationId);
       // Placement is server-side (BotSignalWorker). Home shows a live rotating snapshot.
       const signalOpts = { expiryCandles, backtestCandles: 200, autoExecute: false as const };
-      const scanIds = rotatingBatch(analyzeIds, 8);
+      const openTradeCount = tradeBundle
+        ? weekAndMonthSummaries(tradeBundle.items).all.active
+        : 0;
+      // One live trade at a time — pause Home RSI analysis until it settles.
+      const scanIds =
+        openTradeCount > 0 ? [] : rotatingBatch(analyzeIds, 8);
       const signalResults =
         scanIds.length && canBrowseMarket(status?.botAccess)
           ? await Promise.all(
@@ -606,7 +611,7 @@ export const homeService = {
           : [];
       const picked = pickLiveDisplaySignal(signalResults);
       let signal = picked.signal;
-      if (running && signal && isActionableSetup(signal)) {
+      if (running && openTradeCount === 0 && signal && isActionableSetup(signal)) {
         try {
           const placed = await strategiesApi.rsiSignal(
             signal.asset,
@@ -633,8 +638,9 @@ export const homeService = {
           hypothesisId: 'H-UI1',
           location: 'homeService.ts:rsiMulti',
           message: 'analyzed_pairs',
-          data: {
+            data: {
             running,
+            openTradeCount,
             pickMode: picked.pickMode,
             pairCount: analyzeIds.length,
             scanCount: scanIds.length,
