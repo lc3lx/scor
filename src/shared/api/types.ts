@@ -213,6 +213,7 @@ export type TradeDto = {
   errorCode: string | null;
   createdAt: string;
   updatedAt: string;
+  strategyId?: string | null;
 };
 
 export type TradeListResponse = {

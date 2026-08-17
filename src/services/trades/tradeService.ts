@@ -87,7 +87,7 @@ function mapTrade(dto: TradeDto): TradeRecord {
     status === 'running'
       ? Math.max(0, Math.ceil((openedAt + durationSec * 1000 - Date.now()) / 1000))
       : undefined;
-  const isBot = (dto.strategyId ?? '').toLowerCase() === 'rsi';
+  const isBot = (dto.strategyId ?? 'rsi').toLowerCase() === 'rsi';
   return {
     id: dto.id,
     pair: dto.asset,
