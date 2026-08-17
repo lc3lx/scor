@@ -1,4 +1,3 @@
-import { Icon } from '@components/atoms/Icon';
 import { Text } from '@components/atoms/Text';
 import { CandlestickChart } from '@components/organisms/CandlestickChart';
 import { useEffect, useState } from 'react';
@@ -34,7 +33,7 @@ function formatEntryTime(iso: string): string {
   });
 }
 
-/** A read-only market monitor. Scar Alpha opens and closes trades autonomously. */
+/** Read-only market chart — bot places trades; no manual pair/amount/expiry controls. */
 export function BinollaTradingCardSection({ content }: BinollaTradingCardSectionProps) {
   const t = useT();
   const last = content.candleData[content.candleData.length - 1];
@@ -80,30 +79,8 @@ export function BinollaTradingCardSection({ content }: BinollaTradingCardSection
   return (
     <section className={styles.section} aria-label={t('nav.trading')}>
       <article className={styles.card}>
-        <header className={styles.header}>
-          <div className={styles.platform}>
-            <div className={styles.platformIcon}>
-              <Icon src={content.platformIconSrc} decorative className={styles.platformIconImage} />
-            </div>
-            <div>
-              <Text variant="caption" tone="primary" className={styles.platformLabel}>
-                {content.platformLabel}
-              </Text>
-              <Text variant="caption-xs" tone="muted" className={styles.monitorLabel}>
-                {t('trading.monitorOnly')}
-              </Text>
-            </div>
-          </div>
-          <Text variant="caption-xs" tone="caption" className={styles.balance}>
-            {content.balancePrefix}{' '}
-            <Text as="span" variant="caption-xs" tone="primary">
-              {content.balanceValue}
-            </Text>
-          </Text>
-        </header>
-
-        <div className={styles.marketBar}>
-          <div>
+        <div className={styles.statusBar}>
+          <div className={styles.statusLeft}>
             <Text variant="body-sm" tone="primary" className={styles.pairName}>
               {pair}
               {content.pairSuffix ? ` · ${content.pairSuffix}` : ''}
@@ -112,10 +89,12 @@ export function BinollaTradingCardSection({ content }: BinollaTradingCardSection
               {content.priceDisplay}
             </p>
           </div>
-          <span className={styles.liveBadge} aria-label={t('trading.liveMarket')}>
-            <span className={styles.liveDot} />
-            {t('trading.liveMarket')}
-          </span>
+          <Text variant="caption-xs" tone="caption" className={styles.balance}>
+            {content.balancePrefix}{' '}
+            <Text as="span" variant="caption-xs" tone="primary">
+              {content.balanceValue}
+            </Text>
+          </Text>
         </div>
 
         {active ? (
@@ -139,7 +118,7 @@ export function BinollaTradingCardSection({ content }: BinollaTradingCardSection
           {content.candleData.length > 0 ? (
             <CandlestickChart
               data={content.candleData}
-              height={440}
+              height={560}
               visibleBars={48}
               className={styles.chart}
             />

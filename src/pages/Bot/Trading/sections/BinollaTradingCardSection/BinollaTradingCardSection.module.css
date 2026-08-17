@@ -17,59 +17,19 @@
   border-radius: 12px;
 }
 
-.header,
-.marketBar {
+.statusBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-shrink: 0;
   padding: 10px 12px;
   background: #1e222d;
   border-bottom: 1px solid rgba(42, 46, 57, 0.95);
 }
 
-.platform {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.statusLeft {
   min-width: 0;
-}
-
-.platformIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: #ffffff;
-  border-radius: 7px;
-}
-
-.platformIconImage {
-  width: 8px;
-  height: 13px;
-}
-
-.platformLabel,
-.monitorLabel {
-  display: block;
-  line-height: 1.25;
-}
-
-.monitorLabel {
-  margin-top: 2px;
-  font-size: 10px;
-}
-
-.balance {
-  flex-shrink: 0;
-  color: #787b86;
-}
-
-.marketBar {
-  min-height: 48px;
-  padding-block: 8px;
-  background: #181b24;
 }
 
 .pairName {
@@ -93,35 +53,17 @@
   color: #ef4444;
 }
 
-.liveBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.balance {
   flex-shrink: 0;
-  padding: 5px 7px;
-  border: 1px solid rgba(18, 230, 85, 0.34);
-  border-radius: 5px;
-  background: rgba(18, 230, 85, 0.08);
-  color: #12e655;
-  font-family: var(--font-family-primary);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.liveDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #12e655;
-  box-shadow: 0 0 7px rgba(18, 230, 85, 0.85);
+  color: #787b86;
 }
 
 .activeTrade {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 0 12px 10px;
+  flex-shrink: 0;
+  margin: 8px 12px 0;
   padding: 8px 10px;
   border: 1px solid rgba(18, 230, 85, 0.38);
   border-radius: 8px;
@@ -152,8 +94,7 @@
 .chartWrap {
   display: flex;
   flex: 1;
-  /* 100px less top + 100px less bottom vs prior 640 / (100dvh - 220) */
-  min-height: min(440px, calc(100dvh - 420px));
+  min-height: min(560px, calc(100dvh - 210px));
   overflow: hidden;
   background: #131722;
 }

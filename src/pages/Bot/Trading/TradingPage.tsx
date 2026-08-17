@@ -1,15 +1,14 @@
-import { brandAssets } from '@assets/index';
 import { PageContent } from '@components/layouts/PageContent';
 import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
-import { HomeHeader } from '@components/organisms/HomeHeader';
 import { useT } from '@shared/i18n';
 import { useTradingData } from './hooks/useTradingData';
 import { BinollaTradingCardSection } from './sections/BinollaTradingCardSection';
+import { TradingTopBarSection } from './sections/TradingTopBarSection';
 import styles from './TradingPage.module.css';
 
 export default function TradingPage() {
   const t = useT();
-  const { data } = useTradingData();
+  const { data, reload } = useTradingData();
 
   if (!data) {
     return (
@@ -17,11 +16,6 @@ export default function TradingPage() {
         <div className={styles.scroll}>
           <BackgroundGlow variant="top-right" />
           <PageContent className={styles.content}>
-            <HomeHeader
-              brandName={t('home.bot.name')}
-              logoSrc={brandAssets.scarTile}
-              className={styles.brandHeader}
-            />
             <p className={styles.loading}>{t('trading.loading')}</p>
           </PageContent>
         </div>
@@ -34,11 +28,7 @@ export default function TradingPage() {
       <div className={styles.scroll}>
         <BackgroundGlow variant="top-right" />
         <PageContent className={styles.content}>
-          <HomeHeader
-            brandName={t('home.bot.name')}
-            logoSrc={brandAssets.scarTile}
-            className={styles.brandHeader}
-          />
+          <TradingTopBarSection content={data.topBar} onRefresh={() => void reload()} />
           <BinollaTradingCardSection content={data.binollaCard} />
         </PageContent>
       </div>
