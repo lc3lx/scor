@@ -547,7 +547,7 @@ export const homeService = {
       const running = runtimeState.botStatus === 'running';
       const expiryCandles = expiryCandlesFromDurationId(runtimeState.durationId);
       // Placement is server-side (BotSignalWorker). Home shows a live rotating snapshot.
-      const signalOpts = { expiryCandles, backtestCandles: 60, autoExecute: false as const };
+      const signalOpts = { expiryCandles, backtestCandles: 200, autoExecute: false as const };
       const scanIds = rotatingBatch(analyzeIds, 8);
       const signalResults =
         scanIds.length && canBrowseMarket(status?.botAccess)
@@ -560,7 +560,25 @@ export const homeService = {
             )
           : [];
       const picked = pickLiveDisplaySignal(signalResults);
-      const signal = picked.signal;
+      let signal = picked.signal;
+      if (
+        running &&
+        signal &&
+        (signal.signal === 'Call' || signal.signal === 'Put') &&
+        signal.backtest?.passed === true
+      ) {
+        try {
+          const placed = await strategiesApi.rsiSignal(
+            signal.asset,
+            60,
+            timedSignal(MARKET_FETCH_MS),
+            { ...signalOpts, autoExecute: true },
+          );
+          signal = placed;
+        } catch {
+          /* worker may still place */
+        }
+      }
       const pairLabel = pairDisplayName(
         signal?.asset ?? scanIds[0] ?? '',
         base.sheets.tradingPair.options,
@@ -586,6 +604,7 @@ export const homeService = {
             liveRsi: signal?.liveRsi ?? null,
             closedRsi: signal?.rsi ?? null,
             automationError: signal?.automationError ?? null,
+            automatedTradeId: signal?.automatedTradeId ?? null,
             rsiEqual: signal ? Number(signal.liveRsi ?? signal.rsi) === Number(signal.rsi) : null,
             best: signal
               ? {
