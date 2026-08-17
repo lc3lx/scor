@@ -612,6 +612,31 @@ export const homeService = {
       const picked = pickLiveDisplaySignal(signalResults);
       let signal = picked.signal;
       if (running && openTradeCount === 0 && signal && isActionableSetup(signal)) {
+        // #region agent log
+        fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1892a4' },
+          body: JSON.stringify({
+            sessionId: '1892a4',
+            runId: 'rsi-zone',
+            hypothesisId: 'H-E',
+            location: 'homeService.ts:autoExecute',
+            message: 'ui_auto_execute',
+            data: {
+              asset: signal.asset,
+              signal: signal.signal,
+              liveRsi: signal.liveRsi ?? null,
+              closedRsi: signal.rsi,
+              putOk: isLivePutRsi(signal),
+              callOk: isLiveCallRsi(signal),
+              violation:
+                (signal.signal === 'Put' && !isLivePutRsi(signal)) ||
+                (signal.signal === 'Call' && !isLiveCallRsi(signal)),
+            },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
         try {
           const placed = await strategiesApi.rsiSignal(
             signal.asset,
