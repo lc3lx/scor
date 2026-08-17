@@ -36,6 +36,12 @@
   padding-bottom: 0;
 }
 
+.brandHeader {
+  flex-shrink: 0;
+  padding-inline: var(--layout-page-padding-x);
+  padding-bottom: var(--space-3);
+}
+
 .loading {
   margin: 48px 16px;
   text-align: center;

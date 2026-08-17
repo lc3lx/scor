@@ -152,7 +152,8 @@
 .chartWrap {
   display: flex;
   flex: 1;
-  min-height: min(640px, calc(100dvh - 220px));
+  /* 100px less top + 100px less bottom vs prior 640 / (100dvh - 220) */
+  min-height: min(440px, calc(100dvh - 420px));
   overflow: hidden;
   background: #131722;
 }

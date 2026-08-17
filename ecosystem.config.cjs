@@ -22,6 +22,10 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '256M',
+      // npx/serve can leave children; don't hang forever on restart/delete
+      kill_timeout: 8000,
+      kill_retry_time: 100,
+      wait_ready: false,
       error_file: path.join(__dirname, 'logs', 'pm2-error.log'),
       out_file: path.join(__dirname, 'logs', 'pm2-out.log'),
       merge_logs: true,
