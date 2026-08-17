@@ -173,13 +173,23 @@ function pairDisplayName(
   return options.find((o) => o.id === id)?.title ?? id;
 }
 
+function isLiveExtreme(signal: StrategySignalResponse): boolean {
+  const rsi = Number(signal.liveRsi ?? signal.rsi);
+  return Number.isFinite(rsi) && (rsi <= 25 || rsi >= 75);
+}
+
 function pickLiveDisplaySignal(
   results: Array<StrategySignalResponse | null>,
 ): { signal: StrategySignalResponse | null; pickMode: string } {
-  const valid = results.filter((s): s is StrategySignalResponse => s != null && Number(s.rsi) > 0);
+  const valid = results.filter(
+    (s): s is StrategySignalResponse =>
+      s != null && Number.isFinite(Number(s.liveRsi ?? s.rsi)),
+  );
   if (valid.length === 0) return { signal: null, pickMode: 'none' };
   const actionable = valid.filter(
-    (s) => (s.signal === 'Call' || s.signal === 'Put') && s.backtest?.passed === true,
+    (s) =>
+      s.backtest?.passed === true &&
+      (s.signal === 'Call' || s.signal === 'Put' || isLiveExtreme(s)),
   );
   if (actionable.length > 0) {
     const signal = [...actionable].sort((a, b) => {
@@ -564,8 +574,8 @@ export const homeService = {
       if (
         running &&
         signal &&
-        (signal.signal === 'Call' || signal.signal === 'Put') &&
-        signal.backtest?.passed === true
+        signal.backtest?.passed === true &&
+        (signal.signal === 'Call' || signal.signal === 'Put' || isLiveExtreme(signal))
       ) {
         try {
           const placed = await strategiesApi.rsiSignal(
