@@ -21,13 +21,17 @@ export function useHomeBotControls(homeData: UseHomeDataReturn) {
     }
     setIsUpdating(true);
     try {
+      const previousStopReason = homeData.data?.runtime.stopReason;
       await homeData.updateRuntime({ botStatus });
       homeData.refresh();
       setFeedback({
         tone: 'success',
         message:
           botStatus === 'running'
-            ? t('home.controls.started')
+            ? previousStopReason === 'DAILY_PROFIT_TARGET_REACHED' ||
+              previousStopReason === 'DAILY_LOSS_LIMIT_REACHED'
+              ? t('home.controls.startedAfterLimit')
+              : t('home.controls.started')
             : botStatus === 'paused'
               ? t('home.controls.paused')
               : t('home.controls.stopped'),

@@ -2,10 +2,9 @@ import { Input } from '@components/atoms/Input';
 import { SelectionOption } from '@components/molecules/SelectionOption';
 import { Text } from '@components/atoms/Text';
 import { useT } from '@shared/i18n';
+import { MAX_BOT_PAIRS } from '../../data/homeService';
 import type { TradingPairSheetContent } from '../../types';
 import styles from './TradingPairSheetContent.module.css';
-
-const MAX_BOT_PAIRS = 50;
 
 export type TradingPairSheetContentProps = {
   content: TradingPairSheetContent;

@@ -127,6 +127,8 @@ export type BotRuntimeResponse = {
   signalConfirmationEnabled: boolean;
   riskLevel: 'risk-low' | 'risk-medium' | 'risk-high' | string;
   notificationsEnabled: boolean;
+  pnlSessionStartedAt?: string | null;
+  stopReason?: string | null;
 };
 
 export type StrategySignalResponse = {

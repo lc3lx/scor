@@ -448,6 +448,8 @@ export const ar: EnDictionary = {
   'home.bot.statusRsi': 'مراقبة RSI',
   'home.bot.statusPaused': 'متوقف مؤقتاً',
   'home.bot.statusManual': 'تداول يدوي',
+  'home.bot.statusDailyProfit': 'وصل حد الربح',
+  'home.bot.statusDailyLoss': 'وصل حد الخسارة',
   'home.stat.signal': 'الإشارة',
   'home.stat.strength': 'القوة',
   'home.stat.updated': 'التحديث',
@@ -459,6 +461,7 @@ export const ar: EnDictionary = {
   'home.stat.active': 'نشط',
   'home.stat.winRate': 'معدل الفوز',
   'home.stat.candle': 'الشمعة',
+  'home.stat.backtest': 'الباك تست',
   'home.row.marketType': 'نوع السوق',
   'home.row.tradingPair': 'زوج التداول',
   'home.row.indicator': 'المؤشر الفني',
@@ -488,6 +491,10 @@ export const ar: EnDictionary = {
   'home.disclaimer.rejected': 'تم رفض هذا الحساب من قبل المسؤول.',
   'home.disclaimer.sessionExpired':
     'انتهت جلسة بينولا. أعد ربط SSID من إعدادات الحساب.',
+  'home.disclaimer.dailyProfitReached':
+    'وصل البوت لحد الربح اليومي وتوقف عن التداول. اضغط بدء للموافقة على جلسة جديدة — عدّاد الربح/الخسارة يرجع من الصفر.',
+  'home.disclaimer.dailyLossReached':
+    'وصل البوت لحد الخسارة اليومي وتوقف عن التداول. اضغط بدء للموافقة على جلسة جديدة — عدّاد الربح/الخسارة يرجع من الصفر.',
   'home.disclaimer.ok':
     'كل بيانات السوق والأوامر من بينولا (تجريبي). يُحسب RSI من شموع بينولا الحية. البدء/الإيقاف المؤقت/الإيقاف الآلي قريباً — نفّذ الصفقات يدوياً من التداول.',
   'home.sheet.settings': 'إعدادات البوت',
@@ -517,6 +524,8 @@ export const ar: EnDictionary = {
   'home.controls.runningNote': 'البوت يعمل — يراقب شموع الدقيقة المغلقة وينتظر إشارة RSI صالحة.',
   'home.controls.selectPair': 'اختر زوج التداول قبل بدء البوت.',
   'home.controls.started': 'تم بدء البوت بنجاح، وهو يراقب الآن إشارات RSI الصالحة.',
+  'home.controls.startedAfterLimit':
+    'جلسة جديدة بدأت. عدّاد الربح/الخسارة اليومي رجع من الصفر. البوت يتداول حتى يصل للحدود من جديد.',
   'home.controls.paused': 'تم إيقاف البوت مؤقتاً. لن تُفتح صفقات آلية جديدة.',
   'home.controls.stopped': 'تم إيقاف البوت بنجاح.',
   'home.controls.saved': 'تم حفظ إعدادات البوت بنجاح.',
@@ -566,6 +575,7 @@ export const ar: EnDictionary = {
   'home.strategy.stat.status': 'الحالة',
   'home.strategy.selectable': 'قابل للاختيار',
   'home.strategy.successRate': 'نجاح ~{n}%',
+  'home.strategy.filterFailed': 'فلتر رافض ~{n}%',
   'home.strategy.active': 'نشط',
   'home.strategy.rsi.indicator': 'RSI 14 · 25 / 75 · دقيقة واحدة',
   'home.strategy.rsi.expiry': '3–5 شموع (الافتراضي 5)',
@@ -574,7 +584,7 @@ export const ar: EnDictionary = {
   'home.strategy.rsi.success': 'التحقق التاريخي مطلوب',
   'home.strategy.empty': 'لا استراتيجيات من الخادم بعد.',
   'home.pairs.empty': 'لا أزواج سوق بعد. اربط بينولا وانتظر الأصول.',
-  'home.pairs.multiHint': 'اختر زوجاً أو أكثر ({{count}}/{{max}}). أغلق الورقة عند الانتهاء.',
+  'home.pairs.multiHint': 'اختر زوجاً أو أكثر ({{count}} محدد). استخدم تحديد الكل لكل الأزواج المتاحة.',
   'home.pairs.selectAll': 'تحديد الكل',
   'home.pairs.clearAll': 'إلغاء التحديد',
   'home.tradeAmount.empty': 'حدد المبلغ من صفحة التداول عند تنفيذ صفقة تجريبية.',

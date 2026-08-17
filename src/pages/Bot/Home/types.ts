@@ -216,6 +216,8 @@ export type HomePageContent = {
 
 export type HomeRuntimeState = {
   botStatus: BotRunStatus;
+  /** Server stop reason e.g. DAILY_PROFIT_TARGET_REACHED — cleared on Start. */
+  stopReason?: string | null;
   marketTypeId: string;
   /** Primary pair (first selected) — chart / summary */
   tradingPairId: string;

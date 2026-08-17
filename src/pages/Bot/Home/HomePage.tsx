@@ -4,6 +4,7 @@ import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { BottomSheet } from '@components/organisms/BottomSheet';
 import { useT } from '@shared/i18n';
 import { getHomeSheetTitles } from './data/home.mock';
+import { MAX_BOT_PAIRS } from './data/homeService';
 import { resolveChartSheetTitle } from './utils/chartTitle';
 import { useHomeBotControls } from './hooks/useHomeBotControls';
 import { useHomeData } from './hooks/useHomeData';
@@ -139,7 +140,7 @@ export default function HomePage() {
             : [];
       const next = current.includes(optionId)
         ? current.filter((id) => id !== optionId)
-        : current.length >= 50
+        : current.length >= MAX_BOT_PAIRS
           ? current
           : [...current, optionId];
       await updateRuntime({
@@ -151,7 +152,7 @@ export default function HomePage() {
   );
 
   const handleTradingPairSelectAll = useCallback(async () => {
-    const ids = filteredPairOptions.map((option) => option.id).slice(0, 50);
+    const ids = filteredPairOptions.map((option) => option.id);
     await updateRuntime({
       tradingPairIds: ids,
       tradingPairId: ids[0] ?? '',

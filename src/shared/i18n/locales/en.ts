@@ -456,6 +456,8 @@ export const en = {
   'home.bot.statusRsi': 'RSI Monitor',
   'home.bot.statusPaused': 'Paused',
   'home.bot.statusManual': 'Manual Trade',
+  'home.bot.statusDailyProfit': 'Daily profit hit',
+  'home.bot.statusDailyLoss': 'Daily loss hit',
   'home.stat.signal': 'Signal',
   'home.stat.strength': 'Strength',
   'home.stat.updated': 'Updated',
@@ -467,6 +469,7 @@ export const en = {
   'home.stat.active': 'Active',
   'home.stat.winRate': 'Win Rate',
   'home.stat.candle': 'Candle',
+  'home.stat.backtest': 'Backtest',
   'home.row.marketType': 'Market Type',
   'home.row.tradingPair': 'Trading Pair',
   'home.row.indicator': 'Technical Indicator',
@@ -496,6 +499,10 @@ export const en = {
   'home.disclaimer.rejected': 'This account was rejected by an administrator.',
   'home.disclaimer.sessionExpired':
     'Your Binolla session expired. Reconnect your SSID in Account settings.',
+  'home.disclaimer.dailyProfitReached':
+    'Daily profit target reached. Bot stopped trading. Press Start to approve a new session — profit/loss counters reset to zero.',
+  'home.disclaimer.dailyLossReached':
+    'Daily loss limit reached. Bot stopped trading. Press Start to approve a new session — profit/loss counters reset to zero.',
   'home.disclaimer.ok':
     'All market data and orders come from Binolla (Demo). RSI is computed from live Binolla candles. Auto Start/Pause/Stop is Coming Soon — place Demo trades manually on Trading.',
   'home.sheet.settings': 'Bot Settings',
@@ -525,6 +532,8 @@ export const en = {
   'home.controls.runningNote': 'Bot is running — monitoring closed 1m candles and waiting for a valid RSI setup.',
   'home.controls.selectPair': 'Select a trading pair before starting the bot.',
   'home.controls.started': 'Bot started successfully. It is now monitoring valid RSI signals.',
+  'home.controls.startedAfterLimit':
+    'New session started. Daily profit/loss counters reset to zero. Bot will trade until the limits again.',
   'home.controls.paused': 'Bot paused. No new automated trades will be opened.',
   'home.controls.stopped': 'Bot stopped successfully.',
   'home.controls.saved': 'Bot settings saved successfully.',
@@ -574,6 +583,7 @@ export const en = {
   'home.strategy.stat.status': 'Status',
   'home.strategy.selectable': 'Selectable',
   'home.strategy.successRate': 'Success ~{n}%',
+  'home.strategy.filterFailed': 'Filter fail ~{n}%',
   'home.strategy.active': 'Active',
   'home.strategy.rsi.indicator': 'RSI 14 · 25 / 75 · 1m',
   'home.strategy.rsi.expiry': '3–5 candles (default 5)',
@@ -582,7 +592,7 @@ export const en = {
   'home.strategy.rsi.success': 'Historical validation required',
   'home.strategy.empty': 'No strategies from server yet.',
   'home.pairs.empty': 'No market pairs yet. Connect Binolla and wait for assets.',
-  'home.pairs.multiHint': 'Select one or more pairs ({{count}}/{{max}}). Close the sheet when done.',
+  'home.pairs.multiHint': 'Select one or more pairs ({{count}} selected). Use Select all for every available pair.',
   'home.pairs.selectAll': 'Select all',
   'home.pairs.clearAll': 'Clear all',
   'home.tradeAmount.empty': 'Set amount on the Trading page when placing a Demo order.',

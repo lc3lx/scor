@@ -24,7 +24,7 @@ import {
 } from '@shared/trades/tradeAggregates';
 import { t } from '@shared/i18n';
 
-const MAX_BOT_PAIRS = 50;
+export const MAX_BOT_PAIRS = 2000;
 
 function normalizePairIds(ids: string[], valid?: Set<string>, max = MAX_BOT_PAIRS): string[] {
   const out: string[] = [];
@@ -62,6 +62,14 @@ function seedRuntimeFromMock(): HomeRuntimeState {
       riskOptions: [...settings.riskOptions],
     },
   };
+}
+
+/** Map bot duration (180/240/300) to RSI backtest expiry candles 3–5 (default 5). */
+function expiryCandlesFromDurationId(durationId: string): 3 | 4 | 5 {
+  const seconds = Number(durationId.replace('duration-', '')) || 300;
+  const candles = Math.round(seconds / 60);
+  if (candles === 3 || candles === 4 || candles === 5) return candles;
+  return 5;
 }
 
 let runtimeState: HomeRuntimeState = seedRuntimeFromMock();
@@ -212,6 +220,7 @@ export const homeService = {
 
       if (botRuntime) {
         runtimeState.botStatus = botRuntime.state.toLowerCase() as HomeRuntimeState['botStatus'];
+        runtimeState.stopReason = botRuntime.stopReason ?? null;
         const fromBot = normalizePairIds(
           botRuntime.assets?.length
             ? botRuntime.assets
@@ -365,34 +374,39 @@ export const homeService = {
       const analyzeIds =
         pairIds.length > 0 ? pairIds : asset ? [asset] : [];
       const running = runtimeState.botStatus === 'running';
+      const expiryCandles = expiryCandlesFromDurationId(runtimeState.durationId);
+      const signalOpts = { expiryCandles, autoExecute: false as const };
       const signalResults =
         analyzeIds.length && canBrowseMarket(status?.botAccess)
           ? await Promise.all(
               analyzeIds.map((symbol) =>
                 strategiesApi
-                  .rsiSignal(symbol, 60, timedSignal(MARKET_FETCH_MS), {
-                    autoExecute: false,
-                  })
+                  .rsiSignal(symbol, 60, timedSignal(MARKET_FETCH_MS), signalOpts)
                   .catch(() => null),
               ),
             )
           : [];
       const actionable = signalResults.filter(
         (s): s is NonNullable<typeof s> =>
-          Boolean(s && (s.signal === 'Call' || s.signal === 'Put')),
+          Boolean(
+            s &&
+              (s.signal === 'Call' || s.signal === 'Put') &&
+              s.backtest?.passed === true,
+          ),
       );
       const scored = [...actionable].sort((a, b) => {
         const rateA = a.backtest?.successRate ?? 0;
         const rateB = b.backtest?.successRate ?? 0;
         if (rateB !== rateA) return rateB - rateA;
         const edge = (s: (typeof actionable)[number]) =>
-          s.signal === 'Call' ? 30 - s.rsi : s.signal === 'Put' ? s.rsi - 70 : 0;
+          s.signal === 'Call' ? 25 - s.rsi : s.signal === 'Put' ? s.rsi - 75 : 0;
         return edge(b) - edge(a);
       });
       let signal = scored[0] ?? signalResults.find((s) => s) ?? null;
       if (running && scored[0]) {
         const executed = await strategiesApi
           .rsiSignal(scored[0].asset, 60, timedSignal(MARKET_FETCH_MS), {
+            expiryCandles,
             autoExecute: true,
           })
           .catch(() => scored[0]);
@@ -412,7 +426,16 @@ export const homeService = {
             running,
             pairCount: analyzeIds.length,
             pairs: analyzeIds,
-            best: signal ? { asset: signal.asset, signal: signal.signal, rsi: signal.rsi } : null,
+            expiryCandles,
+            best: signal
+              ? {
+                  asset: signal.asset,
+                  signal: signal.signal,
+                  rsi: signal.rsi,
+                  successRate: signal.backtest?.successRate ?? null,
+                  passed: signal.backtest?.passed ?? null,
+                }
+              : null,
             candidates: actionable.length,
           },
           timestamp: Date.now(),
@@ -420,6 +443,14 @@ export const homeService = {
       }).catch(() => {});
       // #endregion
       if (signal) {
+        const rate = signal.backtest?.successRate;
+        const passed = signal.backtest?.passed === true;
+        const rateLabel =
+          rate == null
+            ? '—'
+            : passed
+              ? t('home.strategy.successRate', { n: Math.round(rate) })
+              : t('home.strategy.filterFailed', { n: Math.round(rate) });
         base.botEngine.stats = [
           {
             id: 'signal',
@@ -428,6 +459,12 @@ export const homeService = {
             valueTone: signal.signal.toLowerCase() === 'call' ? 'success' : 'primary',
           },
           { id: 'strength', label: t('common.rsi'), value: signal.rsi.toFixed(2) },
+          {
+            id: 'backtest',
+            label: t('home.stat.backtest'),
+            value: rateLabel,
+            valueTone: passed ? 'success' : 'primary',
+          },
           {
             id: 'updated',
             label: t('home.stat.candle'),
@@ -438,6 +475,7 @@ export const homeService = {
         base.botEngine.stats = [
           { id: 'signal', label: t('home.stat.signal'), value: t('common.none') },
           { id: 'strength', label: t('common.rsi'), value: '—' },
+          { id: 'backtest', label: t('home.stat.backtest'), value: '—' },
           { id: 'updated', label: t('home.stat.candle'), value: '—' },
         ];
       }
@@ -499,8 +537,24 @@ export const homeService = {
         base.disclaimer = t('home.disclaimer.rejected');
       } else if (status?.botAccess === 'SessionExpired') {
         base.disclaimer = t('home.disclaimer.sessionExpired');
+      } else if (runtimeState.stopReason === 'DAILY_PROFIT_TARGET_REACHED') {
+        base.disclaimer = t('home.disclaimer.dailyProfitReached');
+      } else if (runtimeState.stopReason === 'DAILY_LOSS_LIMIT_REACHED') {
+        base.disclaimer = t('home.disclaimer.dailyLossReached');
       } else {
         base.disclaimer = t('home.disclaimer.ok');
+      }
+
+      if (runtimeState.stopReason === 'DAILY_PROFIT_TARGET_REACHED') {
+        base.botEngine.statusLabel = t('home.bot.statusDailyProfit');
+        base.botEngine.statusTone = 'success';
+      } else if (runtimeState.stopReason === 'DAILY_LOSS_LIMIT_REACHED') {
+        base.botEngine.statusLabel = t('home.bot.statusDailyLoss');
+        base.botEngine.statusTone = 'danger';
+      } else {
+        const statusDisplay = getBotStatusDisplay()[runtimeState.botStatus];
+        base.botEngine.statusLabel = statusDisplay.label;
+        base.botEngine.statusTone = statusDisplay.tone;
       }
 
       base.riskLimits = base.riskLimits.map((limit) => ({
@@ -527,9 +581,6 @@ export const homeService = {
       };
 
       runtimeState.marketTypeId = 'binolla-market';
-      const statusDisplay = getBotStatusDisplay()[runtimeState.botStatus];
-      base.botEngine.statusLabel = statusDisplay.label;
-      base.botEngine.statusTone = statusDisplay.tone;
     } catch (error) {
       if (error instanceof ApiClientError) {
         base.disclaimer = error.message;
@@ -615,6 +666,7 @@ export const homeService = {
       partial = {
         ...partial,
         botStatus: persistedBot.state.toLowerCase() as HomeRuntimeState['botStatus'],
+        stopReason: persistedBot.stopReason ?? null,
         tradingPairIds: persistedPairs,
         tradingPairId: persistedPairs[0] ?? persistedBot.asset ?? asset,
         tradeAmountId: `amount-${persistedBot.amount}`,
