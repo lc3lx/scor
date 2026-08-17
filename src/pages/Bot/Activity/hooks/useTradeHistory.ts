@@ -38,10 +38,27 @@ export function useTradeHistory(filter: TradeListFilter) {
       });
     }, 8_000);
 
+    const tickId = window.setInterval(() => {
+      if (!active) return;
+      setResult((current) => {
+        if (!current?.items.some((t) => t.status === 'running')) return current;
+        return {
+          ...current,
+          items: current.items.map((t) => {
+            if (t.status !== 'running') return t;
+            const dur = t.durationSeconds ?? 300;
+            const left = Math.max(0, Math.ceil((t.openedAt + dur * 1000 - Date.now()) / 1000));
+            return left === t.liveTimerSeconds ? t : { ...t, liveTimerSeconds: left };
+          }),
+        };
+      });
+    }, 1000);
+
     return () => {
       active = false;
       unsubscribe();
       window.clearInterval(pollId);
+      window.clearInterval(tickId);
     };
   }, [cacheKey, filter]);
 

@@ -13,6 +13,8 @@ export type TradeRecord = {
   strategy: string;
   indicator: string;
   duration: string;
+  /** Raw duration for live countdown. */
+  durationSeconds?: number;
   direction: TradeDirection;
   amount: number;
   stakeLabel: string;

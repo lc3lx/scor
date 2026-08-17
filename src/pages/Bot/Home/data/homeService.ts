@@ -12,7 +12,7 @@ import {
 import type { TradeDto } from '@shared/api';
 import { canBrowseMarket } from '@shared/access/botAccess';
 import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
-import { getAccountStatusCached } from '@shared/api/botSessionCache';
+import { getAccountStatusCached, invalidateBotSessionCache } from '@shared/api/botSessionCache';
 import {
   pickPreferredMarketAsset,
 } from '@shared/market/preferAsset';
@@ -24,7 +24,39 @@ import {
 } from '@shared/trades/tradeAggregates';
 import { t } from '@shared/i18n';
 
-export const MAX_BOT_PAIRS = 2000;
+const MAX_BOT_PAIRS = 2000;
+const DESIRED_RUNNING_KEY = 'scar-alpha-bot-desired-running';
+
+export { MAX_BOT_PAIRS };
+
+type DesiredRunningSnapshot = {
+  assets: string[];
+  amount: number;
+  durationSeconds: number;
+  dailyProfitTarget: number;
+  dailyLossLimit: number;
+};
+
+function readDesiredRunning(): DesiredRunningSnapshot | null {
+  try {
+    const raw = localStorage.getItem(DESIRED_RUNNING_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DesiredRunningSnapshot;
+    if (!Array.isArray(parsed.assets) || parsed.assets.length === 0) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeDesiredRunning(snapshot: DesiredRunningSnapshot | null): void {
+  try {
+    if (!snapshot) localStorage.removeItem(DESIRED_RUNNING_KEY);
+    else localStorage.setItem(DESIRED_RUNNING_KEY, JSON.stringify(snapshot));
+  } catch {
+    /* ignore */
+  }
+}
 
 function normalizePairIds(ids: string[], valid?: Set<string>, max = MAX_BOT_PAIRS): string[] {
   const out: string[] = [];
@@ -210,7 +242,7 @@ export const homeService = {
     let pairIds = [...(runtimeState.tradingPairIds ?? [])];
 
     try {
-      const [status, balance, strategies, tradeBundle, botRuntime] = await Promise.all([
+      const [status, balance, strategies, tradeBundle, botRuntimeInitial] = await Promise.all([
         getAccountStatusCached().catch(() => null),
         binollaApi.balance(timedSignal(MARKET_FETCH_MS)).catch(() => null),
         strategiesApi.list().catch(() => null),
@@ -218,9 +250,17 @@ export const homeService = {
         botApi.status().catch(() => null),
       ]);
 
+      let botRuntime = botRuntimeInitial;
+
       if (botRuntime) {
         runtimeState.botStatus = botRuntime.state.toLowerCase() as HomeRuntimeState['botStatus'];
         runtimeState.stopReason = botRuntime.stopReason ?? null;
+        if (
+          botRuntime.stopReason === 'DAILY_PROFIT_TARGET_REACHED' ||
+          botRuntime.stopReason === 'DAILY_LOSS_LIMIT_REACHED'
+        ) {
+          writeDesiredRunning(null);
+        }
         const fromBot = normalizePairIds(
           botRuntime.assets?.length
             ? botRuntime.assets
@@ -240,6 +280,43 @@ export const homeService = {
         runtimeState.tradeAmountId = `amount-${botRuntime.amount}`;
         runtimeState.durationId = `duration-${botRuntime.durationSeconds}`;
         runtimeState.settings = applyBotPreferences(runtimeState.settings, botRuntime);
+
+        // Auto-resume: user wanted Running but server lost state (API restart) or soft-stopped.
+        const desired = readDesiredRunning();
+        const serverStopped =
+          botRuntime.state === 'Stopped' &&
+          botRuntime.stopReason !== 'DAILY_PROFIT_TARGET_REACHED' &&
+          botRuntime.stopReason !== 'DAILY_LOSS_LIMIT_REACHED';
+        if (desired && serverStopped) {
+          try {
+            const resumed = await botApi.start(
+              desired.assets,
+              desired.amount,
+              desired.durationSeconds,
+              desired.dailyProfitTarget,
+              desired.dailyLossLimit,
+              toBotPreferences(runtimeState.settings),
+            );
+            botRuntime = resumed;
+            runtimeState.botStatus = 'running';
+            runtimeState.stopReason = null;
+            pairIds = normalizePairIds(resumed.assets?.length ? resumed.assets : desired.assets);
+            runtimeState.tradingPairIds = pairIds;
+            runtimeState.tradingPairId = pairIds[0] ?? '';
+            asset = pairIds[0] ?? '';
+          } catch {
+            /* next poll retries */
+          }
+        }
+
+        // Session soft-fail while bot Running — silent reconnect so trading resumes alone.
+        if (
+          runtimeState.botStatus === 'running' &&
+          (status?.botAccess === 'SessionExpired' || status?.botAccess === 'BinollaNotConnected')
+        ) {
+          await binollaApi.reconnect().catch(() => undefined);
+          invalidateBotSessionCache();
+        }
       }
 
       const assets =
@@ -375,6 +452,7 @@ export const homeService = {
         pairIds.length > 0 ? pairIds : asset ? [asset] : [];
       const running = runtimeState.botStatus === 'running';
       const expiryCandles = expiryCandlesFromDurationId(runtimeState.durationId);
+      // Placement is server-side (BotSignalWorker) for instant post-close entry — FE only displays.
       const signalOpts = { expiryCandles, autoExecute: false as const };
       const signalResults =
         analyzeIds.length && canBrowseMarket(status?.botAccess)
@@ -402,16 +480,7 @@ export const homeService = {
           s.signal === 'Call' ? 25 - s.rsi : s.signal === 'Put' ? s.rsi - 75 : 0;
         return edge(b) - edge(a);
       });
-      let signal = scored[0] ?? signalResults.find((s) => s) ?? null;
-      if (running && scored[0]) {
-        const executed = await strategiesApi
-          .rsiSignal(scored[0].asset, 60, timedSignal(MARKET_FETCH_MS), {
-            expiryCandles,
-            autoExecute: true,
-          })
-          .catch(() => scored[0]);
-        if (executed) signal = executed;
-      }
+      const signal = scored[0] ?? signalResults.find((s) => s) ?? null;
       // #region agent log
       fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
         method: 'POST',
@@ -632,10 +701,19 @@ export const homeService = {
         dailyLossLimit,
         toBotPreferences(settings),
       );
+      writeDesiredRunning({
+        assets: pairIds,
+        amount,
+        durationSeconds,
+        dailyProfitTarget,
+        dailyLossLimit,
+      });
     } else if (partial.botStatus === 'paused') {
       persistedBot = await botApi.pause();
+      // Keep desired so API restart can restore; pause is intentional but we still want auto-resume to Paused... skip
     } else if (partial.botStatus === 'stopped') {
       persistedBot = await botApi.stop();
+      writeDesiredRunning(null);
     }
     if (
       partial.settings ||

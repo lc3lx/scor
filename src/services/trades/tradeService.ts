@@ -81,6 +81,13 @@ function formatPnl(pnl: number | null, status: string): string | undefined {
 function mapTrade(dto: TradeDto): TradeRecord {
   const status = mapStatus(dto.status, dto.pnl);
   const pnlLabel = formatPnl(dto.pnl, dto.status);
+  const openedAt = new Date(dto.createdAt).getTime() || Date.now();
+  const durationSec = dto.durationSeconds > 0 ? dto.durationSeconds : 60;
+  const remaining =
+    status === 'running'
+      ? Math.max(0, Math.ceil((openedAt + durationSec * 1000 - Date.now()) / 1000))
+      : undefined;
+  const isBot = (dto.strategyId ?? '').toLowerCase() === 'rsi';
   return {
     id: dto.id,
     pair: dto.asset,
@@ -88,21 +95,22 @@ function mapTrade(dto: TradeDto): TradeRecord {
     strategy: 'RSI',
     indicator: 'RSI',
     duration: formatDuration(dto.durationSeconds),
+    durationSeconds: durationSec,
     direction: mapDirection(dto.direction),
     amount: dto.amount,
     stakeLabel: `$${dto.amount}`,
     result: pnlLabel,
     resultTone: dto.pnl !== null && dto.pnl >= 0 ? 'success' : dto.pnl !== null ? 'danger' : undefined,
     status,
-    source: 'user',
+    source: isBot ? 'bot' : 'user',
     timeLabel: formatTime(dto.createdAt),
     isToday: isToday(dto.createdAt),
-    liveTimerSeconds: status === 'running' ? dto.durationSeconds : undefined,
+    liveTimerSeconds: remaining,
     entryTime: formatTime(dto.createdAt),
     exitTime: status === 'running' ? undefined : formatTime(dto.updatedAt),
     signalStrength: '—',
     candleData: [],
-    openedAt: new Date(dto.createdAt).getTime() || Date.now(),
+    openedAt,
   };
 }
 
