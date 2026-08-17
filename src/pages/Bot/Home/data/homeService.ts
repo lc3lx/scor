@@ -597,8 +597,10 @@ export const homeService = {
         ? weekAndMonthSummaries(tradeBundle.items).all.active
         : 0;
       // One live trade at a time — pause Home RSI analysis until it settles.
+      // Worker owns analysis while Running. Home only snapshots 1 pair for the RSI gauge
+      // so it does not fire 8 extra asset/change on the same Binolla session.
       const scanIds =
-        openTradeCount > 0 ? [] : rotatingBatch(analyzeIds, 8);
+        openTradeCount > 0 ? [] : rotatingBatch(analyzeIds, running ? 1 : 8);
       const signalResults =
         scanIds.length && canBrowseMarket(status?.botAccess)
           ? await Promise.all(
