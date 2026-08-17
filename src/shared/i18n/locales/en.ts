@@ -686,6 +686,7 @@ export const en = {
   'trade.detail.statusLive': 'Live',
   'trade.detail.statusWon': 'Won',
   'trade.detail.statusLost': 'Lost',
+  'trade.detail.statusUnknown': 'Unsettled',
   'trade.detail.onStake': 'on {stake}',
   'trade.detail.idBinolla': '{id} · Binolla',
   'trade.timeline.signalDetected': 'Signal detected',
@@ -712,6 +713,7 @@ export const en = {
   'history.status.running': 'Running',
   'history.status.profit': 'Profit',
   'history.status.loss': 'Loss',
+  'history.status.unknown': 'Unsettled',
   'history.source.bot': 'Source: Bot',
   'history.source.user': 'Source: User',
 

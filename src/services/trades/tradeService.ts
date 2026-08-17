@@ -27,19 +27,30 @@ function notifyListeners(): void {
   listeners.forEach((listener) => listener());
 }
 
-function mapStatus(status: string, pnl?: number | null): TradeStatus {
+function mapStatus(
+  status: string,
+  pnl?: number | null,
+  createdAt?: string,
+  durationSeconds?: number,
+): TradeStatus {
   const s = status.toLowerCase();
   if (s === 'profit' || s === 'tie') return 'profit';
   if (s === 'loss') return 'loss';
-  if (s === 'running' || s === 'pending') return 'running';
-  // Unknown/Failed without PnL: do not fake "Running" — prefer PnL when present (late settle).
   if (typeof pnl === 'number') {
     if (pnl > 0) return 'profit';
     if (pnl < 0) return 'loss';
     return 'profit';
   }
-  if (s === 'failed' || s === 'cancelled' || s === 'unknown') return 'running';
-  return 'running';
+  if (s === 'running' || s === 'pending') {
+    if (createdAt) {
+      const opened = Date.parse(createdAt);
+      const dur = (durationSeconds && durationSeconds > 0 ? durationSeconds : 60) + 90;
+      if (Number.isFinite(opened) && Date.now() > opened + dur * 1000) return 'unknown';
+    }
+    return 'running';
+  }
+  if (s === 'failed' || s === 'cancelled' || s === 'unknown') return 'unknown';
+  return 'unknown';
 }
 
 function mapDirection(direction: string): TradeDirection {
@@ -79,7 +90,7 @@ function formatPnl(pnl: number | null, status: string): string | undefined {
 }
 
 function mapTrade(dto: TradeDto): TradeRecord {
-  const status = mapStatus(dto.status, dto.pnl);
+  const status = mapStatus(dto.status, dto.pnl, dto.createdAt, dto.durationSeconds);
   const pnlLabel = formatPnl(dto.pnl, dto.status);
   const openedAt = new Date(dto.createdAt).getTime() || Date.now();
   const durationSec = dto.durationSeconds > 0 ? dto.durationSeconds : 60;
@@ -134,6 +145,7 @@ function buildTradeRef(trade: TradeRecord): string {
 function formatTradeStatusValue(status: TradeRecord['status']): string {
   if (status === 'running') return t('history.status.running');
   if (status === 'profit') return t('history.status.profit');
+  if (status === 'unknown') return t('history.status.unknown');
   return t('history.status.loss');
 }
 
@@ -192,13 +204,21 @@ function buildTimeline(trade: TradeRecord): TradeDetailContent['timeline'] {
 
 function buildDetailContent(trade: TradeRecord): TradeDetailContent {
   const statusTone =
-    trade.status === 'running' ? 'warning' : trade.status === 'profit' ? 'success' : 'danger';
+    trade.status === 'running'
+      ? 'warning'
+      : trade.status === 'profit'
+        ? 'success'
+        : trade.status === 'unknown'
+          ? 'neutral'
+          : 'danger';
   const statusLabel =
     trade.status === 'running'
       ? t('trade.detail.statusLive')
       : trade.status === 'profit'
         ? t('trade.detail.statusWon')
-        : t('trade.detail.statusLost');
+        : trade.status === 'unknown'
+          ? t('trade.detail.statusUnknown')
+          : t('trade.detail.statusLost');
 
   return {
     id: trade.id,
@@ -283,7 +303,7 @@ export const tradeService = {
               id: t.id?.slice?.(0, 8),
               status: t.status,
               pnl: t.pnl,
-              mapped: mapStatus(t.status, t.pnl),
+              mapped: mapStatus(t.status, t.pnl, t.createdAt, t.durationSeconds),
               durationSeconds: t.durationSeconds,
             })),
           },

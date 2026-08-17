@@ -676,6 +676,7 @@ export const ar: EnDictionary = {
   'trade.detail.statusLive': 'مباشر',
   'trade.detail.statusWon': 'ربحت',
   'trade.detail.statusLost': 'خسرت',
+  'trade.detail.statusUnknown': 'غير محسومة',
   'trade.detail.onStake': 'على {stake}',
   'trade.detail.idBinolla': '{id} · بينولا',
   'trade.timeline.signalDetected': 'تم اكتشاف الإشارة',
@@ -702,6 +703,7 @@ export const ar: EnDictionary = {
   'history.status.running': 'جارٍ',
   'history.status.profit': 'ربح',
   'history.status.loss': 'خسارة',
+  'history.status.unknown': 'غير محسومة',
   'history.source.bot': 'المصدر: البوت',
   'history.source.user': 'المصدر: المستخدم',
 

@@ -47,6 +47,10 @@ export function useTradeHistory(filter: TradeListFilter) {
           items: current.items.map((t) => {
             if (t.status !== 'running') return t;
             const dur = t.durationSeconds ?? 300;
+            const expired = Date.now() > t.openedAt + (dur + 90) * 1000;
+            if (expired) {
+              return { ...t, status: 'unknown' as const, liveTimerSeconds: 0 };
+            }
             const left = Math.max(0, Math.ceil((t.openedAt + dur * 1000 - Date.now()) / 1000));
             return left === t.liveTimerSeconds ? t : { ...t, liveTimerSeconds: left };
           }),

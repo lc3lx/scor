@@ -1,7 +1,7 @@
 import type { CandlestickPoint } from '@components/organisms/CandlestickChart';
 import type { ChipTone, TradeDirection } from '@components/types';
 
-export type TradeStatus = 'running' | 'profit' | 'loss';
+export type TradeStatus = 'running' | 'profit' | 'loss' | 'unknown';
 export type TradeSource = 'bot' | 'user';
 export type TradePlatform = 'global' | 'binolla';
 export type TradeListFilter = 'all' | 'live' | 'profit' | 'loss' | 'today';
