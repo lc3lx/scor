@@ -215,6 +215,13 @@ export const ar: EnDictionary = {
   'login.footerSuffix': ' Company',
   'login.continueTelegram': 'المتابعة عبر تيليجرام',
   'login.forgotInfo': 'إعادة تعيين كلمة المرور غير متاحة بعد. تواصل مع الدعم إن تعذّر الدخول.',
+  'demoLogin.title': 'دخول حساب التسويق (ديمو)',
+  'demoLogin.description':
+    'سجّل الدخول ببريد وكلمة مرور حساب التسويق. هذا ليس بينولا وليس حساب سكار ألفا العادي.',
+  'demoLogin.submit': 'دخول الديمو',
+  'demoLogin.securityTitle': 'ديمو فقط',
+  'demoLogin.securitySubtitle': 'بيانات محاكاة — بدون اتصال حقيقي ببينولا.',
+  'demoLogin.normalLogin': 'تسجيل الدخول العادي',
   'signup.title': 'انضم إلى سكار ألفا AI',
   'signup.description': 'أنشئ حساب سكار ألفا، ثم اربط بينولا.',
   'signup.fullName': 'الاسم الكامل',
@@ -354,7 +361,8 @@ export const ar: EnDictionary = {
   'admin.approveFailed': 'فشلت الموافقة.',
   'admin.rejectFailed': 'فشل الرفض.',
   'admin.demo.intro':
-    'أنشئ حسابات تسويق لبوت تيليجرام (Mini App). الأفضل تمرير رقم تيليجرام حتى يفتح البوت مباشرة بيانات حية الشكل (بدون بينولا حقيقي). البريد اختياري — أول تسجيل دخول داخل الميني آب يربط التيليجرام.',
+    'أنشئ حسابات تسويق لبوت تيليجرام (Mini App). الأفضل تمرير رقم تيليجرام حتى يفتح البوت مباشرة بيانات حية الشكل (بدون بينولا حقيقي). البريد/كلمة المرور: الدخول فقط عبر /demo-login (مو /login ومو ربط بينولا).',
+  'admin.demo.loginUrl': 'رابط دخول الديمو: {url}',
   'admin.demo.createTitle': 'إنشاء حساب تجريبي',
   'admin.demo.email': 'البريد (اختياري إذا وُجد رقم تيليجرام)',
   'admin.demo.password': 'كلمة المرور (٨ أحرف على الأقل مع البريد)',

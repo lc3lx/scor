@@ -475,6 +475,14 @@ export default function AdminPage() {
             </Text>
           )}
 
+          {tab === 'demos' ? (
+            <Text variant="caption" tone="primary" className={styles.intro}>
+              {t('admin.demo.loginUrl', {
+                url: `${window.location.origin}${import.meta.env.BASE_URL?.replace(/\/$/, '') || ''}${ROUTES.demoLogin}`,
+              })}
+            </Text>
+          ) : null}
+
           {error ? (
             <p className={styles.error} role="alert">
               {error}

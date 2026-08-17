@@ -60,6 +60,13 @@ export const authApi = {
       auth: false,
     });
   },
+  demoLogin(body: Pick<EmailAuthRequest, 'email' | 'password'>): Promise<AuthTelegramResponse> {
+    return apiRequest<AuthTelegramResponse>('/api/auth/demo-login', {
+      method: 'POST',
+      body: { email: body.email, password: body.password },
+      auth: false,
+    });
+  },
   register(body: EmailAuthRequest): Promise<AuthTelegramResponse> {
     return apiRequest<AuthTelegramResponse>('/api/auth/register', {
       method: 'POST',

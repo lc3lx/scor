@@ -219,6 +219,13 @@ export const en = {
   'login.footerSuffix': ' Company',
   'login.continueTelegram': 'Continue with Telegram',
   'login.forgotInfo': 'Password reset is not available yet. Contact support if you are locked out.',
+  'demoLogin.title': 'Marketing demo login',
+  'demoLogin.description':
+    'Sign in with a marketing demo email and password. This is not Binolla and not a normal Scar Alpha account.',
+  'demoLogin.submit': 'Enter demo',
+  'demoLogin.securityTitle': 'Demo only',
+  'demoLogin.securitySubtitle': 'Uses simulated data. No real Binolla connection.',
+  'demoLogin.normalLogin': 'Normal account login',
   'signup.title': 'Join Scar Alpha AI',
   'signup.description': 'Create your Scar Alpha account, then link Binolla.',
   'signup.fullName': 'Full Name',
@@ -360,7 +367,8 @@ export const en = {
   'admin.approveFailed': 'Approve failed.',
   'admin.rejectFailed': 'Reject failed.',
   'admin.demo.intro':
-    'Create marketing demos for the Telegram bot Mini App. Prefer Telegram user id so opening the bot shows fake live data immediately (no real Binolla). Optional email/password also works — first login inside the Mini App links Telegram.',
+    'Create marketing demos for the Telegram bot Mini App. Prefer Telegram user id so opening the bot shows fake live data immediately (no real Binolla). Optional email/password: sign in only at /demo-login (not /login or Binolla link).',
+  'admin.demo.loginUrl': 'Demo login URL: {url}',
   'admin.demo.createTitle': 'Create demo account',
   'admin.demo.email': 'Email (optional if Telegram id set)',
   'admin.demo.password': 'Password (min 8, required with email)',
