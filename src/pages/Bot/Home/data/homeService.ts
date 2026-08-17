@@ -176,7 +176,7 @@ function pairDisplayName(
 function pickLiveDisplaySignal(
   results: Array<StrategySignalResponse | null>,
 ): { signal: StrategySignalResponse | null; pickMode: string } {
-  const valid = results.filter((s): s is StrategySignalResponse => Boolean(s) && Number(s.rsi) > 0);
+  const valid = results.filter((s): s is StrategySignalResponse => s != null && Number(s.rsi) > 0);
   if (valid.length === 0) return { signal: null, pickMode: 'none' };
   const actionable = valid.filter(
     (s) => (s.signal === 'Call' || s.signal === 'Put') && s.backtest?.passed === true,
