@@ -459,6 +459,8 @@ export const ar: EnDictionary = {
   'home.bot.statusDailyProfit': 'وصل حد الربح',
   'home.bot.statusDailyLoss': 'وصل حد الخسارة',
   'home.stat.signal': 'الإشارة',
+  'home.stat.signalWaitClose': 'انتظار إغلاق',
+  'home.stat.signalLate': 'فات الوقت',
   'home.stat.pair': 'الزوج',
   'home.stat.strength': 'القوة',
   'home.stat.updated': 'التحديث',

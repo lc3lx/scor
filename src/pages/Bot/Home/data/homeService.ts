@@ -208,14 +208,27 @@ function engineStatsFromSignal(
       : passed
         ? t('home.strategy.successRate', { n: Math.round(rate) })
         : t('home.strategy.filterFailed', { n: Math.round(rate) });
-  const rsiValue = Number(signal.liveRsi ?? signal.rsi);
+  const live = Number(signal.liveRsi ?? signal.rsi);
+  const closed = Number(signal.rsi);
+  const rsiValue = Number.isFinite(live) ? live : closed;
+  const sig = signal.signal.toLowerCase();
+  let signalLabel = formatSignal(signal.signal);
+  let signalTone: HomeData['botEngine']['stats'][number]['valueTone'] =
+    sig === 'call' ? 'success' : 'primary';
+  if (sig !== 'call' && sig !== 'put') {
+    if (signal.automationError === 'SIGNAL_STALE') {
+      signalLabel = t('home.stat.signalLate');
+    } else if (rsiValue >= 75 || rsiValue <= 25) {
+      signalLabel = t('home.stat.signalWaitClose');
+    }
+  }
   return [
     { id: 'pair', label: t('home.stat.pair'), value: pairLabel },
     {
       id: 'signal',
       label: t('home.stat.signal'),
-      value: formatSignal(signal.signal),
-      valueTone: signal.signal.toLowerCase() === 'call' ? 'success' : 'primary',
+      value: signalLabel,
+      valueTone: signalTone,
     },
     {
       id: 'strength',
@@ -569,6 +582,8 @@ export const homeService = {
             expiryCandles,
             pairLabel,
             liveRsi: signal?.liveRsi ?? null,
+            closedRsi: signal?.rsi ?? null,
+            automationError: signal?.automationError ?? null,
             closedRsi: signal?.rsi ?? null,
             rsiEqual: signal ? Number(signal.liveRsi ?? signal.rsi) === Number(signal.rsi) : null,
             best: signal
