@@ -186,8 +186,10 @@ function pickLiveDisplaySignal(
       const rateA = a.backtest?.successRate ?? 0;
       const rateB = b.backtest?.successRate ?? 0;
       if (rateB !== rateA) return rateB - rateA;
-      const edge = (s: StrategySignalResponse) =>
-        s.signal === 'Call' ? 25 - s.rsi : s.signal === 'Put' ? s.rsi - 75 : 0;
+      const edge = (s: StrategySignalResponse) => {
+        const rsi = Number(s.liveRsi ?? s.rsi);
+        return s.signal === 'Call' ? 25 - rsi : s.signal === 'Put' ? rsi - 75 : 0;
+      };
       return edge(b) - edge(a);
     })[0]!;
     return { signal, pickMode: 'actionable' };
