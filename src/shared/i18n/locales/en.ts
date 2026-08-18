@@ -492,9 +492,16 @@ export const en = {
   'home.market.binollaDesc': 'Trade directly on Binolla market pairs.',
   'home.tradeAmount': 'Trade Amount',
   'home.tradeAmountSoon': 'Trade Amount (Coming Soon — set on Trading)',
+  'home.tradeAmount.inputLabel': 'Custom amount',
+  'home.tradeAmount.placeholder': 'Enter trade amount',
+  'home.tradeAmount.helper': 'Use any amount that fits your plan. Quick picks stay available below.',
+  'home.tradeAmount.quickSelect': 'Quick amount options',
+  'home.tradeAmount.invalid': 'Enter a valid amount greater than zero.',
   'home.duration': 'Duration',
   'home.durationSoon': 'Duration (Coming Soon — set on Trading)',
   'home.duration.custom': 'Custom',
+  'home.duration.helper': 'Choose the candle expiry that matches how aggressively you want the bot to react.',
+  'home.duration.quickSelect': 'Quick duration options',
   'home.risk.profitTarget': 'Daily Profit Target',
   'home.risk.lossLimit': 'Daily Loss Limit',
   'home.risk.hint': 'Managed on Binolla / not auto-enforced here',
@@ -551,6 +558,18 @@ export const en = {
   'home.controls.saved': 'Bot settings saved successfully.',
   'home.controls.comingSoonTitle':
     'Coming Soon — auto Start/Pause/Stop is not available yet',
+  'home.layout.setupTitle': 'Bot setup',
+  'home.layout.setupSubtitle':
+    'Choose the market, pair, strategy, amount, and duration in a cleaner configure-first flow.',
+  'home.layout.riskTitle': 'Risk and tools',
+  'home.layout.riskSubtitle':
+    'Review daily limits and open supporting tools like chart and settings when needed.',
+  'home.layout.runtimeTitle': 'Runtime controls',
+  'home.layout.runtimeSubtitle':
+    'Pause or stop the bot here when you need immediate control over an active session.',
+  'home.layout.actionsTitle': 'Save and start',
+  'home.layout.actionsSubtitle':
+    'Save your latest setup, then start the bot when everything looks right.',
   'home.chart.empty': 'No live Binolla candles yet. Connect Binolla and wait for market data.',
   'home.pair.eurusd': 'Euro / US Dollar',
   'home.pair.gbpusd': 'British Pound / US Dollar',

@@ -1,4 +1,5 @@
 import type { UseHomeDataReturn } from './useHomeData';
+import type { HomeRuntimeState } from '../types';
 import { useState } from 'react';
 import { ApiClientError } from '@shared/api';
 import { useT } from '@shared/i18n';
@@ -13,16 +14,22 @@ export function useHomeBotControls(homeData: UseHomeDataReturn) {
   const t = useT();
   const [isUpdating, setIsUpdating] = useState(false);
   const [feedback, setFeedback] = useState<ControlFeedback | null>(null);
-  const setStatus = async (botStatus: 'running' | 'paused' | 'stopped') => {
+  const setStatus = async (
+    botStatus: 'running' | 'paused' | 'stopped',
+    partial: Partial<HomeRuntimeState> = {},
+  ) => {
     if (isUpdating) return;
-    if (botStatus === 'running' && !(homeData.data?.runtime.tradingPairIds?.length || homeData.data?.runtime.tradingPairId)) {
+    if (
+      botStatus === 'running' &&
+      !(homeData.data?.runtime.tradingPairIds?.length || homeData.data?.runtime.tradingPairId)
+    ) {
       setFeedback({ tone: 'warning', message: t('home.controls.selectPair') });
       return;
     }
     setIsUpdating(true);
     try {
       const previousStopReason = homeData.data?.runtime.stopReason;
-      await homeData.updateRuntime({ botStatus });
+      await homeData.updateRuntime({ ...partial, botStatus });
       homeData.refresh();
       setFeedback({
         tone: 'success',
@@ -47,15 +54,18 @@ export function useHomeBotControls(homeData: UseHomeDataReturn) {
   };
 
   return {
-    handleStart: () => setStatus('running'),
+    handleStart: (partial: Partial<HomeRuntimeState> = {}) => setStatus('running', partial),
     handlePause: () => setStatus('paused'),
     handleStop: () => setStatus('stopped'),
-    handleApply: async () => {
+    handleApply: async (partial: Partial<HomeRuntimeState> = {}) => {
       if (!homeData.data) return;
       if (isUpdating) return;
       setIsUpdating(true);
       try {
-        await homeData.updateRuntime({ settings: homeData.data.runtime.settings });
+        await homeData.updateRuntime({
+          ...partial,
+          settings: partial.settings ?? homeData.data.runtime.settings,
+        });
         homeData.refresh();
         setFeedback({ tone: 'success', message: t('home.controls.saved') });
       } catch (error) {

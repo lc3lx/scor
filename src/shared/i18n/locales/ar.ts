@@ -484,9 +484,16 @@ export const ar: EnDictionary = {
   'home.market.binollaDesc': 'تداول مباشرة على أزواج سوق بينولا.',
   'home.tradeAmount': 'مبلغ الصفقة',
   'home.tradeAmountSoon': 'مبلغ الصفقة (قريباً — يُحدد في التداول)',
+  'home.tradeAmount.inputLabel': 'مبلغ مخصص',
+  'home.tradeAmount.placeholder': 'أدخل مبلغ الصفقة',
+  'home.tradeAmount.helper': 'أدخل أي رقم تريده، وتبقى الخيارات السريعة متاحة بالأسفل.',
+  'home.tradeAmount.quickSelect': 'خيارات المبلغ السريعة',
+  'home.tradeAmount.invalid': 'أدخل مبلغاً صحيحاً أكبر من الصفر.',
   'home.duration': 'المدة',
   'home.durationSoon': 'المدة (قريباً — تُحدد في التداول)',
   'home.duration.custom': 'مخصص',
+  'home.duration.helper': 'اختر مدة الانتهاء التي تناسب سرعة دخول البوت وطريقة تفاعله مع الإشارة.',
+  'home.duration.quickSelect': 'خيارات المدة السريعة',
   'home.risk.profitTarget': 'هدف الربح اليومي',
   'home.risk.lossLimit': 'حد الخسارة اليومي',
   'home.risk.hint': 'يُدار على بينولا / غير مفروض تلقائياً هنا',
@@ -543,6 +550,18 @@ export const ar: EnDictionary = {
   'home.controls.saved': 'تم حفظ إعدادات البوت بنجاح.',
   'home.controls.comingSoonTitle':
     'قريباً — البدء/الإيقاف المؤقت/الإيقاف الآلي غير متاح بعد',
+  'home.layout.setupTitle': 'إعداد البوت',
+  'home.layout.setupSubtitle':
+    'اختر السوق والزوج والاستراتيجية والمبلغ والمدة ضمن تدفق أوضح يبدأ بالإعداد أولاً.',
+  'home.layout.riskTitle': 'المخاطر والأدوات',
+  'home.layout.riskSubtitle':
+    'راجع حدود الربح والخسارة اليومية وافتح الأدوات المساندة مثل المخطط والإعدادات عند الحاجة.',
+  'home.layout.runtimeTitle': 'التحكم أثناء التشغيل',
+  'home.layout.runtimeSubtitle':
+    'يمكنك إيقاف البوت مؤقتاً أو إيقافه كلياً من هنا عند الحاجة لتحكم مباشر بالجلسة.',
+  'home.layout.actionsTitle': 'الحفظ والبدء',
+  'home.layout.actionsSubtitle':
+    'احفظ آخر إعداداتك ثم ابدأ البوت عندما تصبح كل الخيارات جاهزة.',
   'home.chart.empty': 'لا شموع بينولا حية بعد. اربط بينولا وانتظر بيانات السوق.',
   'home.pair.eurusd': 'يورو / دولار أمريكي',
   'home.pair.gbpusd': 'جنيه إسترليني / دولار أمريكي',

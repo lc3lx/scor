@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button } from '@components/atoms/Button';
+import { Text } from '@components/atoms/Text';
 import { PageContent } from '@components/layouts/PageContent';
 import { BackgroundGlow } from '@components/organisms/BackgroundGlow';
 import { BottomSheet } from '@components/organisms/BottomSheet';
@@ -36,6 +38,7 @@ export default function HomePage() {
   const sheetTitles = getHomeSheetTitles();
 
   const { data, configRows, tradeAmount, duration, updateRuntime } = homeData;
+  const [tradeAmountValue, setTradeAmountValue] = useState('');
 
   const botEngine = data?.botEngine ?? null;
 
@@ -232,6 +235,48 @@ export default function HomePage() {
     sheets.closeSheet();
   }, [settingsContent, sheets.closeSheet, updateRuntime]);
 
+  useEffect(() => {
+    if (!tradeAmount) return;
+    const next = tradeAmount.selectedId.replace('amount-', '');
+    setTradeAmountValue(next);
+  }, [tradeAmount]);
+
+  const parsedTradeAmount = useMemo(() => {
+    const n = Number(tradeAmountValue);
+    if (!Number.isFinite(n)) return null;
+    const rounded = Math.floor(n);
+    if (rounded <= 0) return null;
+    return rounded;
+  }, [tradeAmountValue]);
+
+  const tradeAmountError = useMemo(() => {
+    if (!tradeAmountValue.trim()) return t('home.tradeAmount.invalid');
+    return parsedTradeAmount == null ? t('home.tradeAmount.invalid') : null;
+  }, [parsedTradeAmount, t, tradeAmountValue]);
+
+  const runtimeDraft = useMemo(
+    () =>
+      parsedTradeAmount == null
+        ? null
+        : {
+            tradeAmountId: `amount-${parsedTradeAmount}`,
+            settings: settingsContent,
+          },
+    [parsedTradeAmount, settingsContent],
+  );
+
+  const footerControls = useMemo(() => data?.controls.filter((action) => action === 'pause' || action === 'stop') ?? [], [data?.controls]);
+
+  const handleSave = useCallback(() => {
+    if (!runtimeDraft) return;
+    void botControls.handleApply(runtimeDraft);
+  }, [botControls, runtimeDraft]);
+
+  const handleStart = useCallback(() => {
+    if (!runtimeDraft) return;
+    void botControls.handleStart(runtimeDraft);
+  }, [botControls, runtimeDraft]);
+
   if (
     !data ||
     !botEngine ||
@@ -261,35 +306,108 @@ export default function HomePage() {
         <div className={styles.scroll}>
           <BackgroundGlow variant="top-right" />
           <PageContent className={styles.content}>
-            <HomeHeaderSection content={data.header} />
-            <BotEngineSection content={botEngine} />
-            <HomeStatsSection stats={data.stats} />
-            <BotControlsSection
-              controls={data.controls}
-              isStartPressed={botControls.isStartPressed}
-              onStart={botControls.handleStart}
-              onPause={botControls.handlePause}
-              onStop={botControls.handleStop}
-              onApply={botControls.handleApply}
-              isUpdating={botControls.isUpdating}
-              feedback={botControls.feedback}
-              comingSoon={false}
-            />
-            <HomeConfigSection rows={configRows} onRowClick={sheets.openSheet} />
-            <TradeAmountSection
-              content={tradeAmount}
-              onSelect={(optionId) => {
-                void updateRuntime({ tradeAmountId: optionId });
-              }}
-            />
-            <DurationSection
-              content={duration}
-              onSelect={(optionId) => {
-                void updateRuntime({ durationId: optionId });
-              }}
-            />
-            <RiskLimitsSection limits={data.riskLimits} />
-            <HomeActionsSection actions={data.actions} onAction={sheets.openSheet} />
+            <div className={styles.heroStack}>
+              <HomeHeaderSection content={data.header} />
+              <BotEngineSection content={botEngine} />
+              <HomeStatsSection stats={data.stats} />
+            </div>
+
+            <section className={styles.surface} aria-label={t('home.layout.setupTitle')}>
+              <div className={styles.surfaceHeader}>
+                <Text variant="h3" tone="body">
+                  {t('home.layout.setupTitle')}
+                </Text>
+                <Text variant="caption" tone="caption" className={styles.surfaceCopy}>
+                  {t('home.layout.setupSubtitle')}
+                </Text>
+              </div>
+
+              <HomeConfigSection rows={configRows} onRowClick={sheets.openSheet} />
+
+              <div className={styles.configGrid}>
+                <TradeAmountSection
+                  content={tradeAmount}
+                  value={tradeAmountValue}
+                  error={tradeAmountError}
+                  onValueChange={setTradeAmountValue}
+                />
+                <DurationSection
+                  content={duration}
+                  onSelect={(optionId) => {
+                    void updateRuntime({ durationId: optionId });
+                  }}
+                />
+              </div>
+            </section>
+
+            <section className={styles.surface} aria-label={t('home.layout.riskTitle')}>
+              <div className={styles.surfaceHeader}>
+                <Text variant="h3" tone="body">
+                  {t('home.layout.riskTitle')}
+                </Text>
+                <Text variant="caption" tone="caption" className={styles.surfaceCopy}>
+                  {t('home.layout.riskSubtitle')}
+                </Text>
+              </div>
+              <RiskLimitsSection limits={data.riskLimits} />
+              <HomeActionsSection actions={data.actions} onAction={sheets.openSheet} />
+            </section>
+
+            <section className={styles.footerPanel} aria-label={t('home.layout.actionsTitle')}>
+              <div className={styles.footerHeader}>
+                <Text variant="h3" tone="body">
+                  {t('home.layout.actionsTitle')}
+                </Text>
+                <Text variant="caption" tone="caption" className={styles.surfaceCopy}>
+                  {t('home.layout.actionsSubtitle')}
+                </Text>
+              </div>
+
+              <BotControlsSection
+                controls={footerControls}
+                isStartPressed={botControls.isStartPressed}
+                onStart={botControls.handleStart}
+                onPause={botControls.handlePause}
+                onStop={botControls.handleStop}
+                onApply={botControls.handleApply}
+                isUpdating={botControls.isUpdating}
+                feedback={null}
+                comingSoon={false}
+              />
+
+              <div className={styles.footerButtons}>
+                <Button
+                  variant="ghost"
+                  fullWidth
+                  className={styles.footerButton}
+                  disabled={botControls.isUpdating || Boolean(tradeAmountError)}
+                  onClick={handleSave}
+                >
+                  {t('home.settings.save')}
+                </Button>
+                <Button
+                  variant="primary"
+                  fullWidth
+                  className={styles.footerButton}
+                  disabled={botControls.isUpdating || Boolean(tradeAmountError)}
+                  onClick={handleStart}
+                >
+                  {t('home.controls.start')}
+                </Button>
+              </div>
+
+              {botControls.feedback ? (
+                <Text
+                  variant="caption-xs"
+                  tone={botControls.feedback.tone}
+                  className={styles.feedback}
+                  aria-live="polite"
+                >
+                  {botControls.feedback.message}
+                </Text>
+              ) : null}
+            </section>
+
             <HomeDisclaimerSection text={data.disclaimer} />
           </PageContent>
         </div>

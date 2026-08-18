@@ -1,4 +1,3 @@
-import { Button } from '@components/atoms/Button';
 import { Input } from '@components/atoms/Input';
 import { OptionChip } from '@components/molecules/OptionChip';
 import { ToggleRow } from '@components/molecules/ToggleRow';
@@ -12,7 +11,7 @@ export type BotSettingsSheetContentProps = {
   onToggleChange: (toggleId: string, enabled: boolean) => void;
   onRiskSelect: (riskId: string) => void;
   onDailyLimitChange: (field: 'dailyProfitTarget' | 'dailyLossLimit', value: number) => void;
-  onSave: () => void;
+  onSave?: () => void;
 };
 
 export function BotSettingsSheetContent({
@@ -20,7 +19,6 @@ export function BotSettingsSheetContent({
   onToggleChange,
   onRiskSelect,
   onDailyLimitChange,
-  onSave,
 }: BotSettingsSheetContentProps) {
   const t = useT();
 
@@ -90,9 +88,6 @@ export function BotSettingsSheetContent({
         </div>
       </div>
 
-      <Button variant="primary" fullWidth className={styles.saveButton} onClick={onSave}>
-        {content.saveLabel}
-      </Button>
     </div>
   );
 }
