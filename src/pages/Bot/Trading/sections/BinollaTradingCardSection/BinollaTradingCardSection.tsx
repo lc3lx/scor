@@ -1,6 +1,6 @@
 import { Text } from '@components/atoms/Text';
 import { CandlestickChart } from '@components/organisms/CandlestickChart';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useT } from '@shared/i18n';
 import type { BinollaCardContent } from '../../types';
 import styles from './BinollaTradingCardSection.module.css';
@@ -16,7 +16,7 @@ function remainingSeconds(createdAt: string, durationSeconds: number): number {
   return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
 }
 
-function formatCountdown(totalSeconds: number): string {
+function formatClock(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
@@ -33,6 +33,33 @@ function formatEntryTime(iso: string): string {
   });
 }
 
+function formatEntryPrice(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 100) return value.toFixed(2);
+  if (abs >= 1) return value.toFixed(4);
+  if (abs >= 0.01) return value.toFixed(5);
+  return value.toFixed(6);
+}
+
+function resolveEntryPrice(
+  candles: BinollaCardContent['candleData'],
+  createdAt: string,
+): { timeSec: number; price: number | undefined; candleIndex: number } {
+  const timeSec = Math.floor(new Date(createdAt).getTime() / 1000);
+  let candleIndex = -1;
+  for (let i = 0; i < candles.length; i += 1) {
+    const candleTime = candles[i]?.time;
+    if (candleTime == null) continue;
+    if (candleTime <= timeSec) candleIndex = i;
+  }
+  if (candleIndex < 0 && candles.length > 0) candleIndex = candles.length - 1;
+  return {
+    timeSec,
+    candleIndex,
+    price: candleIndex >= 0 ? candles[candleIndex]?.close : undefined,
+  };
+}
+
 /** Read-only market chart — bot places trades; no manual pair/amount/expiry controls. */
 export function BinollaTradingCardSection({ content }: BinollaTradingCardSectionProps) {
   const t = useT();
@@ -42,6 +69,11 @@ export function BinollaTradingCardSection({ content }: BinollaTradingCardSection
   const active = content.activeTrade;
   const [leftSec, setLeftSec] = useState(() =>
     active ? remainingSeconds(active.createdAt, active.durationSeconds) : 0,
+  );
+
+  const entry = useMemo(
+    () => (active ? resolveEntryPrice(content.candleData, active.createdAt) : null),
+    [active, content.candleData],
   );
 
   useEffect(() => {
@@ -76,6 +108,36 @@ export function BinollaTradingCardSection({ content }: BinollaTradingCardSection
     return () => window.clearInterval(id);
   }, [active?.id, active?.createdAt, active?.durationSeconds]);
 
+  useEffect(() => {
+    if (!active || !entry) return;
+    // #region agent log
+    fetch('http://127.0.0.1:7892/ingest/aea6d51e-f3e9-4c7e-b6b4-db55c4306e97', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1892a4' },
+      body: JSON.stringify({
+        sessionId: '1892a4',
+        runId: 'pre-fix',
+        hypothesisId: 'B',
+        location: 'BinollaTradingCardSection.tsx:entryMarker',
+        message: 'trade_entry_marker',
+        data: {
+          hasActive: true,
+          candleCount: content.candleData.length,
+          candleIndex: entry.candleIndex,
+          timeSec: entry.timeSec,
+          price: entry.price ?? null,
+          direction: active.direction,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [active, content.candleData.length, entry]);
+
+  const isDown =
+    (active?.direction ?? '').toUpperCase() === 'PUT' ||
+    (active?.direction ?? '').toUpperCase() === 'DOWN';
+
   return (
     <section className={styles.section} aria-label={t('nav.trading')}>
       <article className={styles.card}>
@@ -98,17 +160,24 @@ export function BinollaTradingCardSection({ content }: BinollaTradingCardSection
         </div>
 
         {active ? (
-          <div className={styles.activeTrade} aria-live="polite">
+          <div
+            className={styles.activeTrade}
+            data-side={isDown ? 'down' : 'up'}
+            aria-live="polite"
+          >
             <span className={styles.activeDot} />
             <div className={styles.activeTradeBody}>
-              <Text variant="caption-xs" tone="primary">
-                {active.direction} {active.asset}
+              <Text variant="caption-xs" tone="primary" className={styles.activeTradeTitle}>
+                {t('trading.chartEntry')} · {active.direction} {active.asset}
                 {' · '}${active.amount.toFixed(2)}
               </Text>
               <Text variant="caption-xs" tone="caption" className={styles.activeTradeMeta}>
                 {t('trading.entryAt', { time: formatEntryTime(active.createdAt) })}
+                {entry?.price != null
+                  ? ` · ${t('trading.entryPrice', { price: formatEntryPrice(entry.price) })}`
+                  : ''}
                 {' · '}
-                {t('trading.remaining', { time: formatCountdown(leftSec) })}
+                {t('trading.remaining', { time: formatClock(leftSec) })}
               </Text>
             </div>
           </div>
@@ -121,6 +190,16 @@ export function BinollaTradingCardSection({ content }: BinollaTradingCardSection
               height={560}
               visibleBars={48}
               className={styles.chart}
+              entryMarker={
+                active && entry
+                  ? {
+                      timeSec: entry.timeSec,
+                      price: entry.price,
+                      direction: active.direction,
+                      label: t('trading.chartEntry'),
+                    }
+                  : undefined
+              }
             />
           ) : (
             <div className={styles.chartEmpty} role="img" aria-label={t('trading.noCandlesFallback')}>

@@ -17,6 +17,7 @@ import {
   pickPreferredMarketAsset,
 } from '@shared/market/preferAsset';
 import {
+  bucketPerformance,
   formatMoneyPlain,
   formatSignedMoney,
   formatWinRate,
@@ -341,14 +342,6 @@ function applyHomeTradeStats(
         valueTone: 'success',
       };
     }
-    if (stat.id === 'today-loss') {
-      return {
-        ...stat,
-        value:
-          buckets.today.lossAbs > 0 ? formatSignedMoney(-buckets.today.lossAbs) : '$0.00',
-        valueTone: 'danger',
-      };
-    }
     if (stat.id === 'net') {
       return {
         ...stat,
@@ -371,6 +364,10 @@ function applyHomeTradeStats(
     }
     return stat;
   });
+  base.performancePoints = bucketPerformance(trades, '7d').map((bucket) => ({
+    label: bucket.label,
+    net: bucket.net,
+  }));
 }
 
 export const homeService = {

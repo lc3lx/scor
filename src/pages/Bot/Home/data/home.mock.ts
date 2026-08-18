@@ -33,11 +33,11 @@ export function getHomeMockContent(): HomePageContent {
     stats: [
       { id: 'balance', label: t('home.stat.balance'), value: '—' },
       { id: 'today-gain', label: t('home.stat.todayGain'), value: '—' },
-      { id: 'today-loss', label: t('home.stat.todayLoss'), value: '—' },
       { id: 'net', label: t('home.stat.net'), value: '—' },
       { id: 'active', label: t('home.stat.active'), value: '—' },
       { id: 'win-rate', label: t('home.stat.winRate'), value: '—' },
     ],
+    performancePoints: [],
     controls: ['start', 'pause', 'stop', 'apply'],
     configRows: [
       {
@@ -100,7 +100,6 @@ export function getHomeMockContent(): HomePageContent {
       },
     ],
     actions: [
-      { id: 'show-chart', label: t('home.action.showChart'), sheetTarget: 'chart' },
       { id: 'bot-settings', label: t('home.action.botSettings'), sheetTarget: 'settings' },
     ],
     disclaimer: t('home.disclaimer.default'),

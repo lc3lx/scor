@@ -70,6 +70,20 @@
   background: rgba(18, 230, 85, 0.08);
 }
 
+.activeTrade[data-side='down'] {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.activeTrade[data-side='down'] .activeDot {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.9);
+}
+
+.activeTradeTitle {
+  font-weight: 700;
+}
+
 .activeTradeBody {
   display: flex;
   flex-direction: column;

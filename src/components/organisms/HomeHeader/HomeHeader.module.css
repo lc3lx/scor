@@ -7,6 +7,10 @@
   padding-top: var(--space-5);
 }
 
+.headerEnd {
+  justify-content: flex-end;
+}
+
 .brand {
   display: flex;
   align-items: center;

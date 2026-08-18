@@ -298,7 +298,12 @@ export const tradeService = {
           message: 'history list',
           data: {
             filter,
+            page,
+            pageSize,
             total: response.total,
+            itemCount: response.items.length,
+            mappedCount: items.length,
+            hasMore: response.page * response.pageSize < response.total,
             sample: response.items.slice(0, 5).map((t) => ({
               id: t.id?.slice?.(0, 8),
               status: t.status,
@@ -328,6 +333,26 @@ export const tradeService = {
       if (error instanceof ApiClientError) throw error;
       throw new ApiClientError('REQUEST_FAILED', t('history.loadFailed'), 0);
     }
+  },
+
+  async listAllTrades(filter: TradeListFilter = 'all'): Promise<PaginatedResult<TradeRecord>> {
+    const backendFilter: TradeListFilter = filter === 'today' ? 'all' : filter;
+    const pageSize = 100;
+    const first = await tradeService.listTrades({ filter: backendFilter, page: 1, pageSize });
+    const items = [...first.items];
+    const totalPages = Math.max(1, Math.ceil((first.total || 0) / (first.pageSize || pageSize)));
+    for (let page = 2; page <= totalPages; page += 1) {
+      const next = await tradeService.listTrades({ filter: backendFilter, page, pageSize });
+      items.push(...next.items);
+    }
+    const filtered = filter === 'today' ? items.filter((trade) => trade.isToday) : items;
+    return {
+      items: filtered,
+      total: filter === 'today' ? filtered.length : first.total,
+      page: 1,
+      pageSize,
+      hasMore: false,
+    };
   },
 
   async getTradeById(tradeId: string): Promise<TradeRecord | null> {

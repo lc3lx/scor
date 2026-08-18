@@ -13,10 +13,8 @@ import { useHomeData } from './hooks/useHomeData';
 import { useHomeSheets } from './hooks/useHomeSheets';
 import { BotControlsSection } from './sections/BotControlsSection';
 import { BotEngineSection } from './sections/BotEngineSection';
-import { DurationSection } from './sections/DurationSection';
 import { HomeActionsSection } from './sections/HomeActionsSection';
 import { HomeConfigSection } from './sections/HomeConfigSection';
-import { HomeDisclaimerSection } from './sections/HomeDisclaimerSection';
 import { HomeHeaderSection } from './sections/HomeHeaderSection';
 import { HomeStatsSection } from './sections/HomeStatsSection';
 import { RiskLimitsSection } from './sections/RiskLimitsSection';
@@ -37,7 +35,7 @@ export default function HomePage() {
   const [pairSearchQuery, setPairSearchQuery] = useState('');
   const sheetTitles = getHomeSheetTitles();
 
-  const { data, configRows, tradeAmount, duration, updateRuntime } = homeData;
+  const { data, configRows, tradeAmount, updateRuntime } = homeData;
   const [tradeAmountValue, setTradeAmountValue] = useState('');
 
   const botEngine = data?.botEngine ?? null;
@@ -102,7 +100,7 @@ export default function HomePage() {
   }, [pairSearchQuery, tradingPairContent]);
 
   const chartTitle = useMemo(() => {
-    if (!data || !duration || !tradingPairContent) return '';
+    if (!data || !tradingPairContent) return '';
 
     const pairIds =
       data.runtime.tradingPairIds?.length > 0
@@ -281,7 +279,6 @@ export default function HomePage() {
     !data ||
     !botEngine ||
     !tradeAmount ||
-    !duration ||
     !marketTypeContent ||
     !tradingPairContent ||
     !technicalIndicatorContent ||
@@ -309,7 +306,7 @@ export default function HomePage() {
             <div className={styles.heroStack}>
               <HomeHeaderSection content={data.header} />
               <BotEngineSection content={botEngine} />
-              <HomeStatsSection stats={data.stats} />
+              <HomeStatsSection stats={data.stats} points={data.performancePoints} />
             </div>
 
             <section className={styles.surface} aria-label={t('home.layout.setupTitle')}>
@@ -324,20 +321,12 @@ export default function HomePage() {
 
               <HomeConfigSection rows={configRows} onRowClick={sheets.openSheet} />
 
-              <div className={styles.configGrid}>
-                <TradeAmountSection
-                  content={tradeAmount}
-                  value={tradeAmountValue}
-                  error={tradeAmountError}
-                  onValueChange={setTradeAmountValue}
-                />
-                <DurationSection
-                  content={duration}
-                  onSelect={(optionId) => {
-                    void updateRuntime({ durationId: optionId });
-                  }}
-                />
-              </div>
+              <TradeAmountSection
+                content={tradeAmount}
+                value={tradeAmountValue}
+                error={tradeAmountError}
+                onValueChange={setTradeAmountValue}
+              />
             </section>
 
             <section className={styles.surface} aria-label={t('home.layout.riskTitle')}>
@@ -349,7 +338,12 @@ export default function HomePage() {
                   {t('home.layout.riskSubtitle')}
                 </Text>
               </div>
-              <RiskLimitsSection limits={data.riskLimits} />
+              <RiskLimitsSection
+                limits={data.riskLimits}
+                profitTarget={settingsContent.dailyProfitTarget}
+                lossLimit={settingsContent.dailyLossLimit}
+                onLimitChange={handleDailyLimitChange}
+              />
               <HomeActionsSection actions={data.actions} onAction={sheets.openSheet} />
             </section>
 
@@ -407,8 +401,6 @@ export default function HomePage() {
                 </Text>
               ) : null}
             </section>
-
-            <HomeDisclaimerSection text={data.disclaimer} />
           </PageContent>
         </div>
       </main>

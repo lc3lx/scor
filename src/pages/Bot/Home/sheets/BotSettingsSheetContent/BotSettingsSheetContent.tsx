@@ -1,4 +1,3 @@
-import { Input } from '@components/atoms/Input';
 import { OptionChip } from '@components/molecules/OptionChip';
 import { ToggleRow } from '@components/molecules/ToggleRow';
 import { Text } from '@components/atoms/Text';
@@ -18,7 +17,6 @@ export function BotSettingsSheetContent({
   content,
   onToggleChange,
   onRiskSelect,
-  onDailyLimitChange,
 }: BotSettingsSheetContentProps) {
   const t = useT();
 
@@ -38,39 +36,6 @@ export function BotSettingsSheetContent({
         ))}
       </div>
 
-      <div className={styles.limitsSection}>
-        <label className={styles.limitField}>
-          <Text variant="caption" tone="caption">
-            {content.dailyProfitLabel}
-          </Text>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            value={String(content.dailyProfitTarget)}
-            onChange={(event) => {
-              const n = Number(event.target.value);
-              onDailyLimitChange('dailyProfitTarget', Number.isFinite(n) ? Math.max(0, n) : 0);
-            }}
-          />
-        </label>
-        <label className={styles.limitField}>
-          <Text variant="caption" tone="caption">
-            {content.dailyLossLabel}
-          </Text>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            value={String(content.dailyLossLimit)}
-            onChange={(event) => {
-              const n = Number(event.target.value);
-              onDailyLimitChange('dailyLossLimit', Number.isFinite(n) ? Math.max(0, n) : 0);
-            }}
-          />
-        </label>
-      </div>
-
       <div className={styles.riskSection}>
         <Text variant="body-sm" tone="body" className={styles.riskLabel}>
           {content.riskLabel}
@@ -87,7 +52,6 @@ export function BotSettingsSheetContent({
           ))}
         </div>
       </div>
-
     </div>
   );
 }

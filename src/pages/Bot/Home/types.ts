@@ -52,6 +52,11 @@ export type HomeStatItem = {
   valueTone?: TextTone;
 };
 
+export type HomePerformancePoint = {
+  label: string;
+  net: number;
+};
+
 /** Figma 207:845–207:903 — home SettingRow list */
 export type HomeConfigRow = {
   id: string;
@@ -204,6 +209,7 @@ export type HomePageContent = {
   header: HomeHeaderContent;
   botEngine: BotEngineContent;
   stats: HomeStatItem[];
+  performancePoints: HomePerformancePoint[];
   controls: BotControlAction[];
   configRows: HomeConfigRow[];
   tradeAmount: ChipGroupContent;
