@@ -15,6 +15,8 @@ import { MARKET_FETCH_MS, timedSignal } from '@shared/api/timedSignal';
 import { getAccountStatusCached, invalidateBotSessionCache } from '@shared/api/botSessionCache';
 import {
   pickPreferredMarketAsset,
+  filterFxCurrencyAssets,
+  isFxCurrencySymbol,
 } from '@shared/market/preferAsset';
 import {
   bucketPerformance,
@@ -64,6 +66,7 @@ function normalizePairIds(ids: string[], valid?: Set<string>, max = MAX_BOT_PAIR
   for (const raw of ids) {
     const id = raw?.trim();
     if (!id || out.includes(id)) continue;
+    if (!isFxCurrencySymbol(id)) continue;
     if (valid && !valid.has(id)) continue;
     out.push(id);
     if (out.length >= max) break;
@@ -158,14 +161,6 @@ function formatSignal(signal: string): string {
   return t('common.none');
 }
 
-function rotatingBatch(ids: string[], size: number): string[] {
-  if (ids.length <= size) return ids;
-  const offset = Math.floor(Date.now() / 2000) % ids.length;
-  const batch: string[] = [];
-  for (let i = 0; i < size; i += 1) batch.push(ids[(offset + i) % ids.length]!);
-  return batch;
-}
-
 function pairDisplayName(
   id: string,
   options: { id: string; title: string }[],
@@ -174,17 +169,21 @@ function pairDisplayName(
   return options.find((o) => o.id === id)?.title ?? id;
 }
 
+function closedRsiValue(signal: StrategySignalResponse): number {
+  return Number(signal.rsi);
+}
+
 function liveRsiValue(signal: StrategySignalResponse): number {
   return Number(signal.liveRsi ?? signal.rsi);
 }
 
-function isLiveCallRsi(signal: StrategySignalResponse): boolean {
-  const rsi = liveRsiValue(signal);
+function isClosedCallRsi(signal: StrategySignalResponse): boolean {
+  const rsi = closedRsiValue(signal);
   return Number.isFinite(rsi) && rsi <= 25;
 }
 
-function isLivePutRsi(signal: StrategySignalResponse): boolean {
-  const rsi = liveRsiValue(signal);
+function isClosedPutRsi(signal: StrategySignalResponse): boolean {
+  const rsi = closedRsiValue(signal);
   return Number.isFinite(rsi) && rsi >= 75;
 }
 
@@ -194,11 +193,11 @@ function backtestReady(signal: StrategySignalResponse): boolean {
   return signal.backtest?.passed === true && total > 0 && rate >= 75;
 }
 
-/** RSI first. Backtest only counts after live RSI is at 25/75. */
+/** Closed RSI first. Backtest only counts after the candle closed at 25/75. */
 function isCallSetup(signal: StrategySignalResponse): boolean {
   return (
     signal.signal === 'Call' &&
-    isLiveCallRsi(signal) &&
+    isClosedCallRsi(signal) &&
     backtestReady(signal)
   );
 }
@@ -206,7 +205,7 @@ function isCallSetup(signal: StrategySignalResponse): boolean {
 function isPutSetup(signal: StrategySignalResponse): boolean {
   return (
     signal.signal === 'Put' &&
-    isLivePutRsi(signal) &&
+    isClosedPutRsi(signal) &&
     backtestReady(signal)
   );
 }
@@ -226,9 +225,9 @@ function pickLiveDisplaySignal(
   const actionable = valid.filter(isActionableSetup);
   if (actionable.length > 0) {
     const signal = [...actionable].sort((a, b) => {
-      // Prefer deeper live RSI extreme first; backtest rate is secondary.
+      // Prefer deeper closed RSI extreme first; backtest rate is secondary.
       const edge = (s: StrategySignalResponse) => {
-        const rsi = liveRsiValue(s);
+        const rsi = closedRsiValue(s);
         return isCallSetup(s) ? 25 - rsi : rsi - 75;
       };
       const edgeDiff = edge(b) - edge(a);
@@ -246,8 +245,8 @@ function engineStatsFromSignal(
   pairLabel: string,
 ): HomeData['botEngine']['stats'] {
   const rate = signal.backtest?.successRate;
-  const atExtreme = isLiveCallRsi(signal) || isLivePutRsi(signal);
-  // Backtest only has entry meaning when live RSI is already at 25/75.
+  const atExtreme = isClosedCallRsi(signal) || isClosedPutRsi(signal);
+  // Backtest only has entry meaning when the closed candle RSI is already at 25/75.
   const passed = atExtreme && backtestReady(signal);
   const rateLabel =
     rate == null
@@ -461,7 +460,8 @@ export const homeService = {
           : null;
 
       if (assets?.assets?.length) {
-        const options = assets.assets.map((a) => ({
+        const fxAssets = filterFxCurrencyAssets(assets.assets);
+        const options = fxAssets.map((a) => ({
           id: a.symbol,
           title: a.name || a.symbol,
           description: a.available ? t('common.available') : t('home.asset.unavailable'),
@@ -469,12 +469,12 @@ export const homeService = {
         base.sheets.tradingPair.options = options;
         const valid = new Set(options.map((o) => o.id));
         const preferred = pickPreferredMarketAsset(
-          assets.assets.map((a) => ({ symbol: a.symbol, available: a.available })),
+          fxAssets.map((a) => ({ symbol: a.symbol, available: a.available })),
         );
         const seed = normalizePairIds(
           pairIds.length
-            ? pairIds
-            : runtimeState.tradingPairId
+            ? pairIds.filter(isFxCurrencySymbol)
+            : runtimeState.tradingPairId && isFxCurrencySymbol(runtimeState.tradingPairId)
               ? [runtimeState.tradingPairId]
               : [],
           valid,
@@ -584,20 +584,22 @@ export const homeService = {
         );
       }
 
-      const analyzeIds =
-        pairIds.length > 0 ? pairIds : asset ? [asset] : [];
+      const analyzeIds = (
+        pairIds.length > 0 ? pairIds : asset ? [asset] : []
+      ).filter(isFxCurrencySymbol);
       const running = runtimeState.botStatus === 'running';
       const expiryCandles = expiryCandlesFromDurationId(runtimeState.durationId);
-      // Placement is server-side (BotSignalWorker). Home shows a live rotating snapshot.
+      // Placement is server-side (BotSignalWorker scans every selected FX pair each tick).
       const signalOpts = { expiryCandles, backtestCandles: 200, autoExecute: false as const };
       const openTradeCount = tradeBundle
         ? weekAndMonthSummaries(tradeBundle.items).all.active
         : 0;
       // One live trade at a time — pause Home RSI analysis until it settles.
-      // Worker owns analysis while Running. Home only snapshots 1 pair for the RSI gauge
-      // so it does not fire 8 extra asset/change on the same Binolla session.
+      // While Running, worker owns full multi-pair scan — Home only gauges 1 pair
+      // so it does not fight the worker on the same Binolla WS.
+      // When idle, analyze every selected FX pair in one pass (no rotating batches).
       const scanIds =
-        openTradeCount > 0 ? [] : rotatingBatch(analyzeIds, running ? 1 : 8);
+        openTradeCount > 0 ? [] : running ? analyzeIds.slice(0, 1) : analyzeIds;
       const signalResults =
         scanIds.length && canBrowseMarket(status?.botAccess)
           ? await Promise.all(
@@ -626,11 +628,11 @@ export const homeService = {
               signal: signal.signal,
               liveRsi: signal.liveRsi ?? null,
               closedRsi: signal.rsi,
-              putOk: isLivePutRsi(signal),
-              callOk: isLiveCallRsi(signal),
+              putOk: isClosedPutRsi(signal),
+              callOk: isClosedCallRsi(signal),
               violation:
-                (signal.signal === 'Put' && !isLivePutRsi(signal)) ||
-                (signal.signal === 'Call' && !isLiveCallRsi(signal)),
+                (signal.signal === 'Put' && !isClosedPutRsi(signal)) ||
+                (signal.signal === 'Call' && !isClosedCallRsi(signal)),
             },
             timestamp: Date.now(),
           }),

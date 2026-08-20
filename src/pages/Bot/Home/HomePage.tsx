@@ -233,11 +233,12 @@ export default function HomePage() {
     sheets.closeSheet();
   }, [settingsContent, sheets.closeSheet, updateRuntime]);
 
+  // Sync from runtime only when the persisted amount id changes — not on every
+  // home poll (tradeAmount object identity changes every few seconds).
   useEffect(() => {
-    if (!tradeAmount) return;
-    const next = tradeAmount.selectedId.replace('amount-', '');
-    setTradeAmountValue(next);
-  }, [tradeAmount]);
+    if (!tradeAmount?.selectedId) return;
+    setTradeAmountValue(tradeAmount.selectedId.replace('amount-', ''));
+  }, [tradeAmount?.selectedId]);
 
   const parsedTradeAmount = useMemo(() => {
     const n = Number(tradeAmountValue);

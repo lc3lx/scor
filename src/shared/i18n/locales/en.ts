@@ -555,7 +555,7 @@ export const en = {
   'home.controls.pause': 'Pause',
   'home.controls.stop': 'Stop',
   'home.controls.apply': 'Apply',
-  'home.controls.runningNote': 'Bot is running — entries require live RSI ≤25 (Call) or ≥75 (Put), then a passing backtest.',
+  'home.controls.runningNote': 'Bot is running — entries require a candle close with RSI ≤25 (Call) or ≥75 (Put), then a passing backtest.',
   'home.controls.selectPair': 'Select a trading pair before starting the bot.',
   'home.controls.started': 'Bot started successfully. It is now monitoring valid RSI signals.',
   'home.controls.startedAfterLimit':
@@ -587,8 +587,8 @@ export const en = {
   'home.indicator.rsi': 'RSI',
   'home.indicator.rsiDesc': 'Relative Strength Index momentum oscillator.',
   'home.indicator.rsiBest': 'Best for: Reversal signals',
-  'home.indicator.rsiSmartDesc': 'Live RSI 14 on the forming 1-minute bar. Call ≤25 / Put ≥75, then historical filter.',
-  'home.indicator.rsiSmartBest': 'RSI 14 · 25 / 75 · 400-candle historical filter',
+  'home.indicator.rsiSmartDesc': 'RSI 14 on the closed 1-minute bar. Call if close ≤25 / Put if close ≥75, then historical filter.',
+  'home.indicator.rsiSmartBest': 'RSI 14 · close 25 / 75 · 400-candle historical filter',
   'home.indicator.macd': 'MACD',
   'home.indicator.macdDesc': 'Trend-following momentum indicator.',
   'home.indicator.macdBest': 'Best for: Trending markets',
@@ -752,7 +752,7 @@ export const en = {
 
   // Notifications
   'notifications.title': 'Notifications',
-  'notifications.markAll': 'Mark all',
+  'notifications.markAll': 'Mark all as read',
   'notifications.backAria': 'Go back',
   'notifications.openRelated': 'Open Related Screen',
   'notifications.notFound': 'Notification not found.',

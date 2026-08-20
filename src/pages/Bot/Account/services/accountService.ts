@@ -129,12 +129,6 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
 
     menuItems.push(
       {
-        id: 'subscription',
-        label: t('account.menu.subscription'),
-        iconSrc: accountAssets.expiration,
-        route: ROUTES.subscription,
-      },
-      {
         id: 'activation-history',
         label: t('account.menu.activationHistory'),
         iconSrc: accountAssets.activationHistory,
@@ -184,7 +178,7 @@ function buildSnapshotFromApi(): Promise<AccountSnapshot> {
           id: 'email',
           label: t('account.detail.email'),
           value: email,
-          iconSrc: accountAssets.country,
+          iconSrc: accountAssets.email,
         },
         {
           id: 'telegram',

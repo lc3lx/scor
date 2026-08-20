@@ -29,9 +29,6 @@ const EditProfilePage = lazy(() =>
 const ChangePasswordPage = lazy(() =>
   import('@pages/Bot/Settings').then((module) => ({ default: module.ChangePasswordPage })),
 );
-const SubscriptionPage = lazy(() =>
-  import('@pages/Bot/Settings').then((module) => ({ default: module.SubscriptionPage })),
-);
 const ActivationHistoryPage = lazy(() =>
   import('@pages/Bot/Settings').then((module) => ({ default: module.ActivationHistoryPage })),
 );
@@ -184,7 +181,7 @@ export const appRoutes: RouteObject[] = [
           },
           {
             path: ROUTES.subscription,
-            element: <SubscriptionPage />,
+            element: <Navigate to={ROUTES.settings} replace />,
             handle: {
               title: 'Subscription',
               figmaNodeId: FIGMA_NODES.subscription,

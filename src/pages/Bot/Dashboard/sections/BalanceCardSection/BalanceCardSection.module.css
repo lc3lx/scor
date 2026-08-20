@@ -14,10 +14,11 @@
 .status {
   position: absolute;
   top: 16px;
-  right: 15px;
+  inset-inline-end: 15px;
 }
 
 .label {
+  max-width: calc(100% - 96px);
   color: var(--dashboard-balance-muted);
   font-size: 14px;
   line-height: 17px;

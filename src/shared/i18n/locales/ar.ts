@@ -547,7 +547,7 @@ export const ar: EnDictionary = {
   'home.controls.pause': 'إيقاف مؤقت',
   'home.controls.stop': 'إيقاف',
   'home.controls.apply': 'تطبيق',
-  'home.controls.runningNote': 'البوت يعمل — الدخول يتطلب RSI الحي ≤25 (شراء) أو ≥75 (بيع)، ثم نجاح الاختبار التاريخي.',
+  'home.controls.runningNote': 'البوت يعمل — الدخول عند إغلاق الشمعة: RSI ≤25 (شراء) أو ≥75 (بيع)، ثم نجاح الاختبار التاريخي.',
   'home.controls.selectPair': 'اختر زوج التداول قبل بدء البوت.',
   'home.controls.started': 'تم بدء البوت بنجاح، وهو يراقب الآن إشارات RSI الصالحة.',
   'home.controls.startedAfterLimit':
@@ -579,8 +579,8 @@ export const ar: EnDictionary = {
   'home.indicator.rsi': 'RSI',
   'home.indicator.rsiDesc': 'مؤشر القوة النسبية للزخم.',
   'home.indicator.rsiBest': 'الأنسب: إشارات الانعكاس',
-  'home.indicator.rsiSmartDesc': 'RSI الحي 14 على شمعة الدقيقة الحالية. شراء ≤25 / بيع ≥75، ثم الفلتر التاريخي.',
-  'home.indicator.rsiSmartBest': 'RSI 14 · مستويات 25 / 75 · فلتر تاريخي 400 شمعة',
+  'home.indicator.rsiSmartDesc': 'RSI 14 على إغلاق شمعة الدقيقة. شراء إذا أغلقت ≤25 / بيع إذا أغلقت ≥75، ثم الفلتر التاريخي.',
+  'home.indicator.rsiSmartBest': 'RSI 14 · إغلاق 25 / 75 · فلتر تاريخي 400 شمعة',
   'home.indicator.macd': 'MACD',
   'home.indicator.macdDesc': 'مؤشر زخم يتبع الاتجاه.',
   'home.indicator.macdBest': 'الأنسب: الأسواق الاتجاهية',
@@ -741,7 +741,7 @@ export const ar: EnDictionary = {
   'history.source.user': 'المصدر: المستخدم',
 
   'notifications.title': 'الإشعارات',
-  'notifications.markAll': 'تعليم الكل',
+  'notifications.markAll': 'تعليم الكل كمقروء',
   'notifications.backAria': 'رجوع',
   'notifications.openRelated': 'فتح الشاشة المرتبطة',
   'notifications.notFound': 'الإشعار غير موجود.',
