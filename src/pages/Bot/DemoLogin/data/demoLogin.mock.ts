@@ -21,7 +21,7 @@ export function getDemoLoginCopy(): DemoLoginCopy {
     footerPrefix: t('login.footerPrefix'),
     footerLinkLabel: t('login.footerLinkLabel'),
     footerSuffix: t('login.footerSuffix'),
-    footerHref: 'https://hul.company',
+    footerHref: '#',
     telegramLabel: t('login.continueTelegram'),
     normalLoginLabel: t('demoLogin.normalLogin'),
   };

@@ -80,7 +80,13 @@ export function TradeDetailHeaderSection({
       title={title}
       onBack={onBack}
       action={
-        <Chip label={statusLabel} tone={statusTone} style="solid" className={styles.statusChip} />
+        <Chip
+          label={statusLabel}
+          tone={statusTone}
+          style="solid"
+          showDot={false}
+          className={styles.statusChip}
+        />
       }
       className={styles.header}
     />

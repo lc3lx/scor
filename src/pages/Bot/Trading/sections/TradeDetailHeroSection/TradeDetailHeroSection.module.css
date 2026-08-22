@@ -85,6 +85,16 @@
 }
 
 .statusChip {
+  --chip-solid-padding-x: 14px;
+  --chip-solid-padding-y: 6px;
+  --badge-font-size: 12px;
+  --badge-line-height: 18px;
+  justify-content: center;
+  align-items: center;
+  min-width: 56px;
+  min-height: 28px;
+  box-sizing: border-box;
+  text-align: center;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
