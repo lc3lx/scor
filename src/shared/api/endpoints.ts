@@ -262,6 +262,8 @@ type BotPreferences = {
   signalConfirmationEnabled?: boolean;
   riskLevel?: string;
   notificationsEnabled?: boolean;
+  /** Which strategy the bot runs: 'rsi' or 'ema'. */
+  strategyId?: string;
 };
 
 export const marketApi = {

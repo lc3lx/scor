@@ -121,7 +121,7 @@ function cloneRuntime(): HomeRuntimeState {
   };
 }
 
-function toBotPreferences(settings: HomeRuntimeState['settings']) {
+function toBotPreferences(settings: HomeRuntimeState['settings'], strategyId?: string) {
   const enabled = (id: string) => settings.toggles.find((toggle) => toggle.id === id)?.enabled ?? false;
   return {
     autoStopAtProfit: enabled('auto-profit'),
@@ -129,6 +129,8 @@ function toBotPreferences(settings: HomeRuntimeState['settings']) {
     signalConfirmationEnabled: enabled('signal-confirm'),
     riskLevel: settings.selectedRiskId,
     notificationsEnabled: enabled('notifications'),
+    // Without this the picked strategy stays client-side and the bot keeps running RSI.
+    ...(strategyId ? { strategyId } : {}),
   };
 }
 
@@ -430,7 +432,7 @@ export const homeService = {
               desired.durationSeconds,
               desired.dailyProfitTarget,
               desired.dailyLossLimit,
-              toBotPreferences(runtimeState.settings),
+              toBotPreferences(runtimeState.settings, runtimeState.strategyId),
             );
             botRuntime = resumed;
             runtimeState.botStatus = 'running';
@@ -528,29 +530,39 @@ export const homeService = {
       }
 
       if (strategies?.strategies?.length) {
+        // Every strategy the server reports as runnable. Each card describes ITSELF —
+        // reusing the RSI copy for another strategy would misdescribe what it does.
         const strategyOptions: StrategyOptionItem[] = strategies.strategies
-          .filter((s) => s.id === 'rsi')
+          .filter((s) => s.enabled)
           .map((s) => ({
             id: s.id,
             title: s.name,
             stats: [
               {
                 label: t('home.strategy.stat.indicators'),
-                value: t('home.strategy.rsi.indicator'),
+                value: t(`home.strategy.${s.id}.indicator`),
               },
               {
                 label: t('home.strategy.stat.duration'),
-                value: t('home.strategy.rsi.expiry'),
+                value: t(`home.strategy.${s.id}.expiry`),
               },
-              { label: t('home.strategy.rsi.filter'), value: t('home.strategy.rsi.filterValue') },
+              {
+                label: t(`home.strategy.${s.id}.filter`),
+                value: t(`home.strategy.${s.id}.filterValue`),
+              },
               { label: t('home.strategy.stat.markets'), value: t('home.market.binolla') },
             ],
-            successRate: t('home.strategy.rsi.success'),
+            successRate: t(`home.strategy.${s.id}.success`),
             previewSrc: strategyPreview(s.id),
             enabled: s.enabled,
           }));
 
         base.sheets.strategy.options = strategyOptions;
+        // The server owns which strategy is running — otherwise a reload would show
+        // RSI while the bot is actually on EMA.
+        if (botRuntime?.strategyId) {
+          runtimeState.strategyId = botRuntime.strategyId;
+        }
         const enabled = strategies.strategies.find((s) => s.enabled)?.id ?? strategies.strategies[0]?.id ?? '';
         if (!strategies.strategies.some((s) => s.id === runtimeState.strategyId && s.enabled)) {
           runtimeState.strategyId = enabled;
@@ -847,6 +859,23 @@ export const homeService = {
     const dailyProfitTarget = Math.max(0, settings.dailyProfitTarget ?? 50);
     const dailyLossLimit = Math.max(0, settings.dailyLossLimit ?? 30);
 
+    // Resolve the strategy BEFORE saving: the payload below must carry the newly
+    // picked one, not the value still sitting in runtimeState. The server rejects
+    // strategies that are not released, so verify here and fall back rather than
+    // sending something that will 400.
+    let strategyId = partial.strategyId ?? runtimeState.strategyId;
+    if (partial.strategyId && partial.strategyId !== runtimeState.strategyId) {
+      try {
+        const strategies = await strategiesApi.list();
+        if (!strategies.strategies.find((s) => s.id === partial.strategyId)?.enabled) {
+          strategyId = runtimeState.strategyId;
+        }
+      } catch {
+        strategyId = runtimeState.strategyId;
+      }
+      partial = { ...partial, strategyId };
+    }
+
     let persistedBot: Awaited<ReturnType<typeof botApi.status>> | null = null;
 
     if (partial.botStatus === 'running') {
@@ -856,7 +885,7 @@ export const homeService = {
         durationSeconds,
         dailyProfitTarget,
         dailyLossLimit,
-        toBotPreferences(settings),
+        toBotPreferences(settings, strategyId),
       );
       writeDesiredRunning({
         assets: pairIds,
@@ -877,7 +906,8 @@ export const homeService = {
       partial.tradeAmountId ||
       partial.durationId ||
       partial.tradingPairId ||
-      partial.tradingPairIds
+      partial.tradingPairIds ||
+      partial.strategyId
     ) {
       persistedBot = await botApi.apply({
         asset,
@@ -886,7 +916,7 @@ export const homeService = {
         durationSeconds,
         dailyProfitTarget,
         dailyLossLimit,
-        ...toBotPreferences(settings),
+        ...toBotPreferences(settings, strategyId),
       });
     }
 
@@ -909,18 +939,6 @@ export const homeService = {
         settings: applyBotPreferences(partial.settings ?? runtimeState.settings, persistedBot),
       };
     }
-    if (partial.strategyId) {
-      try {
-        const strategies = await strategiesApi.list();
-        const selected = strategies.strategies.find((s) => s.id === partial.strategyId);
-        if (!selected?.enabled) {
-          partial = { ...partial, strategyId: runtimeState.strategyId };
-        }
-      } catch {
-        partial = { ...partial, strategyId: runtimeState.strategyId };
-      }
-    }
-
     if (partial.technicalIndicatorId && partial.technicalIndicatorId !== 'rsi') {
       partial = { ...partial, technicalIndicatorId: 'rsi' };
     }

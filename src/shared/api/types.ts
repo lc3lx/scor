@@ -129,6 +129,8 @@ export type BotRuntimeResponse = {
   notificationsEnabled: boolean;
   pnlSessionStartedAt?: string | null;
   stopReason?: string | null;
+  /** Which strategy the bot runs: 'rsi' or 'ema'. */
+  strategyId?: string | null;
 };
 
 export type StrategySignalResponse = {
